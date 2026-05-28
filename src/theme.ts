@@ -45,30 +45,7 @@ const theme = createTheme({
     },
     divider: '#DEE1E6', // Light gray for borders
   },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          '&.MuiButton-containedPrimary': {
-            color: '#ffffff',
-          },
-        },
-      },
-    },
-    MuiOutlinedInput: {
-      styleOverrides: {
-        root: {
-          '& .MuiInputBase-input::placeholder': {
-            color: 'rgba(10, 10, 10, 0.5)',
-            opacity: 1,
-          },
-        },
-        notchedOutline: {
-          borderColor: '#d1d5dc',
-        },
-      },
-    },
-  },
+  components: {},
 });
 
 export default theme;

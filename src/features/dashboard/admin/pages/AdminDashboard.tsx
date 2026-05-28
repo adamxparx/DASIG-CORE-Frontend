@@ -1,13 +1,13 @@
-import { Box, Typography } from '@mui/material';
+import RoleBasedDashboardPage from '../../shared/components/RoleBasedDashboardPage';
 
 const AdminDashboard = () => {
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Welcome, Admin!
-      </Typography>
-      <Typography variant="body1">This is your main dashboard view.</Typography>
-    </Box>
+    <RoleBasedDashboardPage
+      role="DASIG_ADMIN"
+      title="KPI Management Hub"
+      subtitle="Monitor consortium-wide KPI definitions and performance updates."
+      welcomeMessage="Welcome, DASIG Admin"
+    />
   );
 };
 

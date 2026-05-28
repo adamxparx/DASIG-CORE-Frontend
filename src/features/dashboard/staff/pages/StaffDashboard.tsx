@@ -1,13 +1,13 @@
-import { Box, Typography } from '@mui/material';
+import RoleBasedDashboardPage from '../../shared/components/RoleBasedDashboardPage';
 
 const StaffDashboard = () => {
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Welcome, Staff!
-      </Typography>
-      <Typography variant="body1">This is your main dashboard view.</Typography>
-    </Box>
+    <RoleBasedDashboardPage
+      role="STAFF"
+      title="Organization KPI Dashboard"
+      subtitle="Track assigned KPIs and maintain on-time submissions."
+      welcomeMessage="Welcome, Staff"
+    />
   );
 };
 

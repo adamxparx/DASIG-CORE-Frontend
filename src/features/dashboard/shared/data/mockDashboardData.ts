@@ -1,0 +1,48 @@
+import type { DashboardKpiItem } from '../types/dashboard.types';
+
+export const mockKpis: DashboardKpiItem[] = [
+  {
+    id: 1,
+    name: 'Startup Incubation Count',
+    description: 'Total startups incubated for the current quarter.',
+    targetValue: 12,
+    submittedValue: 10,
+    unit: 'startups',
+    deadline: '2026-06-30',
+    organization: 'Organization A',
+    status: 'AT_RISK',
+  },
+  {
+    id: 2,
+    name: 'Mentorship Sessions',
+    description: 'Mentorship sessions completed with registered founders.',
+    targetValue: 30,
+    submittedValue: 33,
+    unit: 'sessions',
+    deadline: '2026-06-20',
+    organization: 'Organization B',
+    status: 'ON_TRACK',
+  },
+  {
+    id: 3,
+    name: 'Prototype Validation',
+    description: 'Validated prototypes endorsed by partner laboratories.',
+    targetValue: 15,
+    submittedValue: 6,
+    unit: 'prototypes',
+    deadline: '2026-05-31',
+    organization: 'Organization B',
+    status: 'DELAYED',
+  },
+  {
+    id: 4,
+    name: 'Industry Partnership Leads',
+    description: 'Qualified industry partnership leads progressed to MoU stage.',
+    targetValue: 8,
+    submittedValue: 8,
+    unit: 'leads',
+    deadline: '2026-06-15',
+    organization: 'Organization C',
+    status: 'ON_TRACK',
+  },
+];
