@@ -1,6 +1,7 @@
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import AssignmentTurnedInOutlinedIcon from '@mui/icons-material/AssignmentTurnedInOutlined';
 import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
+import CorporateFareOutlinedIcon from '@mui/icons-material/CorporateFareOutlined';
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
 import PostAddOutlinedIcon from '@mui/icons-material/PostAddOutlined';
@@ -15,7 +16,7 @@ import ListItemText from '@mui/material/ListItemText';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import type { ReactElement } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { routes } from '../../../../routes';
 import { tokenStorage } from '../../../auth/utils/tokenStorage';
 import type { UserRole } from '../types/dashboard.types';
@@ -28,12 +29,19 @@ interface SidebarItem {
   key: string;
   label: string;
   icon: ReactElement;
+  path?: string;
 }
+
+const adminPaths: Record<string, string> = {
+  dashboard: routes.adminDashboard,
+  organizations: routes.adminOrganizations,
+};
 
 const roleMenus: Record<UserRole, SidebarItem[]> = {
   DASIG_ADMIN: [
-    { key: 'dashboard', label: 'Admin Dashboard', icon: <SpaceDashboardOutlinedIcon /> },
+    { key: 'dashboard', label: 'Admin Dashboard', icon: <SpaceDashboardOutlinedIcon />, path: adminPaths.dashboard },
     { key: 'users', label: 'User Management', icon: <ManageAccountsOutlinedIcon /> },
+    { key: 'organizations', label: 'Organization Management', icon: <CorporateFareOutlinedIcon />, path: adminPaths.organizations },
     { key: 'alerts', label: 'Alerts', icon: <CampaignOutlinedIcon /> },
     { key: 'reports', label: 'Report Generation', icon: <SummarizeOutlinedIcon /> },
   ],
@@ -51,12 +59,48 @@ const roleMenus: Record<UserRole, SidebarItem[]> = {
   ],
 };
 
+const staffPaths: Record<string, string> = {
+  dashboard: routes.staffDashboard,
+};
+
+const tbiPaths: Record<string, string> = {
+  dashboard: routes.tbiManagerDashboard,
+};
+
+function isItemSelected(pathname: string, item: SidebarItem): boolean {
+  if (!item.path) {
+    return false;
+  }
+
+  if (item.path === routes.adminDashboard || item.path === routes.staffDashboard || item.path === routes.tbiManagerDashboard) {
+    return pathname === item.path;
+  }
+
+  return pathname === item.path || pathname.startsWith(`${item.path}/`);
+}
+
 const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  const pathByKey =
+    role === 'DASIG_ADMIN' ? adminPaths : role === 'STAFF' ? staffPaths : tbiPaths;
+
+  const menuItems = roleMenus[role].map((item) => ({
+    ...item,
+    path: item.path ?? pathByKey[item.key],
+  }));
 
   const handleLogout = () => {
     tokenStorage.clear();
     navigate(routes.auth, { replace: true });
+  };
+
+  const handleNavClick = (item: SidebarItem) => {
+    const target = item.path ?? pathByKey[item.key];
+    if (target) {
+      navigate(target);
+    }
   };
 
   return (
@@ -81,9 +125,23 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
       </Box>
       <Divider />
       <List sx={{ px: 1.5, py: 1, flexGrow: 1 }}>
-        {roleMenus[role].map((item, index) => (
-          <ListItemButton key={item.key} selected={index === 0} sx={{ borderRadius: 2, mb: 0.5 }}>
-            <ListItemIcon sx={{ minWidth: 38 }}>{item.icon}</ListItemIcon>
+        {menuItems.map((item) => (
+          <ListItemButton
+            key={item.key}
+            selected={isItemSelected(pathname, item)}
+            onClick={() => handleNavClick(item)}
+            sx={{
+              borderRadius: 2,
+              mb: 0.5,
+              '&.Mui-selected': {
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': { bgcolor: 'primary.dark' },
+                '& .MuiListItemIcon-root': { color: 'primary.contrastText' },
+              },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 38, color: 'inherit' }}>{item.icon}</ListItemIcon>
             <ListItemText primary={item.label} />
           </ListItemButton>
         ))}

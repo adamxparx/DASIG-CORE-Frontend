@@ -7,6 +7,7 @@ import { tokenStorage } from './features/auth/utils/tokenStorage';
 import AdminDashboard from './features/dashboard/admin/pages/AdminDashboard';
 import StaffDashboard from './features/dashboard/staff/pages/StaffDashboard';
 import TbiManagerDashboard from './features/dashboard/tbi_manager/pages/TbiManagerDashboard';
+import OrganizationManagementPage from './features/organization/pages/OrganizationManagementPage';
 import { routes } from './routes';
 
 function getSession() {
@@ -82,6 +83,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="ROLE_DASIG_ADMIN">
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={routes.adminOrganizations}
+          element={
+            <ProtectedRoute requiredRole="ROLE_DASIG_ADMIN">
+              <OrganizationManagementPage />
             </ProtectedRoute>
           }
         />
