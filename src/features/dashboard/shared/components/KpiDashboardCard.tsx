@@ -17,6 +17,8 @@ import SubmitProgressLink from './SubmitProgressLink';
 interface KpiDashboardCardProps {
   item: DashboardKpiItem;
   role: UserRole;
+  onEdit?: (item: DashboardKpiItem) => void;
+  onDelete?: (item: DashboardKpiItem) => void;
 }
 
 const formatDate = (date: string) => {
@@ -36,7 +38,7 @@ const getDaysLeftText = (date: string) => {
   return `${diffInDays} days left`;
 };
 
-const KpiDashboardCard = ({ item, role }: KpiDashboardCardProps) => {
+const KpiDashboardCard = ({ item, role, onEdit, onDelete }: KpiDashboardCardProps) => {
   const progressPercent = (item.submittedValue / item.targetValue) * 100;
 
   return (
@@ -102,7 +104,10 @@ const KpiDashboardCard = ({ item, role }: KpiDashboardCardProps) => {
             </Stack>
 
             {role === 'DASIG_ADMIN' ? (
-              <KpiAdminActions onEdit={() => undefined} onDelete={() => undefined} />
+              <KpiAdminActions
+                onEdit={() => onEdit?.(item)}
+                onDelete={() => onDelete?.(item)}
+              />
             ) : (
               <SubmitProgressLink onClick={() => undefined} />
             )}

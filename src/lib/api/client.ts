@@ -61,6 +61,9 @@ export async function apiClient<T>(path: string, options: ApiClientOptions = {})
   }
 
   if (!bodyText) {
+    if (response.ok) {
+      return undefined as unknown as T;
+    }
     throw new ApiError('Empty response from server.', response.status);
   }
 
