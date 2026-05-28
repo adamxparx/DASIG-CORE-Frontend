@@ -1,12 +1,15 @@
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import Stack from '@mui/material/Stack';
-import { useEffect, useMemo, useState } from 'react';
+import Snackbar from '@mui/material/Snackbar';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { ApiError } from '../../../../lib/api/client';
 import DashboardViewToggle from '../../admin/components/DashboardViewToggle';
 import CreateKpiButton from '../../admin/components/CreateKpiButton';
+import KpiFormDialog from '../../admin/components/KpiFormDialog';
+import DeleteKpiDialog from '../../admin/components/DeleteKpiDialog';
 import { dashboardService } from '../api/dashboardService';
-import type { DashboardApiResponse, DashboardStatus, DashboardViewMode, UserRole } from '../types/dashboard.types';
+import type { DashboardApiResponse, DashboardKpiItem, DashboardStatus, DashboardViewMode, UserRole } from '../types/dashboard.types';
 import DashboardHeader from './DashboardHeader';
 import DashboardLayout from './DashboardLayout';
 import KpiDashboardCard from './KpiDashboardCard';
@@ -35,39 +38,73 @@ const RoleBasedDashboardPage = ({
   const [organization, setOrganization] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<DashboardViewMode>('grid');
 
-  useEffect(() => {
-    let mounted = true;
+  // Form Dialog States
+  const [formDialogOpen, setFormDialogOpen] = useState(false);
+  const [selectedKpiForEdit, setSelectedKpiForEdit] = useState<DashboardKpiItem | null>(null);
 
-    const loadDashboard = async () => {
-      try {
-        const response = await dashboardService.getDashboard();
-        if (!mounted) {
-          return;
-        }
+  // Delete Dialog States
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedKpiForDelete, setSelectedKpiForDelete] = useState<DashboardKpiItem | null>(null);
 
-        setDashboardData(response);
-        if (response.organizationName && role !== 'DASIG_ADMIN') {
-          setOrganization(response.organizationName);
-        }
-      } catch (err) {
-        if (!mounted) {
-          return;
-        }
+  // Toast notification state
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastSeverity, setToastSeverity] = useState<'success' | 'error'>('success');
 
-        setError(err instanceof ApiError ? err.message : 'Unable to load dashboard data.');
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
+  const loadDashboard = useCallback(async (silent = false) => {
+    if (!silent) {
+      setIsLoading(true);
+    }
+    try {
+      const response = await dashboardService.getDashboard();
+      setDashboardData(response);
+      if (response.organizationName && role !== 'DASIG_ADMIN') {
+        setOrganization(response.organizationName);
       }
-    };
-
-    void loadDashboard();
-
-    return () => {
-      mounted = false;
-    };
+      setError(null);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Unable to load dashboard data.');
+    } finally {
+      if (!silent) {
+        setIsLoading(false);
+      }
+    }
   }, [role]);
+
+  useEffect(() => {
+    void loadDashboard();
+  }, [loadDashboard]);
+
+  const handleCreateClick = () => {
+    setSelectedKpiForEdit(null);
+    setFormDialogOpen(true);
+  };
+
+  const handleEditClick = (item: DashboardKpiItem) => {
+    setSelectedKpiForEdit(item);
+    setFormDialogOpen(true);
+  };
+
+  const handleDeleteClick = (item: DashboardKpiItem) => {
+    setSelectedKpiForDelete(item);
+    setDeleteDialogOpen(true);
+  };
+
+  const showToast = (message: string, severity: 'success' | 'error') => {
+    setToastMessage(message);
+    setToastSeverity(severity);
+    setToastOpen(true);
+  };
+
+  const handleCreateOrUpdateSuccess = () => {
+    void loadDashboard(true);
+    showToast(selectedKpiForEdit ? 'KPI updated successfully.' : 'KPI created successfully.', 'success');
+  };
+
+  const handleDeleteSuccess = () => {
+    void loadDashboard(true);
+    showToast('KPI deleted successfully.', 'success');
+  };
 
   const organizations = useMemo(() => {
     const kpis = dashboardData?.kpis ?? [];
@@ -97,7 +134,7 @@ const RoleBasedDashboardPage = ({
   const topActions =
     role === 'DASIG_ADMIN' ? (
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ justifyContent: 'space-between' }}>
-        <CreateKpiButton onClick={() => undefined} />
+        <CreateKpiButton onClick={handleCreateClick} />
         <DashboardViewToggle viewMode={viewMode} onChange={setViewMode} />
       </Stack>
     ) : null;
@@ -129,33 +166,80 @@ const RoleBasedDashboardPage = ({
   }
 
   return (
-    <DashboardLayout
-      role={role}
-      header={<DashboardHeader title={resolvedTitle} subtitle={subtitle} />}
-      welcomeBanner={<WelcomeBanner message={resolvedWelcomeMessage} />}
-      topActions={topActions}
-      filterBar={
-        <KpiFilterBar
-          search={search}
-          status={status}
-          organization={organization}
-          organizations={organizations}
-          organizationLocked={role !== 'DASIG_ADMIN'}
-          onSearchChange={setSearch}
-          onStatusChange={setStatus}
-          onOrganizationChange={setOrganization}
-        />
-      }
-      content={
-        <KpiGrid
-          title={role === 'DASIG_ADMIN' ? 'All KPIs' : 'Organization KPIs'}
-          items={filteredKpis}
-          viewMode={viewMode}
-          gridColumns={role === 'DASIG_ADMIN' ? 3 : 2}
-          renderItem={(item) => <KpiDashboardCard key={item.id} item={item} role={role} />}
-        />
-      }
-    />
+    <>
+      <DashboardLayout
+        role={role}
+        header={<DashboardHeader title={resolvedTitle} subtitle={subtitle} />}
+        welcomeBanner={<WelcomeBanner message={resolvedWelcomeMessage} />}
+        topActions={topActions}
+        filterBar={
+          <KpiFilterBar
+            search={search}
+            status={status}
+            organization={organization}
+            organizations={organizations}
+            organizationLocked={role !== 'DASIG_ADMIN'}
+            onSearchChange={setSearch}
+            onStatusChange={setStatus}
+            onOrganizationChange={setOrganization}
+          />
+        }
+        content={
+          <KpiGrid
+            title={role === 'DASIG_ADMIN' ? 'All KPIs' : 'Organization KPIs'}
+            items={filteredKpis}
+            viewMode={viewMode}
+            gridColumns={role === 'DASIG_ADMIN' ? 3 : 2}
+            renderItem={(item) => (
+              <KpiDashboardCard
+                key={item.id}
+                item={item}
+                role={role}
+                onEdit={handleEditClick}
+                onDelete={handleDeleteClick}
+              />
+            )}
+          />
+        }
+      />
+
+      {/* KPI Form Modal */}
+      <KpiFormDialog
+        open={formDialogOpen}
+        onClose={() => setFormDialogOpen(false)}
+        onSubmitSuccess={handleCreateOrUpdateSuccess}
+        kpi={selectedKpiForEdit}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteKpiDialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onSubmitSuccess={handleDeleteSuccess}
+        kpiId={selectedKpiForDelete?.id ?? null}
+        kpiName={selectedKpiForDelete?.name ?? ''}
+      />
+
+      {/* Snackbar Feedback */}
+      <Snackbar
+        open={toastOpen}
+        autoHideDuration={4000}
+        onClose={() => setToastOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          severity={toastSeverity}
+          onClose={() => setToastOpen(false)}
+          sx={{
+            borderRadius: 3,
+            fontWeight: 600,
+            boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.08)',
+          }}
+        >
+          {toastMessage}
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
 
