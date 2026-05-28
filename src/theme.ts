@@ -48,8 +48,10 @@ const theme = createTheme({
   components: {
     MuiButton: {
       styleOverrides: {
-        containedPrimary: {
-          color: '#ffffff', // White button text on primary background
+        root: {
+          '&.MuiButton-containedPrimary': {
+            color: '#ffffff',
+          },
         },
       },
     },
