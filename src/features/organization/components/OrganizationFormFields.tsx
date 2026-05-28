@@ -14,10 +14,19 @@ interface OrganizationFormFieldsProps {
   form: OrganizationFormValues;
   errors: Record<string, string>;
   isSubmitting: boolean;
+  readOnly?: boolean;
   onFieldChange: (field: keyof OrganizationFormValues, value: string) => void;
 }
 
-const OrganizationFormFields = ({ form, errors, isSubmitting, onFieldChange }: OrganizationFormFieldsProps) => {
+const OrganizationFormFields = ({
+  form,
+  errors,
+  isSubmitting,
+  readOnly = false,
+  onFieldChange,
+}: OrganizationFormFieldsProps) => {
+  const fieldsDisabled = isSubmitting || readOnly;
+
   return (
     <Grid container spacing={2.5}>
       <Grid size={{ xs: 12, md: 6 }}>
@@ -29,7 +38,7 @@ const OrganizationFormFields = ({ form, errors, isSubmitting, onFieldChange }: O
           onChange={(e) => onFieldChange('name', e.target.value)}
           error={!!errors.name}
           helperText={errors.name}
-          disabled={isSubmitting}
+          disabled={fieldsDisabled}
           hiddenLabel
           sx={organizationFieldSx}
         />
@@ -44,7 +53,7 @@ const OrganizationFormFields = ({ form, errors, isSubmitting, onFieldChange }: O
           onChange={(e) => onFieldChange('address', e.target.value)}
           error={!!errors.address}
           helperText={errors.address}
-          disabled={isSubmitting}
+          disabled={fieldsDisabled}
           hiddenLabel
           sx={organizationFieldSx}
         />
@@ -57,7 +66,7 @@ const OrganizationFormFields = ({ form, errors, isSubmitting, onFieldChange }: O
           placeholder="Number"
           value={form.contactNumber}
           onChange={(e) => onFieldChange('contactNumber', e.target.value)}
-          disabled={isSubmitting}
+          disabled={fieldsDisabled}
           hiddenLabel
           sx={organizationFieldSx}
         />
@@ -73,7 +82,7 @@ const OrganizationFormFields = ({ form, errors, isSubmitting, onFieldChange }: O
           onChange={(e) => onFieldChange('contactEmail', e.target.value)}
           error={!!errors.contactEmail}
           helperText={errors.contactEmail}
-          disabled={isSubmitting}
+          disabled={fieldsDisabled}
           hiddenLabel
           sx={organizationFieldSx}
         />
@@ -88,7 +97,7 @@ const OrganizationFormFields = ({ form, errors, isSubmitting, onFieldChange }: O
           placeholder="Enter description"
           value={form.description}
           onChange={(e) => onFieldChange('description', e.target.value)}
-          disabled={isSubmitting}
+          disabled={fieldsDisabled}
           hiddenLabel
           sx={organizationFieldSx}
         />

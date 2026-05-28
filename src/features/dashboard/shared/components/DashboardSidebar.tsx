@@ -34,13 +34,14 @@ interface SidebarItem {
 
 const adminPaths: Record<string, string> = {
   dashboard: routes.adminDashboard,
+  users: routes.adminUsers,
   organizations: routes.adminOrganizations,
 };
 
 const roleMenus: Record<UserRole, SidebarItem[]> = {
   DASIG_ADMIN: [
     { key: 'dashboard', label: 'Admin Dashboard', icon: <SpaceDashboardOutlinedIcon />, path: adminPaths.dashboard },
-    { key: 'users', label: 'User Management', icon: <ManageAccountsOutlinedIcon /> },
+    { key: 'users', label: 'User Management', icon: <ManageAccountsOutlinedIcon />, path: adminPaths.users },
     { key: 'organizations', label: 'Organization Management', icon: <CorporateFareOutlinedIcon />, path: adminPaths.organizations },
     { key: 'alerts', label: 'Alerts', icon: <CampaignOutlinedIcon /> },
     { key: 'reports', label: 'Report Generation', icon: <SummarizeOutlinedIcon /> },
