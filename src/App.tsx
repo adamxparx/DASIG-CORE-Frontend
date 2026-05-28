@@ -8,6 +8,7 @@ import AdminDashboard from './features/dashboard/admin/pages/AdminDashboard';
 import StaffDashboard from './features/dashboard/staff/pages/StaffDashboard';
 import TbiManagerDashboard from './features/dashboard/tbi_manager/pages/TbiManagerDashboard';
 import OrganizationManagementPage from './features/organization/pages/OrganizationManagementPage';
+import UserManagementPage from './features/user/pages/UserManagementPage';
 import { routes } from './routes';
 
 function getSession() {
@@ -91,6 +92,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="ROLE_DASIG_ADMIN">
               <OrganizationManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={routes.adminUsers}
+          element={
+            <ProtectedRoute requiredRole="ROLE_DASIG_ADMIN">
+              <UserManagementPage />
             </ProtectedRoute>
           }
         />

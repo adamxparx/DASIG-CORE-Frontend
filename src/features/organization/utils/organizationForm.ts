@@ -45,3 +45,7 @@ export function formValuesToPayload(form: OrganizationFormValues) {
     ...(form.description.trim() ? { description: form.description.trim() } : {}),
   };
 }
+
+export function isActiveOrganization(status: string): boolean {
+  return status.toLowerCase() === 'active';
+}

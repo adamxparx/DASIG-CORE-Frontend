@@ -5,43 +5,76 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { ApiError } from '../../../lib/api/client';
-import { organizationService } from '../api/organizationService';
-import type { OrganizationFormValues, OrganizationResponse } from '../types/organization.types';
+import type { OrganizationResponse } from '../../organization/types/organization.types';
+import { userService } from '../api/userService';
+import type { AccountRole, CreateUserFormValues } from '../types/user.types';
 import {
-  formValuesToPayload,
-  isActiveOrganization,
-  organizationToFormValues,
-  validateOrganizationForm,
-} from '../utils/organizationForm';
-import DeactivateOrganizationDialog from './DeactivateOrganizationDialog';
-import OrganizationFormFields from './OrganizationFormFields';
+  formValuesToUserPayload,
+  userToFormValues,
+  validateUserForm,
+} from '../utils/userForm';
+import { isActiveAccount } from '../utils/userDisplay';
+import DeactivateUserDialog from './DeactivateUserDialog';
+import UserAccountFormFields from './UserAccountFormFields';
+import type { UserListItem } from './UsersList';
 
-interface EditOrganizationFormProps {
-  organization: OrganizationResponse;
+interface EditUserAccountFormProps {
+  user: UserListItem;
+  organizations: OrganizationResponse[];
   onUpdated: () => void;
   onDeactivated: () => void;
   onCancel: () => void;
 }
 
-const EditOrganizationForm = ({ organization, onUpdated, onDeactivated, onCancel }: EditOrganizationFormProps) => {
-  const [form, setForm] = useState<OrganizationFormValues>(() => organizationToFormValues(organization));
+function getOrganizationOptions(
+  organizations: OrganizationResponse[],
+  user: UserListItem,
+): OrganizationResponse[] {
+  const active = organizations.filter((org) => org.status.toLowerCase() === 'active');
+  if (user.organizationId === null) {
+    return active;
+  }
+
+  const currentOrg = organizations.find((org) => org.id === user.organizationId);
+  if (!currentOrg || active.some((org) => org.id === currentOrg.id)) {
+    return active;
+  }
+
+  return [currentOrg, ...active];
+}
+
+const EditUserAccountForm = ({ user, organizations, onUpdated, onDeactivated, onCancel }: EditUserAccountFormProps) => {
+  const [form, setForm] = useState<CreateUserFormValues>(() => userToFormValues(user));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
 
-  const isInactive = !isActiveOrganization(organization.status);
+  const organizationOptions = useMemo(
+    () => getOrganizationOptions(organizations, user),
+    [organizations, user],
+  );
+
+  const isInactive = !isActiveAccount(user.status);
 
   useEffect(() => {
-    setForm(organizationToFormValues(organization));
+    setForm(userToFormValues(user));
     setErrors({});
     setSubmitError(null);
-  }, [organization]);
+  }, [user]);
 
-  const setField = (field: keyof OrganizationFormValues, value: string) => {
+  const setField = <K extends keyof CreateUserFormValues>(field: K, value: CreateUserFormValues[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleRoleChange = (role: AccountRole | '') => {
+    setForm((prev) => ({
+      ...prev,
+      role,
+      organizationId: role === 'DASIG_ADMIN' ? '' : prev.organizationId,
+    }));
   };
 
   const handleSubmit = async (event: FormEvent) => {
@@ -51,9 +84,9 @@ const EditOrganizationForm = ({ organization, onUpdated, onDeactivated, onCancel
       return;
     }
 
-    const nextErrors = validateOrganizationForm(form);
+    const nextErrors = validateUserForm(form);
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) {
+    if (Object.keys(nextErrors).length > 0 || !form.role) {
       return;
     }
 
@@ -61,10 +94,10 @@ const EditOrganizationForm = ({ organization, onUpdated, onDeactivated, onCancel
     setSubmitError(null);
 
     try {
-      await organizationService.update(organization.id, formValuesToPayload(form));
+      await userService.update(user.id, formValuesToUserPayload(form));
       onUpdated();
     } catch (err) {
-      setSubmitError(err instanceof ApiError ? err.message : 'Unable to update organization. Please try again.');
+      setSubmitError(err instanceof ApiError ? err.message : 'Unable to update user account. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -74,7 +107,7 @@ const EditOrganizationForm = ({ organization, onUpdated, onDeactivated, onCancel
     <>
     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4 }}>
       <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
-        Edit Organization
+        Update User Account
       </Typography>
 
       <Paper elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 3 }}>
@@ -84,12 +117,14 @@ const EditOrganizationForm = ({ organization, onUpdated, onDeactivated, onCancel
           </Alert>
         )}
 
-        <OrganizationFormFields
+        <UserAccountFormFields
           form={form}
           errors={errors}
           isSubmitting={isSubmitting}
           readOnly={isInactive}
+          organizationOptions={organizationOptions}
           onFieldChange={setField}
+          onRoleChange={handleRoleChange}
         />
 
         <Stack
@@ -156,9 +191,9 @@ const EditOrganizationForm = ({ organization, onUpdated, onDeactivated, onCancel
       </Paper>
     </Box>
 
-    <DeactivateOrganizationDialog
+    <DeactivateUserDialog
       open={deactivateDialogOpen}
-      organizationId={organization.id}
+      userId={user.id}
       onClose={() => setDeactivateDialogOpen(false)}
       onDeactivated={onDeactivated}
     />
@@ -166,4 +201,4 @@ const EditOrganizationForm = ({ organization, onUpdated, onDeactivated, onCancel
   );
 };
 
-export default EditOrganizationForm;
+export default EditUserAccountForm;
