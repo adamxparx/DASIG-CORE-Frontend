@@ -1,4 +1,5 @@
 import { getApiUrl } from '../../config/api';
+import { tokenStorage } from '../../features/auth/utils/tokenStorage';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -40,12 +41,14 @@ function parseErrorMessage(status: number, bodyText: string): string {
 
 export async function apiClient<T>(path: string, options: ApiClientOptions = {}): Promise<T> {
   const { method = 'GET', body } = options;
+  const token = tokenStorage.get();
 
   const response = await fetch(getApiUrl(path), {
     method,
     credentials: 'omit',
     headers: {
       Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
