@@ -17,7 +17,12 @@ import Typography from '@mui/material/Typography';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEventHandler } from 'react';
 import { kpiSubmissionService } from '../../api/kpiSubmissionService';
-import { getCurrentPeriod, getPeriodOptions } from '../utils/reportingPeriodUtils';
+import {
+  getCurrentPeriod,
+  getExpectedPeriodValue,
+  getPeriodOptions,
+  sumPreviousPeriodValues,
+} from '../utils/reportingPeriodUtils';
 import type {
   AssignableKpi,
   CreateKpiSubmissionRequest,
@@ -33,11 +38,15 @@ interface SubmitKpiEntryPageProps {
 const formatDeadline = (rawDate: string) =>
   new Date(rawDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
 
+const formatMetricValue = (value: number) =>
+  value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const today = new Date().toISOString().slice(0, 10);
 
   const [assignableKpis, setAssignableKpis] = useState<AssignableKpi[]>([]);
+  const [submissions, setSubmissions] = useState<KpiSubmissionResponse[]>([]);
   const [isLoadingKpis, setIsLoadingKpis] = useState(true);
   const [selectedKpiId, setSelectedKpiId] = useState<number | ''>('');
   const [period, setPeriod] = useState('');
@@ -53,8 +62,12 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
     const loadKpis = async () => {
       setIsLoadingKpis(true);
       try {
-        const data = await kpiSubmissionService.getAssignableKpis();
+        const [data, submissionData] = await Promise.all([
+          kpiSubmissionService.getAssignableKpis(),
+          kpiSubmissionService.getSubmissions(),
+        ]);
         setAssignableKpis(data);
+        setSubmissions(submissionData);
         if (data.length > 0) {
           setSelectedKpiId(data[0].id);
         }
@@ -86,15 +99,29 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
   }, [selectedKpi, periodOptions]);
 
   const numericSubmittedValue = Number(submittedValue) || 0;
+  const submissionType = role === 'STAFF' ? 'INTERNAL' : 'FINAL';
+  const relatedSubmissions = selectedKpi
+    ? submissions.filter((submission) =>
+        submission.kpiDefinitionId === selectedKpi.id && submission.submissionType === submissionType
+      )
+    : [];
+  const previousSubmittedValue = sumPreviousPeriodValues(relatedSubmissions, periodOptions, period);
+  const cumulativeSubmittedValue = previousSubmittedValue + numericSubmittedValue;
+  const expectedTargetValue = selectedKpi
+    ? getExpectedPeriodValue(selectedKpi.targetValue, periodOptions, period)
+    : 0;
+  const expectedThresholdValue = selectedKpi
+    ? getExpectedPeriodValue(selectedKpi.threshold, periodOptions, period)
+    : 0;
   const achievementRate =
-    selectedKpi && selectedKpi.targetValue > 0
-      ? (numericSubmittedValue / selectedKpi.targetValue) * 100
+    selectedKpi && expectedTargetValue > 0
+      ? (cumulativeSubmittedValue / expectedTargetValue) * 100
       : 0;
 
   const helperMessage =
-    selectedKpi && achievementRate < selectedKpi.threshold
-      ? 'Below target. Consider adding context in comments.'
-      : 'On track against the configured target threshold.';
+    selectedKpi && cumulativeSubmittedValue < expectedThresholdValue
+      ? `Cumulative progress is below the expected threshold for ${period}.`
+      : `Cumulative progress is on track for ${period || 'the selected period'}.`;
 
   const handlePickFiles = () => {
     fileInputRef.current?.click();
@@ -142,6 +169,7 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
     setIsSubmitting(true);
     try {
       const response: KpiSubmissionResponse = await kpiSubmissionService.createSubmission(payload, files);
+      setSubmissions((current) => [response, ...current]);
       setSuccess(`KPI submitted successfully as ${response.submissionType}.`);
       setSubmittedValue('');
       setNotes('');
@@ -229,7 +257,10 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                           Target Overview
                         </Typography>
                         <Typography variant="h5" sx={{ fontWeight: 700, color: '#1F2329' }}>
-                          {selectedKpi?.targetValue ?? 0} <Typography component="span">{selectedKpi?.unit ?? '-'}</Typography>
+                          {formatMetricValue(selectedKpi?.targetValue ?? 0)} <Typography component="span">{selectedKpi?.unit ?? '-'}</Typography>
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#7A8090', display: 'block', mt: 0.25 }}>
+                          Period target: {formatMetricValue(expectedTargetValue)} {selectedKpi?.unit ?? '-'}
                         </Typography>
                       </Box>
                     </Stack>
@@ -248,10 +279,10 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                   <TextField
                     fullWidth
-                    label="Submitted Value"
+                    label="Value Achieved This Period"
                     value={submittedValue}
                     onChange={(event) => setSubmittedValue(event.target.value)}
-                    helperText="Enter the exact numeric value achieved."
+                    helperText="Enter only the value achieved during the selected reporting period."
                     slotProps={{ input: { endAdornment: <Typography sx={{ color: '#8A91A1' }}>{selectedKpi?.unit ?? ''}</Typography> } }}
                   />
                   <TextField
@@ -266,7 +297,7 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
 
                 <Box>
                   <Stack direction="row" sx={{ mb: 0.75, justifyContent: 'space-between' }}>
-                    <Typography sx={{ fontWeight: 600, color: '#414B5A' }}>Achievement Preview</Typography>
+                    <Typography sx={{ fontWeight: 600, color: '#414B5A' }}>Cumulative Achievement Preview</Typography>
                     <Typography sx={{ fontWeight: 700, color: '#5B61D9' }}>
                       {Math.max(0, Math.round(achievementRate * 10) / 10)}%
                     </Typography>

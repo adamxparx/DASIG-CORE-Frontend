@@ -127,3 +127,36 @@ export const getCurrentPeriod = (
 
   return options[options.length - 1] ?? null;
 };
+
+export const getPeriodProgressRatio = (periodOptions: string[], reportingPeriod: string): number => {
+  const periodIndex = periodOptions.indexOf(reportingPeriod);
+  if (periodIndex < 0 || periodOptions.length === 0) {
+    return 0;
+  }
+
+  return (periodIndex + 1) / periodOptions.length;
+};
+
+export const getExpectedPeriodValue = (
+  totalValue: number,
+  periodOptions: string[],
+  reportingPeriod: string
+): number => totalValue * getPeriodProgressRatio(periodOptions, reportingPeriod);
+
+export const sumPreviousPeriodValues = (
+  submissions: { reportingPeriod: string; submittedValue: number }[],
+  periodOptions: string[],
+  reportingPeriod: string
+): number => {
+  const currentPeriodIndex = periodOptions.indexOf(reportingPeriod);
+  if (currentPeriodIndex < 0) {
+    return 0;
+  }
+
+  return submissions
+    .filter((submission) => {
+      const submissionPeriodIndex = periodOptions.indexOf(submission.reportingPeriod);
+      return submissionPeriodIndex >= 0 && submissionPeriodIndex < currentPeriodIndex;
+    })
+    .reduce((total, submission) => total + submission.submittedValue, 0);
+};
