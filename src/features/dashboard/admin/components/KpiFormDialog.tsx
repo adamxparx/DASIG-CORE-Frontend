@@ -37,6 +37,14 @@ interface KpiFormDialogProps {
 const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogProps) => {
   const isEdit = !!kpi;
 
+  const getTodayDateString = () => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
   // Form states
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -164,6 +172,16 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
     }
     if (!deadline) {
       newErrors.deadline = 'Deadline is required';
+    } else {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selectedDate = new Date(deadline);
+      selectedDate.setHours(0, 0, 0, 0);
+
+      const isDeadlineChanged = kpi ? deadline !== formatDateForInput(kpi.deadline) : true;
+      if (isDeadlineChanged && selectedDate < today) {
+        newErrors.deadline = 'Deadline cannot be a past date';
+      }
     }
     if (!threshold.trim()) {
       newErrors.threshold = 'Threshold is required';
@@ -378,6 +396,11 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
                 helperText={errors.deadline ?? getDeadlineFieldHelperText(deadline)}
                 disabled={isSubmitting}
                 hiddenLabel
+                slotProps={{
+                  htmlInput: {
+                    min: getTodayDateString(),
+                  },
+                }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2.5,
@@ -457,11 +480,17 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
                   <MenuItem value="" disabled>
                     {isLoadingOrgs ? 'Loading organizations...' : 'Select assigned organization...'}
                   </MenuItem>
-                  {organizations.map((org) => (
-                    <MenuItem key={org.id} value={org.id}>
-                      {org.name}
-                    </MenuItem>
-                  ))}
+                  {organizations
+                    .filter((org) => {
+                      const isActive = !org.status || org.status.toLowerCase() === 'active';
+                      const isCurrentlySelected = org.id === organizationId;
+                      return isActive || isCurrentlySelected;
+                    })
+                    .map((org) => (
+                      <MenuItem key={org.id} value={org.id}>
+                        {org.name}
+                      </MenuItem>
+                    ))}
                 </Select>
                 {errors.organizationId && (
                   <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>

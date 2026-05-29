@@ -98,9 +98,14 @@ export default function ReportGenerationPage() {
       setIsLoadingOrgs(true);
       try {
         const orgData = await organizationService.getAll();
-        setOrganizations(orgData);
-        if (orgData.length > 0) {
-          setSelectedOrgId(String(orgData[0].id));
+        const activeOrgs = orgData.filter(
+          (org) => !org.status || org.status.toLowerCase() === 'active'
+        );
+        setOrganizations(activeOrgs);
+        if (activeOrgs.length > 0) {
+          setSelectedOrgId(String(activeOrgs[0].id));
+        } else {
+          setSelectedOrgId('');
         }
       } catch (err) {
         showToast('Failed to load incubator list.');

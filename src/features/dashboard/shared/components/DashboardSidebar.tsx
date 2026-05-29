@@ -1,4 +1,3 @@
-import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import AssignmentTurnedInOutlinedIcon from '@mui/icons-material/AssignmentTurnedInOutlined';
 import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
 import CorporateFareOutlinedIcon from '@mui/icons-material/CorporateFareOutlined';
@@ -55,14 +54,12 @@ const roleMenus: Record<UserRole, SidebarItem[]> = {
   TBI_MANAGER: [
     { key: 'dashboard', label: 'TBI Dashboard', icon: <SpaceDashboardOutlinedIcon /> },
     { key: 'notifications', label: 'Notifications', icon: <NotificationsOutlinedIcon /> },
-    { key: 'assigned', label: 'Assigned KPIs', icon: <AssessmentOutlinedIcon /> },
     { key: 'history', label: 'Submission History', icon: <AssignmentTurnedInOutlinedIcon /> },
     { key: 'submit', label: 'Submit KPI', icon: <PostAddOutlinedIcon /> },
   ],
   STAFF: [
     { key: 'dashboard', label: 'Staff Dashboard', icon: <SpaceDashboardOutlinedIcon /> },
     { key: 'notifications', label: 'Notifications', icon: <NotificationsOutlinedIcon /> },
-    { key: 'assigned', label: 'Assigned KPIs', icon: <AssessmentOutlinedIcon /> },
     { key: 'submit', label: 'Submit KPI', icon: <PostAddOutlinedIcon /> },
     { key: 'history', label: 'Submission History', icon: <AssignmentTurnedInOutlinedIcon /> },
   ],
