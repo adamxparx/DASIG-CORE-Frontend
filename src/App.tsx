@@ -7,6 +7,7 @@ import { tokenStorage } from './features/auth/utils/tokenStorage';
 import AdminDashboard from './features/dashboard/admin/pages/AdminDashboard';
 import StaffDashboard from './features/dashboard/staff/pages/StaffDashboard';
 import TbiManagerDashboard from './features/dashboard/tbi_manager/pages/TbiManagerDashboard';
+import StaffSubmissionHistoryPage from './features/kpisubmission/staff/pages/StaffSubmissionHistoryPage';
 import StaffSubmitKpiPage from './features/kpisubmission/staff/pages/StaffSubmitKpiPage';
 import TbiManagerSubmitKpiPage from './features/kpisubmission/tbi_manager/pages/TbiManagerSubmitKpiPage';
 import OrganizationManagementPage from './features/organization/pages/OrganizationManagementPage';
@@ -118,6 +119,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="ROLE_STAFF">
               <StaffSubmitKpiPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={routes.staffSubmissionHistory}
+          element={
+            <ProtectedRoute requiredRole="ROLE_STAFF">
+              <StaffSubmissionHistoryPage />
             </ProtectedRoute>
           }
         />
