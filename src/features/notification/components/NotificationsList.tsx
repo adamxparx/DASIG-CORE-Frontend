@@ -53,8 +53,7 @@ const NotificationsList = ({
           You have no notifications yet.
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          If an admin just saved a matching deadline, click Refresh above. Alerts are scoped to your
-          assigned organization.
+          Deadline alerts for your organization will appear here.
         </Typography>
       </Paper>
     );

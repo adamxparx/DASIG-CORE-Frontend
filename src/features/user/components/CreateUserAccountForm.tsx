@@ -9,12 +9,13 @@ import { type FormEvent, useState } from 'react';
 import { ApiError } from '../../../lib/api/client';
 import type { OrganizationResponse } from '../../organization/types/organization.types';
 import { userService } from '../api/userService';
-import type { AccountRole, CreateUserFormValues } from '../types/user.types';
+import type { AccountRole, CreateUserFormValues, UserResponse } from '../types/user.types';
 import {
   emptyUserForm,
   formValuesToUserPayload,
   validateUserForm,
 } from '../utils/userForm';
+import UserAccountCreatedDialog from './UserAccountCreatedDialog';
 import UserAccountFormFields from './UserAccountFormFields';
 
 interface CreateUserAccountFormProps {
@@ -27,6 +28,7 @@ const CreateUserAccountForm = ({ organizations, onCreated }: CreateUserAccountFo
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createdUser, setCreatedUser] = useState<UserResponse | null>(null);
 
   const activeOrganizations = organizations.filter(
     (org) => org.status.toLowerCase() === 'active',
@@ -63,9 +65,10 @@ const CreateUserAccountForm = ({ organizations, onCreated }: CreateUserAccountFo
     setSubmitError(null);
 
     try {
-      await userService.create(formValuesToUserPayload(form));
+      const created = await userService.create(formValuesToUserPayload(form));
       resetForm();
       onCreated();
+      setCreatedUser(created);
     } catch (err) {
       setSubmitError(err instanceof ApiError ? err.message : 'Unable to create user account. Please try again.');
     } finally {
@@ -129,6 +132,12 @@ const CreateUserAccountForm = ({ organizations, onCreated }: CreateUserAccountFo
           </Button>
         </Stack>
       </Paper>
+
+      <UserAccountCreatedDialog
+        open={createdUser !== null}
+        user={createdUser}
+        onClose={() => setCreatedUser(null)}
+      />
     </Box>
   );
 };
