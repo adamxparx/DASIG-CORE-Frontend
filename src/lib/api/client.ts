@@ -16,8 +16,8 @@ type ApiClientOptions = {
   body?: unknown;
 };
 
-function parseErrorMessage(status: number, bodyText: string): string {
-  if (bodyText) {
+function parseErrorMessage(status: number, bodyText: string, path: string): string {
+  if (bodyText && !bodyText.trim().startsWith('<')) {
     try {
       const body = JSON.parse(bodyText) as {
         message?: string;
@@ -33,7 +33,14 @@ function parseErrorMessage(status: number, bodyText: string): string {
   }
 
   if (status === 401) {
-    return 'Invalid email or password.';
+    if (path.includes('/auth/login')) {
+      return 'Invalid email or password.';
+    }
+    return 'Session expired or unauthorized access.';
+  }
+
+  if (status === 403) {
+    return 'You do not have permission to perform this action.';
   }
 
   return 'Something went wrong. Please try again.';
@@ -57,7 +64,7 @@ export async function apiClient<T>(path: string, options: ApiClientOptions = {})
   const bodyText = await response.text();
 
   if (!response.ok) {
-    throw new ApiError(parseErrorMessage(response.status, bodyText), response.status);
+    throw new ApiError(parseErrorMessage(response.status, bodyText, path), response.status);
   }
 
   if (!bodyText) {
