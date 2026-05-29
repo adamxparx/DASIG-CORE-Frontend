@@ -13,6 +13,7 @@ import Typography from '@mui/material/Typography';
 import type { MouseEvent } from 'react';
 import KpiAdminActions from '../../admin/components/KpiAdminActions';
 import type { DashboardKpiItem, UserRole } from '../types/dashboard.types';
+import { getDaysLeftLabel } from '../../../notification/utils/notificationDisplay';
 import KpiProgressBar from './KpiProgressBar';
 import KpiStatusBadge from './KpiStatusBadge';
 import SubmitProgressLink from './SubmitProgressLink';
@@ -31,19 +32,6 @@ const formatDate = (date: string) => {
 
 const formatMetricValue = (value: number) =>
   value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-const getDaysLeftText = (date: string) => {
-  const now = new Date();
-  const deadline = new Date(date);
-  const diffInMs = deadline.getTime() - now.getTime();
-  const diffInDays = Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
-
-  if (diffInDays < 0) {
-    return `${Math.abs(diffInDays)} days overdue`;
-  }
-
-  return `${diffInDays} days left`;
-};
 
 const KpiDashboardCard = ({ item, role, onEdit, onDelete, onViewHistory }: KpiDashboardCardProps) => {
   const overallTargetValue = item.overallTargetValue ?? item.targetValue;
@@ -133,7 +121,7 @@ const KpiDashboardCard = ({ item, role, onEdit, onDelete, onViewHistory }: KpiDa
                 {formatDate(item.deadline)}
               </Typography>
               <Typography variant="body1" sx={{ color: '#8A909C' }}>
-                {getDaysLeftText(item.deadline)}
+                {getDaysLeftLabel(item.deadline)}
               </Typography>
             </Paper>
           </Stack>

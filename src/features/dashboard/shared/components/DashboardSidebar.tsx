@@ -4,9 +4,11 @@ import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
 import CorporateFareOutlinedIcon from '@mui/icons-material/CorporateFareOutlined';
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
+import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
 import PostAddOutlinedIcon from '@mui/icons-material/PostAddOutlined';
 import SpaceDashboardOutlinedIcon from '@mui/icons-material/SpaceDashboardOutlined';
 import SummarizeOutlinedIcon from '@mui/icons-material/SummarizeOutlined';
+import Badge from '@mui/material/Badge';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
 import List from '@mui/material/List';
@@ -19,6 +21,7 @@ import type { ReactElement } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { routes } from '../../../../routes';
 import { tokenStorage } from '../../../auth/utils/tokenStorage';
+import { useUnreadNotificationCount } from '../../../notification/hooks/useUnreadNotificationCount';
 import type { UserRole } from '../types/dashboard.types';
 
 interface DashboardSidebarProps {
@@ -50,12 +53,14 @@ const roleMenus: Record<UserRole, SidebarItem[]> = {
   ],
   TBI_MANAGER: [
     { key: 'dashboard', label: 'TBI Dashboard', icon: <SpaceDashboardOutlinedIcon /> },
+    { key: 'notifications', label: 'Notifications', icon: <NotificationsOutlinedIcon /> },
     { key: 'assigned', label: 'Assigned KPIs', icon: <AssessmentOutlinedIcon /> },
     { key: 'history', label: 'Submission History', icon: <AssignmentTurnedInOutlinedIcon /> },
     { key: 'submit', label: 'Submit KPI', icon: <PostAddOutlinedIcon /> },
   ],
   STAFF: [
     { key: 'dashboard', label: 'Staff Dashboard', icon: <SpaceDashboardOutlinedIcon /> },
+    { key: 'notifications', label: 'Notifications', icon: <NotificationsOutlinedIcon /> },
     { key: 'assigned', label: 'Assigned KPIs', icon: <AssessmentOutlinedIcon /> },
     { key: 'submit', label: 'Submit KPI', icon: <PostAddOutlinedIcon /> },
     { key: 'history', label: 'Submission History', icon: <AssignmentTurnedInOutlinedIcon /> },
@@ -64,12 +69,14 @@ const roleMenus: Record<UserRole, SidebarItem[]> = {
 
 const staffPaths: Record<string, string> = {
   dashboard: routes.staffDashboard,
+  notifications: routes.staffNotifications,
   submit: routes.staffSubmitKpi,
   history: routes.staffSubmissionHistory,
 };
 
 const tbiPaths: Record<string, string> = {
   dashboard: routes.tbiManagerDashboard,
+  notifications: routes.tbiManagerNotifications,
   submit: routes.tbiManagerSubmitKpi,
   history: routes.tbiManagerSubmissionHistory,
 };
@@ -89,6 +96,8 @@ function isItemSelected(pathname: string, item: SidebarItem): boolean {
 const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const showNotificationBadge = role === 'STAFF' || role === 'TBI_MANAGER';
+  const { unreadCount } = useUnreadNotificationCount(showNotificationBadge);
 
   const pathByKey =
     role === 'DASIG_ADMIN' ? adminPaths : role === 'STAFF' ? staffPaths : tbiPaths;
@@ -150,7 +159,20 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
               },
             }}
           >
-            <ListItemIcon sx={{ minWidth: 38, color: 'inherit' }}>{item.icon}</ListItemIcon>
+            <ListItemIcon sx={{ minWidth: 38, color: 'inherit' }}>
+              {item.key === 'notifications' && showNotificationBadge ? (
+                <Badge
+                  badgeContent={unreadCount}
+                  color="error"
+                  invisible={unreadCount === 0}
+                  max={99}
+                >
+                  {item.icon}
+                </Badge>
+              ) : (
+                item.icon
+              )}
+            </ListItemIcon>
             <ListItemText primary={item.label} />
           </ListItemButton>
         ))}
