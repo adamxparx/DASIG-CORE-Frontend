@@ -44,6 +44,10 @@ export const kpiService = {
     return apiClient<KpiDefinitionResponse>(`${KPI_ENDPOINT}/${id}`);
   },
 
+  getKpisByOrganization(organizationId: number): Promise<KpiDefinitionResponse[]> {
+    return apiClient<KpiDefinitionResponse[]>(`${KPI_ENDPOINT}/organization/${organizationId}`);
+  },
+
   async getOrganizations(): Promise<Organization[]> {
     try {
       const response = await apiClient<Organization[]>(ORGANIZATIONS_ENDPOINT);

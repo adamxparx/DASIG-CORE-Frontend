@@ -1,14 +1,24 @@
 import { getApiUrl } from '../../../config/api';
 import { apiClient } from '../../../lib/api/client';
 import { tokenStorage } from '../../auth/utils/tokenStorage';
-import type { GenerateReportRequest, ReportResponse } from '../types/report.types';
+import type { GenerateOrgReportRequest, GenerateKpiReportRequest, ReportResponse } from '../types/report.types';
 
 export const reportService = {
   /**
+   * Triggers the generation of an AI-powered Organizational Performance Report narrative.
+   */
+  generateOrgReport: (request: GenerateOrgReportRequest): Promise<ReportResponse> => {
+    return apiClient<ReportResponse>('/api/reports/generate/organization', {
+      method: 'POST',
+      body: request,
+    });
+  },
+
+  /**
    * Triggers the generation of an AI-powered KPI Performance Report narrative.
    */
-  generateReport: (request: GenerateReportRequest): Promise<ReportResponse> => {
-    return apiClient<ReportResponse>('/api/reports/generate', {
+  generateKpiReport: (request: GenerateKpiReportRequest): Promise<ReportResponse> => {
+    return apiClient<ReportResponse>('/api/reports/generate/kpi', {
       method: 'POST',
       body: request,
     });
@@ -17,7 +27,7 @@ export const reportService = {
   /**
    * Retrieves a previously generated report by its ID.
    */
-  getById: (id: number): Promise<ReportResponse> => {
+  getById: (id: string): Promise<ReportResponse> => {
     return apiClient<ReportResponse>(`/api/reports/${id}`);
   },
 
@@ -32,7 +42,7 @@ export const reportService = {
    * Downloads a PDF export of a report by its ID.
    * Fetches the file using the authorized header and returns it as a binary Blob.
    */
-  exportPdfBlob: async (id: number): Promise<Blob> => {
+  exportPdfBlob: async (id: string): Promise<Blob> => {
     const token = tokenStorage.get();
     const response = await fetch(getApiUrl(`/api/reports/${id}/export`), {
       headers: {
@@ -47,3 +57,4 @@ export const reportService = {
     return response.blob();
   },
 };
+

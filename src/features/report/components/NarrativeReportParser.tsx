@@ -38,135 +38,190 @@ export default function NarrativeReportParser({ text }: NarrativeReportParserPro
     );
   }
 
-  // Split narrative by double-newlines to process paragraph blocks
-  const blocks = text.split(/\n\s*\n/);
+  // Normalize newlines and split by line to ensure robust parsing
+  const lines = text.split(/\r?\n/);
+  
+  // Define parsed block types
+  type Block = 
+    | { type: 'heading'; level: number; text: string }
+    | { type: 'bullet_list'; items: string[] }
+    | { type: 'numbered_list'; items: { num: string; text: string }[] }
+    | { type: 'paragraph'; text: string };
+
+  const blocks: Block[] = [];
+  let currentParagraphLines: string[] = [];
+
+  const flushParagraph = () => {
+    if (currentParagraphLines.length > 0) {
+      blocks.push({
+        type: 'paragraph',
+        text: currentParagraphLines.join(' '),
+      });
+      currentParagraphLines = [];
+    }
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      // Empty line signals end of current paragraph/block
+      flushParagraph();
+      continue;
+    }
+
+    // 1. Heading check: e.g. "## 1. Overall Performance Summary"
+    const headingMatch = trimmed.match(/^(#{1,6})\s*(.*)$/);
+    if (headingMatch) {
+      flushParagraph();
+      blocks.push({
+        type: 'heading',
+        level: headingMatch[1].length,
+        text: headingMatch[2].trim(),
+      });
+      continue;
+    }
+
+    // 2. Bullet list check: e.g. "- item" or "* item"
+    const bulletMatch = trimmed.match(/^[-*]\s*(.*)$/);
+    if (bulletMatch) {
+      flushParagraph();
+      const lastBlock = blocks[blocks.length - 1];
+      if (lastBlock && lastBlock.type === 'bullet_list') {
+        lastBlock.items.push(bulletMatch[1].trim());
+      } else {
+        blocks.push({
+          type: 'bullet_list',
+          items: [bulletMatch[1].trim()],
+        });
+      }
+      continue;
+    }
+
+    // 3. Numbered list check: e.g. "1. item"
+    const numberedMatch = trimmed.match(/^(\d+)\.\s*(.*)$/);
+    if (numberedMatch) {
+      flushParagraph();
+      const lastBlock = blocks[blocks.length - 1];
+      if (lastBlock && lastBlock.type === 'numbered_list') {
+        lastBlock.items.push({ num: numberedMatch[1], text: numberedMatch[2].trim() });
+      } else {
+        blocks.push({
+          type: 'numbered_list',
+          items: [{ num: numberedMatch[1], text: numberedMatch[2].trim() }],
+        });
+      }
+      continue;
+    }
+
+    // 4. Otherwise, it is standard text. Group consecutive non-empty lines into a single paragraph block.
+    currentParagraphLines.push(trimmed);
+  }
+
+  // Flush any final paragraph block
+  flushParagraph();
 
   return (
     <Stack spacing={2.5} sx={{ mt: 1 }}>
       {blocks.map((block, blockIdx) => {
-        const trimmed = block.trim();
-        if (!trimmed) return null;
-
-        // 1. HEADINGS (e.g. ### 1. Overall Performance Summary)
-        if (trimmed.startsWith('#')) {
-          const match = trimmed.match(/^(#{1,6})\s*(.*)$/);
-          if (match) {
-            const level = match[1].length;
-            const headingText = match[2].trim();
-            
-            // Map heading levels to stylish theme sizes
-            const variant = level === 1 ? 'h4' : level === 2 ? 'h5' : 'h6';
-            const isMainSection = level <= 3;
-            
-            return (
-              <Box
-                key={blockIdx}
+        if (block.type === 'heading') {
+          const { level, text: headingText } = block;
+          const variant = level === 1 ? 'h4' : level === 2 ? 'h5' : 'h6';
+          const isMainSection = level <= 3;
+          
+          return (
+            <Box
+              key={blockIdx}
+              sx={{
+                pt: isMainSection ? 2 : 1,
+                pb: 0.5,
+                borderBottom: isMainSection ? '1px solid' : 'none',
+                borderColor: 'divider',
+                mt: isMainSection ? 4 : 2,
+                '&:first-of-type': { mt: 0, pt: 0 },
+              }}
+            >
+              <Typography
+                variant={variant}
                 sx={{
-                  pt: isMainSection ? 2 : 1,
-                  pb: 0.5,
-                  borderBottom: isMainSection ? '1px solid' : 'none',
-                  borderColor: 'divider',
-                  mt: isMainSection ? 4 : 2,
-                  '&:first-of-type': { mt: 0, pt: 0 },
+                  fontWeight: 800,
+                  color: isMainSection ? 'primary.main' : 'text.primary',
+                  fontSize: level === 1 ? '1.5rem' : level === 2 ? '1.3rem' : '1.1rem',
+                  letterSpacing: '-0.3px',
                 }}
               >
-                <Typography
-                  variant={variant}
+                {headingText}
+              </Typography>
+            </Box>
+          );
+        }
+
+        if (block.type === 'bullet_list') {
+          return (
+            <Stack key={blockIdx} spacing={1} sx={{ pl: 2, my: 1 }}>
+              {block.items.map((item, itemIdx) => (
+                <Box
+                  key={itemIdx}
                   sx={{
-                    fontWeight: 800,
-                    color: isMainSection ? 'primary.main' : 'text.primary',
-                    fontSize: level === 1 ? '1.5rem' : level === 2 ? '1.3rem' : '1.1rem',
-                    letterSpacing: '-0.3px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 1.5,
                   }}
                 >
-                  {headingText}
-                </Typography>
-              </Box>
-            );
-          }
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      bgcolor: 'primary.main',
+                      mt: 1.25,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.6, flex: 1 }}>
+                    {formatInlineBold(item)}
+                  </Typography>
+                </Box>
+              ))}
+            </Stack>
+          );
         }
 
-        // 2. BULLET LIST ITEMS (e.g. - Server Response Time: Target...)
-        if (trimmed.startsWith('-') || trimmed.startsWith('*')) {
-          const lines = trimmed.split('\n');
+        if (block.type === 'numbered_list') {
           return (
             <Stack key={blockIdx} spacing={1} sx={{ pl: 2, my: 1 }}>
-              {lines.map((line, lineIdx) => {
-                const lineContent = line.replace(/^[-*]\s*/, '').trim();
-                return (
-                  <Box
-                    key={lineIdx}
+              {block.items.map((item, itemIdx) => (
+                <Box
+                  key={itemIdx}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 1.5,
+                  }}
+                >
+                  <Typography
+                    variant="body1"
                     sx={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: 1.5,
+                      fontWeight: 700,
+                      color: 'primary.main',
+                      minWidth: 16,
+                      flexShrink: 0,
+                      textAlign: 'right',
                     }}
                   >
-                    {/* Beautiful colored bullet indicator */}
-                    <Box
-                      sx={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                        bgcolor: 'primary.main',
-                        mt: 1.25,
-                        flexShrink: 0,
-                      }}
-                    />
-                    <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.6, flex: 1 }}>
-                      {formatInlineBold(lineContent)}
-                    </Typography>
-                  </Box>
-                );
-              })}
+                    {item.num}.
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.6, flex: 1 }}>
+                    {formatInlineBold(item.text)}
+                  </Typography>
+                </Box>
+              ))}
             </Stack>
           );
         }
 
-        // 3. NUMBERED LIST ITEMS (e.g. 1. Overall Performance...)
-        if (/^\d+\.\s+/.test(trimmed)) {
-          const lines = trimmed.split('\n');
-          return (
-            <Stack key={blockIdx} spacing={1} sx={{ pl: 2, my: 1 }}>
-              {lines.map((line, lineIdx) => {
-                const match = line.match(/^(\d+)\.\s*(.*)$/);
-                if (match) {
-                  const num = match[1];
-                  const lineContent = match[2].trim();
-                  return (
-                    <Box
-                      key={lineIdx}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: 1.5,
-                      }}
-                    >
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          fontWeight: 700,
-                          color: 'primary.main',
-                          minWidth: 16,
-                          flexShrink: 0,
-                          textAlign: 'right',
-                        }}
-                      >
-                        {num}.
-                      </Typography>
-                      <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.6, flex: 1 }}>
-                        {formatInlineBold(lineContent)}
-                      </Typography>
-                    </Box>
-                  );
-                }
-                return null;
-              })}
-            </Stack>
-          );
-        }
-
-        // 4. PARAGRAPH BLOCKS
+        // Paragraph Block
         return (
           <Typography
             key={blockIdx}
@@ -177,7 +232,7 @@ export default function NarrativeReportParser({ text }: NarrativeReportParserPro
               mb: 1.5,
             }}
           >
-            {formatInlineBold(trimmed)}
+            {formatInlineBold(block.text)}
           </Typography>
         );
       })}
