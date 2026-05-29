@@ -36,6 +36,14 @@ export const kpiService = {
     });
   },
 
+  getAllKpiDefinitions(): Promise<KpiDefinitionResponse[]> {
+    return apiClient<KpiDefinitionResponse[]>(KPI_ENDPOINT);
+  },
+
+  getKpiDefinitionById(id: number): Promise<KpiDefinitionResponse> {
+    return apiClient<KpiDefinitionResponse>(`${KPI_ENDPOINT}/${id}`);
+  },
+
   async getOrganizations(): Promise<Organization[]> {
     try {
       const response = await apiClient<Organization[]>(ORGANIZATIONS_ENDPOINT);
