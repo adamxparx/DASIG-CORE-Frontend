@@ -64,7 +64,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { kpiSubmissionService } from '../../api/kpiSubmissionService';
 
-import type { AssignableKpi, KpiSubmissionResponse } from '../../types/kpiSubmission.types';
+import type { AssignableKpi, KpiSubmissionResponse, SubmissionDocumentResponse } from '../../types/kpiSubmission.types';
 
 
 
@@ -218,6 +218,22 @@ const sectionLabelSx = {
 
 const formatSubmissionId = (id: number) => `SUB-${new Date().getFullYear()}-${String(id).padStart(4, '0')}`;
 
+type DocumentPreview = {
+  document: SubmissionDocumentResponse;
+  kind: 'image' | 'pdf' | 'text';
+  url?: string;
+  text?: string;
+};
+
+const isImageDocument = (document: SubmissionDocumentResponse) => document.contentType.startsWith('image/');
+
+const isPdfDocument = (document: SubmissionDocumentResponse) => document.contentType === 'application/pdf';
+
+const isTextDocument = (document: SubmissionDocumentResponse) =>
+  document.contentType.startsWith('text/') ||
+  document.contentType === 'text/csv' ||
+  document.contentType === 'application/csv';
+
 
 
 const mapStatus = (status: string) => {
@@ -279,6 +295,12 @@ const TbiManagerSubmissionHistoryPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   const [selectedSubmission, setSelectedSubmission] = useState<KpiSubmissionResponse | null>(null);
+
+  const [documentPreview, setDocumentPreview] = useState<DocumentPreview | null>(null);
+
+  const [documentError, setDocumentError] = useState<string | null>(null);
+
+  const [isDocumentLoading, setIsDocumentLoading] = useState(false);
 
 
 
@@ -465,6 +487,78 @@ const TbiManagerSubmissionHistoryPage = () => {
     URL.revokeObjectURL(url);
 
   };
+
+  const clearDocumentPreview = useCallback(() => {
+    setDocumentPreview((current) => {
+      if (current?.url) {
+        URL.revokeObjectURL(current.url);
+      }
+      return null;
+    });
+  }, []);
+
+  const downloadDocumentBlob = useCallback(async (document: SubmissionDocumentResponse) => {
+    const blob = await kpiSubmissionService.downloadDocument(document.id);
+    const url = URL.createObjectURL(blob);
+    const link = window.document.createElement('a');
+    link.href = url;
+    link.download = document.fileName;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const handleDocumentClick = useCallback(async (document: SubmissionDocumentResponse) => {
+    setDocumentError(null);
+    setIsDocumentLoading(true);
+    clearDocumentPreview();
+
+    try {
+      const blob = await kpiSubmissionService.downloadDocument(document.id);
+
+      if (isImageDocument(document)) {
+        setDocumentPreview({ document, kind: 'image', url: URL.createObjectURL(blob) });
+        return;
+      }
+
+      if (isPdfDocument(document)) {
+        setDocumentPreview({ document, kind: 'pdf', url: URL.createObjectURL(blob) });
+        return;
+      }
+
+      if (isTextDocument(document)) {
+        setDocumentPreview({ document, kind: 'text', text: await blob.text() });
+        return;
+      }
+
+      await downloadDocumentBlob(document);
+    } catch (err) {
+      setDocumentError(err instanceof Error ? err.message : 'Unable to open supporting document.');
+    } finally {
+      setIsDocumentLoading(false);
+    }
+  }, [clearDocumentPreview, downloadDocumentBlob]);
+
+  const handleModalExport = useCallback(async () => {
+    if (!selectedSubmission || selectedSubmission.documents.length === 0) {
+      return;
+    }
+
+    setDocumentError(null);
+    setIsDocumentLoading(true);
+    try {
+      await downloadDocumentBlob(selectedSubmission.documents[0]);
+    } catch (err) {
+      setDocumentError(err instanceof Error ? err.message : 'Unable to export supporting document.');
+    } finally {
+      setIsDocumentLoading(false);
+    }
+  }, [downloadDocumentBlob, selectedSubmission]);
+
+  const handleCloseDetails = useCallback(() => {
+    clearDocumentPreview();
+    setDocumentError(null);
+    setSelectedSubmission(null);
+  }, [clearDocumentPreview]);
 
 
 
@@ -1166,7 +1260,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
         open={Boolean(selectedSubmission)}
 
-        onClose={() => setSelectedSubmission(null)}
+        onClose={handleCloseDetails}
 
         sx={{
 
@@ -1218,7 +1312,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                 <IconButton
 
-                  onClick={() => setSelectedSubmission(null)}
+                  onClick={handleCloseDetails}
 
                   sx={{
 
@@ -1496,7 +1590,19 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                         variant="outlined"
 
-                        sx={{ p: 1.75, borderRadius: 2.5, borderColor: '#E2E5EC', bgcolor: '#fff' }}
+                        onClick={() => void handleDocumentClick(document)}
+
+                        sx={{
+                          p: 1.75,
+                          borderRadius: 2.5,
+                          borderColor: '#E2E5EC',
+                          bgcolor: '#fff',
+                          cursor: 'pointer',
+                          '&:hover': {
+                            borderColor: '#C7D2FE',
+                            bgcolor: '#F8FAFF',
+                          },
+                        }}
 
                       >
 
@@ -1566,6 +1672,69 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                   </Stack>
 
+                  {isDocumentLoading && <LinearProgress sx={{ mt: 1.5 }} />}
+
+                  {documentError && (
+                    <Alert severity="error" sx={{ mt: 1.5 }}>
+                      {documentError}
+                    </Alert>
+                  )}
+
+                  {documentPreview && (
+                    <Paper
+                      variant="outlined"
+                      sx={{ mt: 1.5, borderRadius: 2.5, borderColor: '#E2E5EC', overflow: 'hidden' }}
+                    >
+                      <Stack
+                        direction="row"
+                        sx={{ alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1, bgcolor: '#F9FAFB' }}
+                      >
+                        <Typography noWrap sx={{ fontWeight: 600, color: '#111827', fontSize: '0.875rem' }}>
+                          Preview: {documentPreview.document.fileName}
+                        </Typography>
+                        <IconButton size="small" onClick={clearDocumentPreview}>
+                          <CloseIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Stack>
+
+                      {documentPreview.kind === 'image' && documentPreview.url && (
+                        <Box
+                          component="img"
+                          src={documentPreview.url}
+                          alt={documentPreview.document.fileName}
+                          sx={{ width: '100%', maxHeight: 360, objectFit: 'contain', display: 'block', bgcolor: '#fff' }}
+                        />
+                      )}
+
+                      {documentPreview.kind === 'pdf' && documentPreview.url && (
+                        <Box
+                          component="iframe"
+                          src={documentPreview.url}
+                          title={documentPreview.document.fileName}
+                          sx={{ width: '100%', height: 420, border: 0, display: 'block', bgcolor: '#fff' }}
+                        />
+                      )}
+
+                      {documentPreview.kind === 'text' && (
+                        <Box
+                          component="pre"
+                          sx={{
+                            m: 0,
+                            p: 1.5,
+                            maxHeight: 360,
+                            overflow: 'auto',
+                            bgcolor: '#fff',
+                            color: '#111827',
+                            fontSize: '0.75rem',
+                            whiteSpace: 'pre-wrap',
+                          }}
+                        >
+                          {documentPreview.text}
+                        </Box>
+                      )}
+                    </Paper>
+                  )}
+
                 </Box>
 
               </Stack>
@@ -1597,6 +1766,10 @@ const TbiManagerSubmissionHistoryPage = () => {
                   variant="outlined"
 
                   startIcon={<DownloadOutlinedIcon sx={{ fontSize: 18 }} />}
+
+                  onClick={() => void handleModalExport()}
+
+                  disabled={selectedSubmission.documents.length === 0 || isDocumentLoading}
 
                   sx={outlinedActionButtonSx}
 
