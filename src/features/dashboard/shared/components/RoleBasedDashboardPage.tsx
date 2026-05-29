@@ -189,7 +189,7 @@ const RoleBasedDashboardPage = ({
             title={role === 'DASIG_ADMIN' ? 'All KPIs' : 'Organization KPIs'}
             items={filteredKpis}
             viewMode={viewMode}
-            gridColumns={role === 'DASIG_ADMIN' ? 3 : 2}
+            gridColumns={3}
             renderItem={(item) => (
               <KpiDashboardCard
                 key={item.id}
