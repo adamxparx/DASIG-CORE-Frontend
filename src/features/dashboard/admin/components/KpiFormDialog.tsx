@@ -47,6 +47,62 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
   // Form validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const formatDateForInput = (rawDate: string) => {
+    if (!rawDate) {
+      return '';
+    }
+
+    try {
+      const dateObj = new Date(rawDate);
+      if (!isNaN(dateObj.getTime())) {
+        return dateObj.toISOString().split('T')[0];
+      }
+      return rawDate;
+    } catch {
+      return rawDate;
+    }
+  };
+
+  const resetForCreate = () => {
+    setName('');
+    setDescription('');
+    setTargetValue('');
+    setUnit('');
+    setDeadline('');
+    setThreshold('80');
+    setOrganizationId('');
+  };
+
+  const populateForEdit = (currentKpi: DashboardKpiItem, orgs: Organization[]) => {
+    setName(currentKpi.name);
+    setDescription(currentKpi.description);
+    setTargetValue(String(currentKpi.targetValue));
+    setUnit(currentKpi.unit);
+    setDeadline(formatDateForInput(currentKpi.deadline));
+
+    const itemWithThreshold = currentKpi as DashboardKpiItem & { threshold?: number };
+    setThreshold(String(itemWithThreshold.threshold ?? 80));
+
+    if (orgs.length > 0) {
+      const matchedOrg = orgs.find(
+        (org) => org.name.toLowerCase() === currentKpi.organization.toLowerCase()
+      );
+      setOrganizationId(matchedOrg ? matchedOrg.id : '');
+    } else {
+      setOrganizationId('');
+    }
+  };
+
+  const initializeForm = (orgs: Organization[]) => {
+    setErrorMessage(null);
+    setErrors({});
+    if (kpi) {
+      populateForEdit(kpi, orgs);
+      return;
+    }
+    resetForCreate();
+  };
+
   // Fetch organizations on mount
   useEffect(() => {
     const loadOrgs = async () => {
@@ -54,9 +110,11 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
       try {
         const data = await kpiService.getOrganizations();
         setOrganizations(data);
+        initializeForm(data);
       } catch {
         // Fallback is handled in kpiService, but we set an empty array just in case
         setOrganizations([]);
+        initializeForm([]);
       } finally {
         setIsLoadingOrgs(false);
       }
@@ -65,59 +123,6 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
       void loadOrgs();
     }
   }, [open]);
-
-  // Reset/Populate form fields when dialog opens or changes
-  useEffect(() => {
-    if (open) {
-      setErrorMessage(null);
-      setErrors({});
-      if (kpi) {
-        setName(kpi.name);
-        setDescription(kpi.description);
-        setTargetValue(String(kpi.targetValue));
-        setUnit(kpi.unit);
-
-        // Format date string from backend/dashboard (e.g. '2026-06-30') to YYYY-MM-DD
-        let formattedDate = '';
-        if (kpi.deadline) {
-          try {
-            const dateObj = new Date(kpi.deadline);
-            if (!isNaN(dateObj.getTime())) {
-              formattedDate = dateObj.toISOString().split('T')[0];
-            } else {
-              formattedDate = kpi.deadline;
-            }
-          } catch {
-            formattedDate = kpi.deadline;
-          }
-        }
-        setDeadline(formattedDate);
-
-        // Try to match threshold from state or default to 80
-        // (Note: in DashboardKpiItem, threshold might not exist. If it does not, default to 80)
-        const itemWithThreshold = kpi as DashboardKpiItem & { threshold?: number };
-        setThreshold(String(itemWithThreshold.threshold ?? 80));
-
-        // Find matching organization by name to set the initial organizationId
-        if (organizations.length > 0) {
-          const matchedOrg = organizations.find(
-            (org) => org.name.toLowerCase() === kpi.organization.toLowerCase()
-          );
-          if (matchedOrg) {
-            setOrganizationId(matchedOrg.id);
-          }
-        }
-      } else {
-        setName('');
-        setDescription('');
-        setTargetValue('');
-        setUnit('');
-        setDeadline('');
-        setThreshold('80');
-        setOrganizationId('');
-      }
-    }
-  }, [open, kpi, organizations]);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -197,6 +202,9 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
       fullWidth
       maxWidth="sm"
       slotProps={{
+        transition: {
+          onEnter: () => initializeForm(organizations),
+        },
         paper: {
           sx: {
             borderRadius: 4,
