@@ -3,6 +3,7 @@ export const routes = {
   adminDashboard: '/dashboard/admin',
   adminOrganizations: '/dashboard/admin/organizations',
   adminUsers: '/dashboard/admin/users',
+  adminAlerts: '/dashboard/admin/alerts',
   staffDashboard: '/dashboard/staff',
   staffSubmitKpi: '/dashboard/staff/submit-kpi',
   staffSubmissionHistory: '/dashboard/staff/submission-history',

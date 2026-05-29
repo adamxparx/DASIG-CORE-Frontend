@@ -36,6 +36,7 @@ const adminPaths: Record<string, string> = {
   dashboard: routes.adminDashboard,
   users: routes.adminUsers,
   organizations: routes.adminOrganizations,
+  alerts: routes.adminAlerts,
 };
 
 const roleMenus: Record<UserRole, SidebarItem[]> = {
