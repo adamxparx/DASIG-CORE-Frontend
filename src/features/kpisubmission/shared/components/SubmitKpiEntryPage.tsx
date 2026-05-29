@@ -57,6 +57,7 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [prefillMessage, setPrefillMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const loadKpis = async () => {
@@ -97,6 +98,54 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
     const currentPeriod = getCurrentPeriod(selectedKpi.reportingFrequency ?? 'QUARTERLY', selectedKpi.deadline);
     setPeriod(currentPeriod ?? periodOptions[0] ?? '');
   }, [selectedKpi, periodOptions]);
+
+  const staffInternalSubmission = selectedKpi && role === 'TBI_MANAGER'
+    ? submissions.find((submission) =>
+        submission.kpiDefinitionId === selectedKpi.id &&
+        submission.reportingPeriod === period &&
+        submission.submissionType === 'INTERNAL'
+      )
+    : null;
+  const tbiFinalSubmission = selectedKpi && role === 'TBI_MANAGER'
+    ? submissions.find((submission) =>
+        submission.kpiDefinitionId === selectedKpi.id &&
+        submission.reportingPeriod === period &&
+        submission.submissionType === 'FINAL'
+      )
+    : null;
+
+  useEffect(() => {
+    if (role !== 'TBI_MANAGER') {
+      setPrefillMessage(null);
+      return;
+    }
+
+    if (!selectedKpi || !period) {
+      setPrefillMessage(null);
+      return;
+    }
+
+    if (tbiFinalSubmission) {
+      setPrefillMessage('A TBI final submission already exists for this period.');
+      return;
+    }
+
+    if (!staffInternalSubmission) {
+      setPrefillMessage('No staff internal submission found for this period. You can enter the final values manually.');
+      return;
+    }
+
+    setSubmittedValue(String(staffInternalSubmission.submittedValue));
+    setSubmissionDate(today);
+    setNotes(staffInternalSubmission.notes ?? '');
+    setPrefillMessage('Loaded values from the staff internal submission for this period. Review before submitting final KPI.');
+  }, [
+    role,
+    selectedKpi,
+    period,
+    staffInternalSubmission,
+    tbiFinalSubmission,
+  ]);
 
   const numericSubmittedValue = Number(submittedValue) || 0;
   const submissionType = role === 'STAFF' ? 'INTERNAL' : 'FINAL';
@@ -210,6 +259,7 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                 {isLoadingKpis && <LinearProgress />}
                 {error && <Alert severity="error">{error}</Alert>}
                 {success && <Alert severity="success">{success}</Alert>}
+                {prefillMessage && <Alert severity="info">{prefillMessage}</Alert>}
 
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                   <TextField
