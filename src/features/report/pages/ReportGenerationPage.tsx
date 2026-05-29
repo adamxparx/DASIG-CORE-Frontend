@@ -7,9 +7,13 @@ import Card from '@mui/material/Card';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import FormLabel from '@mui/material/FormLabel';
 import IconButton from '@mui/material/IconButton';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
 import Select from '@mui/material/Select';
 import type { SelectChangeEvent } from '@mui/material/Select';
 import Snackbar from '@mui/material/Snackbar';
@@ -24,11 +28,14 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useState } from 'react';
 import AdminPageLayout from '../../dashboard/shared/components/AdminPageLayout';
+import { kpiService } from '../../dashboard/shared/api/kpiService';
+import type { KpiDefinitionResponse } from '../../dashboard/shared/types/kpi.types';
 import { organizationService } from '../../organization/api/organizationService';
 import type { OrganizationResponse } from '../../organization/types/organization.types';
 import { reportService } from '../api/reportService';
 import NarrativeReportParser from '../components/NarrativeReportParser';
 import type { ReportResponse } from '../types/report.types';
+
 
 export default function ReportGenerationPage() {
   const [organizations, setOrganizations] = useState<OrganizationResponse[]>([]);
@@ -46,9 +53,44 @@ export default function ReportGenerationPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
+  // Scope states
+  const [reportScope, setReportScope] = useState<'ORGANIZATIONAL' | 'KPI'>('ORGANIZATIONAL');
+  const [kpis, setKpis] = useState<KpiDefinitionResponse[]>([]);
+  const [selectedKpiId, setSelectedKpiId] = useState<string>('');
+  const [isKpisLoading, setIsKpisLoading] = useState(false);
+
   // Toast notifications
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  // Fetch KPIs globally when scope is KPI
+  useEffect(() => {
+    async function loadKpis() {
+      if (reportScope !== 'KPI') {
+        setKpis([]);
+        setSelectedKpiId('');
+        return;
+      }
+      setIsKpisLoading(true);
+      try {
+        const kpiData = await kpiService.getAllKpiDefinitions();
+        setKpis(kpiData);
+        if (kpiData.length > 0) {
+          const firstKpi = kpiData[0];
+          setSelectedKpiId(String(firstKpi.id));
+          setSelectedOrgId(String(firstKpi.organizationId));
+        } else {
+          setSelectedKpiId('');
+          setSelectedOrgId('');
+        }
+      } catch (err) {
+        showToast('Failed to load KPI list.');
+      } finally {
+        setIsKpisLoading(false);
+      }
+    }
+    void loadKpis();
+  }, [reportScope]);
 
   // Load organizations on landing
   useEffect(() => {
@@ -74,7 +116,7 @@ export default function ReportGenerationPage() {
     if (!orgIdStr) return;
     setIsHistoryLoading(true);
     try {
-      const data = await reportService.getByOrganization(Number(orgIdStr));
+      const data = await reportService.getByOrganization(parseInt(orgIdStr, 10));
       setHistoryReports(data);
     } catch {
       // Gracefully ignore history errors to keep page interactive
@@ -103,7 +145,7 @@ export default function ReportGenerationPage() {
   // Generate new report
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedOrgId || !periodFrom || !periodTo) {
+    if (!selectedOrgId || !periodFrom || !periodTo || (reportScope === 'KPI' && !selectedKpiId)) {
       showToast('Please select all filter parameters.');
       return;
     }
@@ -112,11 +154,21 @@ export default function ReportGenerationPage() {
     setActiveReport(null);
 
     try {
-      const report = await reportService.generateReport({
-        organizationId: Number(selectedOrgId),
-        periodFrom,
-        periodTo,
-      });
+      let report: ReportResponse;
+
+      if (reportScope === 'ORGANIZATIONAL') {
+        report = await reportService.generateOrgReport({
+          organizationId: parseInt(selectedOrgId, 10),
+          periodFrom,
+          periodTo,
+        });
+      } else {
+        report = await reportService.generateKpiReport({
+          kpiDefinitionId: parseInt(selectedKpiId, 10),
+          periodFrom,
+          periodTo,
+        });
+      }
 
       if (report.status === 'FAILED') {
         throw new Error(report.narrativeText || 'Failed to generate AI performance narrative.');
@@ -133,7 +185,7 @@ export default function ReportGenerationPage() {
   };
 
   // Trigger authenticated PDF export blob downloader
-  const handleExportPdf = async (id: number) => {
+  const handleExportPdf = async (id: string) => {
     setIsExporting(true);
     try {
       const blob = await reportService.exportPdfBlob(id);
@@ -231,24 +283,111 @@ export default function ReportGenerationPage() {
             </Typography>
             
             <Stack spacing={3}>
-              {/* Organization Selector */}
-              <FormControl fullWidth size="small">
-                <InputLabel id="org-selector-label" sx={{ fontWeight: 500 }}>Select Incubator</InputLabel>
-                <Select
-                  labelId="org-selector-label"
-                  id="org-selector"
-                  value={selectedOrgId}
-                  label="Select Incubator"
-                  onChange={handleOrgChange}
-                  sx={{ borderRadius: 2 }}
+              {/* Report Scope Selector */}
+              <FormControl component="fieldset">
+                <FormLabel id="report-scope-label" sx={{ fontWeight: 700, fontSize: '0.88rem', color: 'text.secondary', mb: 1 }}>
+                  Report Scope
+                </FormLabel>
+                <RadioGroup
+                  aria-labelledby="report-scope-label"
+                  name="report-scope"
+                  value={reportScope}
+                  onChange={(e) => {
+                    setReportScope(e.target.value as 'ORGANIZATIONAL' | 'KPI');
+                    setActiveReport(null);
+                    setPeriodFrom('');
+                    setPeriodTo('');
+                  }}
+                  sx={{ gap: 1 }}
                 >
-                  {organizations.map((org) => (
-                    <MenuItem key={org.id} value={String(org.id)}>
-                      {org.name}
-                    </MenuItem>
-                  ))}
-                </Select>
+                  <FormControlLabel
+                    value="ORGANIZATIONAL"
+                    control={<Radio size="small" sx={{ color: '#426ef0', '&.Mui-checked': { color: '#426ef0' } }} />}
+                    label={
+                      <Typography sx={{ fontSize: '0.92rem', fontWeight: reportScope === 'ORGANIZATIONAL' ? 700 : 500 }}>
+                        Organizational Report
+                      </Typography>
+                    }
+                  />
+                  <FormControlLabel
+                    value="KPI"
+                    control={<Radio size="small" sx={{ color: '#426ef0', '&.Mui-checked': { color: '#426ef0' } }} />}
+                    label={
+                      <Typography sx={{ fontSize: '0.92rem', fontWeight: reportScope === 'KPI' ? 700 : 500 }}>
+                        KPI Performance Report
+                      </Typography>
+                    }
+                  />
+                </RadioGroup>
               </FormControl>
+
+              {/* Organization Selector (Only shown for Organizational scope) */}
+              {reportScope === 'ORGANIZATIONAL' && (
+                <FormControl fullWidth size="small">
+                  <InputLabel id="org-selector-label" sx={{ fontWeight: 500 }}>Select Incubator</InputLabel>
+                  <Select
+                    labelId="org-selector-label"
+                    id="org-selector"
+                    value={selectedOrgId}
+                    label="Select Incubator"
+                    onChange={handleOrgChange}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    {organizations.map((org) => (
+                      <MenuItem key={org.id} value={String(org.id)}>
+                        {org.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+
+              {/* KPI Selector (Only shown for KPI Scope) */}
+              {reportScope === 'KPI' && (
+                <FormControl fullWidth size="small">
+                  <InputLabel id="kpi-selector-label" sx={{ fontWeight: 500 }}>Select KPI</InputLabel>
+                  <Select
+                    labelId="kpi-selector-label"
+                    id="kpi-selector"
+                    value={selectedKpiId}
+                    label="Select KPI"
+                    onChange={(e) => {
+                      const kpiId = e.target.value;
+                      setSelectedKpiId(kpiId);
+                      const selectedKpi = kpis.find((k) => String(k.id) === kpiId);
+                      if (selectedKpi) {
+                        setSelectedOrgId(String(selectedKpi.organizationId));
+                      }
+                    }}
+                    disabled={isKpisLoading || kpis.length === 0}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    {isKpisLoading ? (
+                      <MenuItem disabled value="">
+                        <CircularProgress size={16} sx={{ mr: 1, color: '#426ef0' }} />
+                        Loading KPIs...
+                      </MenuItem>
+                    ) : kpis.length === 0 ? (
+                      <MenuItem disabled value="">
+                        No KPIs found
+                      </MenuItem>
+                    ) : (
+                      kpis.map((kpi) => (
+                        <MenuItem key={kpi.id} value={String(kpi.id)}>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', py: 0.25 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {kpi.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              Incubator: {kpi.organizationName}
+                            </Typography>
+                          </Box>
+                        </MenuItem>
+                      ))
+                    )}
+                  </Select>
+                </FormControl>
+              )}
 
               {/* Start Date */}
               <TextField
@@ -279,7 +418,7 @@ export default function ReportGenerationPage() {
               {/* Trigger Button */}
               <Button
                 type="submit"
-                disabled={isGenerating || !selectedOrgId || !periodFrom || !periodTo}
+                disabled={isGenerating || !selectedOrgId || !periodFrom || !periodTo || (reportScope === 'KPI' && !selectedKpiId)}
                 variant="contained"
                 disableElevation
                 sx={{
@@ -332,7 +471,7 @@ export default function ReportGenerationPage() {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
                   <Stack spacing={0.5}>
                     <Typography variant="h5" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '1.45rem', letterSpacing: '-0.3px' }}>
-                      Incubator Performance Narrative
+                      {reportScope === 'KPI' ? 'KPI Performance Narrative' : 'Incubator Performance Narrative'}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
                       Reporting Period: {formatDateRange(activeReport.periodFrom, activeReport.periodTo)}
@@ -363,7 +502,7 @@ export default function ReportGenerationPage() {
                 <Divider />
 
                 <Box sx={{ maxHeight: '600px', overflowY: 'auto', pr: 1 }}>
-                  <NarrativeReportParser text={activeReport.narrativeText} />
+                  <NarrativeReportParser key={activeReport.id} text={activeReport.narrativeText} />
                 </Box>
               </Stack>
             ) : (
