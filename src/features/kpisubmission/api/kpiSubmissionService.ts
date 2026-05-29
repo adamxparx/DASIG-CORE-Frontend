@@ -14,8 +14,41 @@ export const kpiSubmissionService = {
     return apiClient<AssignableKpi[]>(ASSIGNABLE_ENDPOINT);
   },
 
-  getSubmissions(): Promise<KpiSubmissionResponse[]> {
-    return apiClient<KpiSubmissionResponse[]>(SUBMISSION_ENDPOINT);
+  getSubmissions(params?: {
+    kpiDefinitionId?: number;
+    reportingPeriod?: string;
+    submissionType?: 'INTERNAL' | 'FINAL';
+  }): Promise<KpiSubmissionResponse[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.kpiDefinitionId !== undefined) {
+      searchParams.set('kpiDefinitionId', String(params.kpiDefinitionId));
+    }
+    if (params?.reportingPeriod) {
+      searchParams.set('reportingPeriod', params.reportingPeriod);
+    }
+    if (params?.submissionType) {
+      searchParams.set('submissionType', params.submissionType);
+    }
+
+    const query = searchParams.toString();
+    return apiClient<KpiSubmissionResponse[]>(query ? `${SUBMISSION_ENDPOINT}?${query}` : SUBMISSION_ENDPOINT);
+  },
+
+  async downloadDocument(documentId: number): Promise<Blob> {
+    const token = tokenStorage.get();
+    const response = await fetch(`${SUBMISSION_ENDPOINT}/documents/${documentId}/download`, {
+      headers: {
+        Accept: '*/*',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!response.ok) {
+      const bodyText = await response.text();
+      throw new ApiError(bodyText || 'Failed to download submission document.', response.status);
+    }
+
+    return response.blob();
   },
 
   async createSubmission(

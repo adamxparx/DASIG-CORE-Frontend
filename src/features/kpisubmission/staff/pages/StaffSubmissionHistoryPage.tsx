@@ -26,7 +26,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { kpiSubmissionService } from '../../api/kpiSubmissionService';
-import type { AssignableKpi, KpiSubmissionResponse } from '../../types/kpiSubmission.types';
+import type { AssignableKpi, KpiSubmissionResponse, SubmissionDocumentResponse } from '../../types/kpiSubmission.types';
 
 const PAGE_SIZE = 5;
 
@@ -82,6 +82,22 @@ const formatSubmissionId = (id: number) => `#SUB-${String(id).padStart(4, '0')}`
 const formatDisplayDate = (rawDate: string) =>
   new Date(rawDate).toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' });
 
+type DocumentPreview = {
+  document: SubmissionDocumentResponse;
+  kind: 'image' | 'pdf' | 'text';
+  url?: string;
+  text?: string;
+};
+
+const isImageDocument = (document: SubmissionDocumentResponse) => document.contentType.startsWith('image/');
+
+const isPdfDocument = (document: SubmissionDocumentResponse) => document.contentType === 'application/pdf';
+
+const isTextDocument = (document: SubmissionDocumentResponse) =>
+  document.contentType.startsWith('text/') ||
+  document.contentType === 'text/csv' ||
+  document.contentType === 'application/csv';
+
 const mapStatus = (status: string) => {
   if (status === 'GREEN') {
     return { label: 'On Track', bg: '#DDF4E8', color: '#14945F' };
@@ -101,6 +117,9 @@ const StaffSubmissionHistoryPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedSubmission, setSelectedSubmission] = useState<KpiSubmissionResponse | null>(null);
+  const [documentPreview, setDocumentPreview] = useState<DocumentPreview | null>(null);
+  const [documentError, setDocumentError] = useState<string | null>(null);
+  const [isDocumentLoading, setIsDocumentLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
   const loadData = useCallback(async () => {
@@ -193,6 +212,78 @@ const StaffSubmissionHistoryPage = () => {
     link.click();
     URL.revokeObjectURL(url);
   };
+
+  const clearDocumentPreview = useCallback(() => {
+    setDocumentPreview((current) => {
+      if (current?.url) {
+        URL.revokeObjectURL(current.url);
+      }
+      return null;
+    });
+  }, []);
+
+  const downloadDocumentBlob = useCallback(async (document: SubmissionDocumentResponse) => {
+    const blob = await kpiSubmissionService.downloadDocument(document.id);
+    const url = URL.createObjectURL(blob);
+    const link = window.document.createElement('a');
+    link.href = url;
+    link.download = document.fileName;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const handleDocumentClick = useCallback(async (document: SubmissionDocumentResponse) => {
+    setDocumentError(null);
+    setIsDocumentLoading(true);
+    clearDocumentPreview();
+
+    try {
+      const blob = await kpiSubmissionService.downloadDocument(document.id);
+
+      if (isImageDocument(document)) {
+        setDocumentPreview({ document, kind: 'image', url: URL.createObjectURL(blob) });
+        return;
+      }
+
+      if (isPdfDocument(document)) {
+        setDocumentPreview({ document, kind: 'pdf', url: URL.createObjectURL(blob) });
+        return;
+      }
+
+      if (isTextDocument(document)) {
+        setDocumentPreview({ document, kind: 'text', text: await blob.text() });
+        return;
+      }
+
+      await downloadDocumentBlob(document);
+    } catch (err) {
+      setDocumentError(err instanceof Error ? err.message : 'Unable to open supporting document.');
+    } finally {
+      setIsDocumentLoading(false);
+    }
+  }, [clearDocumentPreview, downloadDocumentBlob]);
+
+  const handleModalExport = useCallback(async () => {
+    if (!selectedSubmission || selectedSubmission.documents.length === 0) {
+      return;
+    }
+
+    setDocumentError(null);
+    setIsDocumentLoading(true);
+    try {
+      await downloadDocumentBlob(selectedSubmission.documents[0]);
+    } catch (err) {
+      setDocumentError(err instanceof Error ? err.message : 'Unable to export supporting document.');
+    } finally {
+      setIsDocumentLoading(false);
+    }
+  }, [downloadDocumentBlob, selectedSubmission]);
+
+  const handleCloseDetails = useCallback(() => {
+    clearDocumentPreview();
+    setDocumentError(null);
+    setSelectedSubmission(null);
+  }, [clearDocumentPreview]);
 
   return (
     <>
@@ -489,7 +580,7 @@ const StaffSubmissionHistoryPage = () => {
       <Drawer
         anchor="right"
         open={Boolean(selectedSubmission)}
-        onClose={() => setSelectedSubmission(null)}
+        onClose={handleCloseDetails}
         sx={{
           '& .MuiDrawer-paper': {
             width: { xs: '100%', sm: 540 },
@@ -513,21 +604,8 @@ const StaffSubmissionHistoryPage = () => {
                 </Typography>
               </Box>
               <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexShrink: 0 }}>
-                <Chip
-                  label="Under Review"
-                  size="small"
-                  sx={{
-                    bgcolor: '#FEF3C7',
-                    color: '#B45309',
-                    fontWeight: 600,
-                    fontSize: '0.75rem',
-                    height: 28,
-                    borderRadius: 999,
-                    px: 0.5,
-                  }}
-                />
                 <IconButton
-                  onClick={() => setSelectedSubmission(null)}
+                  onClick={handleCloseDetails}
                   sx={{
                     color: '#6B7280',
                     border: '1px solid #E2E5EC',
@@ -676,11 +754,17 @@ const StaffSubmissionHistoryPage = () => {
                     <Paper
                       key={document.id}
                       variant="outlined"
+                      onClick={() => void handleDocumentClick(document)}
                       sx={{
                         p: 1.75,
                         borderRadius: 2.5,
                         borderColor: '#E2E5EC',
                         bgcolor: '#fff',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          borderColor: '#C7D2FE',
+                          bgcolor: '#F8FAFF',
+                        },
                       }}
                     >
                       <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
@@ -709,24 +793,73 @@ const StaffSubmissionHistoryPage = () => {
                             {(document.fileSize / (1024 * 1024)).toFixed(1)} MB • {document.contentType || 'File'}
                           </Typography>
                         </Box>
-                        <IconButton
-                          size="small"
-                          sx={{
-                            color: '#6B7280',
-                            border: '1px solid #E2E5EC',
-                            borderRadius: 1.5,
-                            width: 34,
-                            height: 34,
-                            flexShrink: 0,
-                            '&:hover': { bgcolor: '#F9FAFB' },
-                          }}
-                        >
-                          <DownloadOutlinedIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
                       </Stack>
                     </Paper>
                   ))}
                 </Stack>
+
+                {isDocumentLoading && <LinearProgress sx={{ mt: 1.5 }} />}
+
+                {documentError && (
+                  <Alert severity="error" sx={{ mt: 1.5 }}>
+                    {documentError}
+                  </Alert>
+                )}
+
+                {documentPreview && (
+                  <Paper
+                    variant="outlined"
+                    sx={{ mt: 1.5, borderRadius: 2.5, borderColor: '#E2E5EC', overflow: 'hidden' }}
+                  >
+                    <Stack
+                      direction="row"
+                      sx={{ alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1, bgcolor: '#F9FAFB' }}
+                    >
+                      <Typography noWrap sx={{ fontWeight: 600, color: '#111827', fontSize: '0.875rem' }}>
+                        Preview: {documentPreview.document.fileName}
+                      </Typography>
+                      <IconButton size="small" onClick={clearDocumentPreview}>
+                        <CloseIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </Stack>
+
+                    {documentPreview.kind === 'image' && documentPreview.url && (
+                      <Box
+                        component="img"
+                        src={documentPreview.url}
+                        alt={documentPreview.document.fileName}
+                        sx={{ width: '100%', maxHeight: 360, objectFit: 'contain', display: 'block', bgcolor: '#fff' }}
+                      />
+                    )}
+
+                    {documentPreview.kind === 'pdf' && documentPreview.url && (
+                      <Box
+                        component="iframe"
+                        src={documentPreview.url}
+                        title={documentPreview.document.fileName}
+                        sx={{ width: '100%', height: 420, border: 0, display: 'block', bgcolor: '#fff' }}
+                      />
+                    )}
+
+                    {documentPreview.kind === 'text' && (
+                      <Box
+                        component="pre"
+                        sx={{
+                          m: 0,
+                          p: 1.5,
+                          maxHeight: 360,
+                          overflow: 'auto',
+                          bgcolor: '#fff',
+                          color: '#111827',
+                          fontSize: '0.75rem',
+                          whiteSpace: 'pre-wrap',
+                        }}
+                      >
+                        {documentPreview.text}
+                      </Box>
+                    )}
+                  </Paper>
+                )}
               </Box>
 
               <Box>
@@ -758,6 +891,20 @@ const StaffSubmissionHistoryPage = () => {
                   </Typography>
                 </Paper>
               </Box>
+
+              <Divider sx={{ borderColor: '#EEF0F4' }} />
+
+              <Stack direction="row" spacing={1.25} sx={{ justifyContent: 'flex-end' }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<DownloadOutlinedIcon sx={{ fontSize: 18 }} />}
+                  onClick={() => void handleModalExport()}
+                  disabled={selectedSubmission.documents.length === 0 || isDocumentLoading}
+                  sx={outlinedActionButtonSx}
+                >
+                  Export
+                </Button>
+              </Stack>
             </Stack>
           </Box>
         )}
