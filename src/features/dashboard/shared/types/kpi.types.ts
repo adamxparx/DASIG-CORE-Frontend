@@ -1,3 +1,5 @@
+export type ReportingFrequency = 'ONE_TIME' | 'QUARTERLY' | 'ANNUAL' | 'MONTHLY';
+
 export interface Organization {
   id: number;
   name: string;
@@ -11,6 +13,7 @@ export interface CreateKpiDefinitionRequest {
   deadline: string; // Format: YYYY-MM-DD
   threshold: number; // Percentage, e.g. 80
   organizationId: number;
+  reportingFrequency: ReportingFrequency;
 }
 
 export interface UpdateKpiDefinitionRequest {
@@ -20,7 +23,7 @@ export interface UpdateKpiDefinitionRequest {
   unit: string;
   deadline: string; // Format: YYYY-MM-DD
   threshold: number; // Percentage, e.g. 80
-  organizationId: number;
+  reportingFrequency: ReportingFrequency;
 }
 
 export interface KpiDefinitionResponse {
@@ -33,4 +36,5 @@ export interface KpiDefinitionResponse {
   threshold: number;
   organizationId: number;
   organizationName: string;
+  reportingFrequency: ReportingFrequency;
 }

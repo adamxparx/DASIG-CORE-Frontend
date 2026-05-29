@@ -14,9 +14,10 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEventHandler } from 'react';
 import { kpiSubmissionService } from '../../api/kpiSubmissionService';
+import { getCurrentPeriod, getPeriodOptions } from '../utils/reportingPeriodUtils';
 import type {
   AssignableKpi,
   CreateKpiSubmissionRequest,
@@ -29,8 +30,6 @@ interface SubmitKpiEntryPageProps {
   role: SubmissionRole;
 }
 
-const PERIOD_OPTIONS = ['Q1 2026', 'Q2 2026', 'Q3 2026', 'Q4 2026'];
-
 const formatDeadline = (rawDate: string) =>
   new Date(rawDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
 
@@ -41,7 +40,7 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
   const [assignableKpis, setAssignableKpis] = useState<AssignableKpi[]>([]);
   const [isLoadingKpis, setIsLoadingKpis] = useState(true);
   const [selectedKpiId, setSelectedKpiId] = useState<number | ''>('');
-  const [period, setPeriod] = useState(PERIOD_OPTIONS[0]);
+  const [period, setPeriod] = useState('');
   const [submittedValue, setSubmittedValue] = useState('');
   const [submissionDate, setSubmissionDate] = useState(today);
   const [notes, setNotes] = useState('');
@@ -70,6 +69,22 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
   }, []);
 
   const selectedKpi = assignableKpis.find((kpi) => kpi.id === selectedKpiId) ?? null;
+  const periodOptions = useMemo(() => {
+    if (!selectedKpi) {
+      return [];
+    }
+    return getPeriodOptions(selectedKpi.reportingFrequency ?? 'QUARTERLY', selectedKpi.deadline);
+  }, [selectedKpi]);
+
+  useEffect(() => {
+    if (!selectedKpi) {
+      setPeriod('');
+      return;
+    }
+    const currentPeriod = getCurrentPeriod(selectedKpi.reportingFrequency ?? 'QUARTERLY', selectedKpi.deadline);
+    setPeriod(currentPeriod ?? periodOptions[0] ?? '');
+  }, [selectedKpi, periodOptions]);
+
   const numericSubmittedValue = Number(submittedValue) || 0;
   const achievementRate =
     selectedKpi && selectedKpi.targetValue > 0
@@ -108,6 +123,11 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
 
     if (!submittedValue || Number.isNaN(Number(submittedValue))) {
       setError('Please enter a valid submitted value.');
+      return;
+    }
+
+    if (!period) {
+      setError('Please select a reporting period.');
       return;
     }
 
@@ -179,8 +199,20 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                     ))}
                   </TextField>
 
-                  <TextField select fullWidth label="Period" value={period} onChange={(event) => setPeriod(event.target.value)}>
-                    {PERIOD_OPTIONS.map((option) => (
+                  <TextField
+                    select
+                    fullWidth
+                    label="Period"
+                    value={period}
+                    onChange={(event) => setPeriod(event.target.value)}
+                    disabled={periodOptions.length === 0}
+                    helperText={
+                      selectedKpi
+                        ? `${selectedKpi.reportingFrequency.replace('_', ' ').toLowerCase()} reporting`
+                        : undefined
+                    }
+                  >
+                    {periodOptions.map((option) => (
                       <MenuItem key={option} value={option}>
                         {option}
                       </MenuItem>
