@@ -112,12 +112,14 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
     <Paper
       elevation={0}
       sx={{
-        width: 280,
+        width: '100%',
+        height: '100%',
         borderRight: 1,
         borderColor: 'divider',
-        minHeight: '100vh',
-        display: { xs: 'none', md: 'flex' },
+        borderRadius: 0,
+        display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
       <Box sx={{ p: 3 }}>
@@ -129,7 +131,7 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
         </Typography>
       </Box>
       <Divider />
-      <List sx={{ px: 1.5, py: 1, flexGrow: 1 }}>
+      <List sx={{ px: 1.5, py: 1, flexGrow: 1, overflowY: 'auto' }}>
         {menuItems.map((item) => (
           <ListItemButton
             key={item.key}
