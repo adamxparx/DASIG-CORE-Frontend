@@ -3,6 +3,7 @@ export type ReportingFrequency = 'ONE_TIME' | 'QUARTERLY' | 'ANNUAL' | 'MONTHLY'
 export interface Organization {
   id: number;
   name: string;
+  status?: string;
 }
 
 export interface CreateKpiDefinitionRequest {

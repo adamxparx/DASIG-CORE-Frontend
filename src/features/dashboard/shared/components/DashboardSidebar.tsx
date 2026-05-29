@@ -1,4 +1,3 @@
-import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import AssignmentTurnedInOutlinedIcon from '@mui/icons-material/AssignmentTurnedInOutlined';
 import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
 import CorporateFareOutlinedIcon from '@mui/icons-material/CorporateFareOutlined';
@@ -20,6 +19,7 @@ import Typography from '@mui/material/Typography';
 import type { ReactElement } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { routes } from '../../../../routes';
+import logo from '../../../../assets/logo.png';
 import { tokenStorage } from '../../../auth/utils/tokenStorage';
 import { useUnreadNotificationCount } from '../../../notification/hooks/useUnreadNotificationCount';
 import type { UserRole } from '../types/dashboard.types';
@@ -54,14 +54,12 @@ const roleMenus: Record<UserRole, SidebarItem[]> = {
   TBI_MANAGER: [
     { key: 'dashboard', label: 'TBI Dashboard', icon: <SpaceDashboardOutlinedIcon /> },
     { key: 'notifications', label: 'Notifications', icon: <NotificationsOutlinedIcon /> },
-    { key: 'assigned', label: 'Assigned KPIs', icon: <AssessmentOutlinedIcon /> },
     { key: 'history', label: 'Submission History', icon: <AssignmentTurnedInOutlinedIcon /> },
     { key: 'submit', label: 'Submit KPI', icon: <PostAddOutlinedIcon /> },
   ],
   STAFF: [
     { key: 'dashboard', label: 'Staff Dashboard', icon: <SpaceDashboardOutlinedIcon /> },
     { key: 'notifications', label: 'Notifications', icon: <NotificationsOutlinedIcon /> },
-    { key: 'assigned', label: 'Assigned KPIs', icon: <AssessmentOutlinedIcon /> },
     { key: 'submit', label: 'Submit KPI', icon: <PostAddOutlinedIcon /> },
     { key: 'history', label: 'Submission History', icon: <AssignmentTurnedInOutlinedIcon /> },
   ],
@@ -133,11 +131,24 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
         overflow: 'hidden',
       }}
     >
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          DASIG-CORE
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
+      <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+          <Box
+            component="img"
+            src={logo}
+            alt="DASIG Logo"
+            sx={{
+              width: 32,
+              height: 32,
+              objectFit: 'contain',
+              borderRadius: 1,
+            }}
+          />
+          <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '0.25px' }}>
+            DASIG-CORE
+          </Typography>
+        </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ pl: 0.25, fontSize: '0.8rem' }}>
           Consortium KPI Platform
         </Typography>
       </Box>

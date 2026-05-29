@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import LoginPage from './features/auth/pages/LoginPage';
-import { getAuthRedirectPath, getSession } from './features/auth/utils/session';
+import LandingPage from './features/landing/pages/LandingPage';
+import { getSession } from './features/auth/utils/session';
 import ProtectedDashboardLayout from './features/dashboard/shared/components/ProtectedDashboardLayout';
 import AdminDashboard from './features/dashboard/admin/pages/AdminDashboard';
 import StaffDashboard from './features/dashboard/staff/pages/StaffDashboard';
@@ -20,7 +21,7 @@ import { routes } from './routes';
 function LandingRoute() {
   const session = getSession();
   if (!session) {
-    return <Navigate to={getAuthRedirectPath()} replace />;
+    return <LandingPage />;
   }
 
   return <Navigate to={session.dashboardPath} replace />;

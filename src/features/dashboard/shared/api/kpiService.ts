@@ -10,9 +10,9 @@ const KPI_ENDPOINT = '/api/kpi-definitions';
 const ORGANIZATIONS_ENDPOINT = '/api/organizations';
 
 const DEFAULT_ORGANIZATIONS: Organization[] = [
-  { id: 1, name: 'Organization A' },
-  { id: 2, name: 'Organization B' },
-  { id: 3, name: 'Organization C' },
+  { id: 1, name: 'Organization A', status: 'Active' },
+  { id: 2, name: 'Organization B', status: 'Active' },
+  { id: 3, name: 'Organization C', status: 'Active' },
 ];
 
 export const kpiService = {
