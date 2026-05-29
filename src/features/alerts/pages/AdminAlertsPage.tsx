@@ -28,7 +28,7 @@ export default function AdminAlertsPage() {
 
   // Filter states
   const [kpiFilter, setKpiFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('UNACKNOWLEDGED');
 
   // Toast notifications
   const [toastOpen, setToastOpen] = useState(false);
