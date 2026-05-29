@@ -25,7 +25,6 @@ import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import DashboardSidebar from '../../../dashboard/shared/components/DashboardSidebar';
 import { kpiSubmissionService } from '../../api/kpiSubmissionService';
 import type { AssignableKpi, KpiSubmissionResponse } from '../../types/kpiSubmission.types';
 
@@ -196,10 +195,8 @@ const StaffSubmissionHistoryPage = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F7F8FB' }}>
-      <DashboardSidebar role="STAFF" />
-
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <>
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100%', bgcolor: '#F7F8FB' }}>
         <Box sx={{ flex: 1, p: { xs: 2, md: 3.5, lg: 4 } }}>
           <Stack spacing={3} sx={{ maxWidth: 1280, mx: 'auto' }}>
             <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 2 }}>
@@ -765,7 +762,7 @@ const StaffSubmissionHistoryPage = () => {
           </Box>
         )}
       </Drawer>
-    </Box>
+    </>
   );
 };
 
