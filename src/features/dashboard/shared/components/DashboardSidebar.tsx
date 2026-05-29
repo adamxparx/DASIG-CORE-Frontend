@@ -16,6 +16,13 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { routes } from '../../../../routes';
@@ -94,6 +101,7 @@ function isItemSelected(pathname: string, item: SidebarItem): boolean {
 const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const showNotificationBadge = role === 'STAFF' || role === 'TBI_MANAGER';
   const { unreadCount } = useUnreadNotificationCount(showNotificationBadge);
 
@@ -106,6 +114,7 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
   }));
 
   const handleLogout = () => {
+    setLogoutDialogOpen(false);
     tokenStorage.clear();
     navigate(routes.auth, { replace: true });
   };
@@ -190,13 +199,72 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
       </List>
       <Divider />
       <List sx={{ p: 1.5 }}>
-        <ListItemButton sx={{ borderRadius: 2 }} onClick={handleLogout}>
+        <ListItemButton sx={{ borderRadius: 2 }} onClick={() => setLogoutDialogOpen(true)}>
           <ListItemIcon sx={{ minWidth: 38 }}>
             <LogoutOutlinedIcon />
           </ListItemIcon>
           <ListItemText primary="Logout" />
         </ListItemButton>
       </List>
+
+      <Dialog
+        open={logoutDialogOpen}
+        onClose={() => setLogoutDialogOpen(false)}
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 3.5,
+              p: 1.5,
+              boxShadow: '0px 8px 32px rgba(0, 0, 0, 0.08)',
+              maxWidth: 400,
+            },
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, fontSize: '1.25rem', pb: 1, color: '#1A1C1E' }}>
+          Confirm Logout
+        </DialogTitle>
+        <DialogContent sx={{ pb: 2 }}>
+          <DialogContentText sx={{ color: 'text.secondary', fontSize: '0.95rem' }}>
+            Are you sure you want to log out? You will need to sign back in to access your dashboard.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 2, pb: 1, gap: 1.5 }}>
+          <Button
+            onClick={() => setLogoutDialogOpen(false)}
+            sx={{
+              color: '#5F6368',
+              fontWeight: 600,
+              textTransform: 'none',
+              fontSize: '0.9rem',
+              '&:hover': { bgcolor: 'transparent', color: '#1A1C1E' },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleLogout}
+            variant="contained"
+            sx={{
+              bgcolor: '#D93025',
+              color: '#fff',
+              fontWeight: 600,
+              px: 3,
+              py: 0.75,
+              borderRadius: '24px',
+              textTransform: 'none',
+              fontSize: '0.9rem',
+              boxShadow: 'none',
+              '&:hover': {
+                bgcolor: '#B8251B',
+                boxShadow: 'none',
+              },
+            }}
+          >
+            Logout
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 };
