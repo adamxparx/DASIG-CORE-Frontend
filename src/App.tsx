@@ -7,6 +7,8 @@ import { tokenStorage } from './features/auth/utils/tokenStorage';
 import AdminDashboard from './features/dashboard/admin/pages/AdminDashboard';
 import StaffDashboard from './features/dashboard/staff/pages/StaffDashboard';
 import TbiManagerDashboard from './features/dashboard/tbi_manager/pages/TbiManagerDashboard';
+import StaffSubmitKpiPage from './features/kpisubmission/staff/pages/StaffSubmitKpiPage';
+import TbiManagerSubmitKpiPage from './features/kpisubmission/tbi_manager/pages/TbiManagerSubmitKpiPage';
 import OrganizationManagementPage from './features/organization/pages/OrganizationManagementPage';
 import UserManagementPage from './features/user/pages/UserManagementPage';
 import { routes } from './routes';
@@ -112,10 +114,26 @@ function App() {
           }
         />
         <Route
+          path={routes.staffSubmitKpi}
+          element={
+            <ProtectedRoute requiredRole="ROLE_STAFF">
+              <StaffSubmitKpiPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path={routes.tbiManagerDashboard}
           element={
             <ProtectedRoute requiredRole="ROLE_TBI_MANAGER">
               <TbiManagerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={routes.tbiManagerSubmitKpi}
+          element={
+            <ProtectedRoute requiredRole="ROLE_TBI_MANAGER">
+              <TbiManagerSubmitKpiPage />
             </ProtectedRoute>
           }
         />
