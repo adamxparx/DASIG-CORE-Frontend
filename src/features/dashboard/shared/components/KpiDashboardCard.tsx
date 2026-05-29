@@ -29,6 +29,9 @@ const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
+const formatMetricValue = (value: number) =>
+  value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 const getDaysLeftText = (date: string) => {
   const now = new Date();
   const deadline = new Date(date);
@@ -43,7 +46,9 @@ const getDaysLeftText = (date: string) => {
 };
 
 const KpiDashboardCard = ({ item, role, onEdit, onDelete, onViewHistory }: KpiDashboardCardProps) => {
-  const progressPercent = (item.submittedValue / item.targetValue) * 100;
+  const overallTargetValue = item.overallTargetValue ?? item.targetValue;
+  const periodTargetValue = item.periodTargetValue ?? item.targetValue;
+  const progressPercent = periodTargetValue > 0 ? (item.submittedValue / periodTargetValue) * 100 : 0;
 
   const handleCardClick = () => {
     onViewHistory?.(item);
@@ -100,14 +105,17 @@ const KpiDashboardCard = ({ item, role, onEdit, onDelete, onViewHistory }: KpiDa
               <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
                 <GpsFixedOutlinedIcon fontSize="small" sx={{ color: '#9AA0A6' }} />
                 <Typography variant="body1" sx={{ color: '#8A909C' }}>
-                  Target Value
+                  Overall Target
                 </Typography>
               </Stack>
               <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1.1, color: '#2E3238' }}>
-                {item.targetValue}
+                {formatMetricValue(overallTargetValue)}
               </Typography>
               <Typography variant="body1" sx={{ color: '#8A909C' }}>
                 {item.unit.charAt(0).toUpperCase() + item.unit.slice(1)}
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#8A909C', display: 'block', mt: 0.5 }}>
+                Period target: {formatMetricValue(periodTargetValue)} {item.unit}
               </Typography>
             </Paper>
 

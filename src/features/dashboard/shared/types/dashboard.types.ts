@@ -11,6 +11,9 @@ export interface DashboardKpiItem {
   name: string;
   description: string;
   targetValue: number;
+  overallTargetValue?: number;
+  periodTargetValue?: number;
+  // For dashboard cards, this is cumulative progress through the selected/current period.
   submittedValue: number;
   unit: string;
   deadline: string;
