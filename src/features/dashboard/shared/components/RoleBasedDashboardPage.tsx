@@ -168,7 +168,6 @@ const RoleBasedDashboardPage = ({
   return (
     <>
       <DashboardLayout
-        role={role}
         header={<DashboardHeader title={resolvedTitle} subtitle={subtitle} />}
         welcomeBanner={<WelcomeBanner message={resolvedWelcomeMessage} />}
         topActions={topActions}

@@ -16,7 +16,6 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useEffect, useRef, useState } from 'react';
 import type { ChangeEventHandler } from 'react';
-import DashboardSidebar from '../../../dashboard/shared/components/DashboardSidebar';
 import { kpiSubmissionService } from '../../api/kpiSubmissionService';
 import type {
   AssignableKpi,
@@ -135,11 +134,8 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F7F8FB' }}>
-      <DashboardSidebar role={role} />
-
-      <Box sx={{ flex: 1, p: { xs: 2, md: 4 } }}>
-        <Stack spacing={2} sx={{ maxWidth: 1080, width: '100%', mx: 'auto' }}>
+    <Box sx={{ minHeight: '100%', bgcolor: '#F7F8FB', p: { xs: 2, md: 4 } }}>
+      <Stack spacing={2} sx={{ maxWidth: 1080, width: '100%', mx: 'auto' }}>
           <Stack spacing={0.75}>
             <Chip
               label={role === 'STAFF' ? 'Staff' : 'TBI Manager'}
@@ -352,7 +348,6 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
             </Stack>
           </Paper>
         </Stack>
-      </Box>
     </Box>
   );
 };
