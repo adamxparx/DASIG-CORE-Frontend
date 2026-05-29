@@ -63,6 +63,7 @@ const roleMenus: Record<UserRole, SidebarItem[]> = {
 const staffPaths: Record<string, string> = {
   dashboard: routes.staffDashboard,
   submit: routes.staffSubmitKpi,
+  history: routes.staffSubmissionHistory,
 };
 
 const tbiPaths: Record<string, string> = {
