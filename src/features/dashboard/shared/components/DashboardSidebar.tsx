@@ -62,10 +62,12 @@ const roleMenus: Record<UserRole, SidebarItem[]> = {
 
 const staffPaths: Record<string, string> = {
   dashboard: routes.staffDashboard,
+  submit: routes.staffSubmitKpi,
 };
 
 const tbiPaths: Record<string, string> = {
   dashboard: routes.tbiManagerDashboard,
+  submit: routes.tbiManagerSubmitKpi,
 };
 
 function isItemSelected(pathname: string, item: SidebarItem): boolean {

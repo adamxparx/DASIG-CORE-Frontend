@@ -79,7 +79,10 @@ const KpiDashboardCard = ({ item, role, onEdit, onDelete }: KpiDashboardCardProp
                   Deadline
                 </Typography>
               </Stack>
-              <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1.1, color: '#2E3238' }}>
+              <Typography
+                variant="h4"
+                sx={{ fontWeight: 700, fontSize: '1.5rem', lineHeight: 1.15, color: '#2E3238' }}
+              >
                 {formatDate(item.deadline)}
               </Typography>
               <Typography variant="body1" sx={{ color: '#8A909C' }}>
@@ -92,25 +95,27 @@ const KpiDashboardCard = ({ item, role, onEdit, onDelete }: KpiDashboardCardProp
 
           <Divider />
 
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 1 }}
-          >
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} sx={{ alignItems: { xs: 'flex-start', md: 'center' }, gap: 1 }}>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flex: 1, minWidth: 0 }}>
               <CorporateFareOutlinedIcon fontSize="small" sx={{ color: '#9AA0A6' }} />
-              <Typography variant="h6" sx={{ fontSize: '1.05rem', color: '#6D727A', fontWeight: 500 }}>
+              <Typography
+                variant="h6"
+                sx={{ fontSize: '0.85rem', color: '#6D727A', fontWeight: 500, lineHeight: 1.25 }}
+              >
                 {item.organization}
               </Typography>
             </Stack>
 
-            {role === 'DASIG_ADMIN' ? (
-              <KpiAdminActions
-                onEdit={() => onEdit?.(item)}
-                onDelete={() => onDelete?.(item)}
-              />
-            ) : (
-              <SubmitProgressLink onClick={() => undefined} />
-            )}
+            <Box sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'center' }, minWidth: 200 }}>
+              {role === 'DASIG_ADMIN' ? (
+                <KpiAdminActions
+                  onEdit={() => onEdit?.(item)}
+                  onDelete={() => onDelete?.(item)}
+                />
+              ) : (
+                <SubmitProgressLink onClick={() => undefined} />
+              )}
+            </Box>
 
             <KpiStatusBadge status={item.status} />
           </Stack>
