@@ -196,48 +196,61 @@ export default function AlertCard({ alert, onClick }: AlertCardProps) {
       <Box
         sx={{
           display: 'flex',
-          gap: { xs: 3, sm: 6 },
+          gap: { xs: 3, sm: 5 },
           mt: 0.5,
           flexWrap: 'wrap',
           pl: { xs: 0, sm: 7.5 }, // align metrics row with the text above
         }}
       >
-        <Box sx={{ minWidth: 100 }}>
+        <Box sx={{ minWidth: 110 }}>
           <Typography
             variant="caption"
             color="text.secondary"
             sx={{ display: 'block', mb: 0.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}
           >
-            Current:
+            Contribution:
           </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '1.1rem' }}>
-            {formatValue(alert.submittedValue, alert.unit)}
+          <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '1.05rem' }}>
+            {formatValue(alert.periodContribution, alert.unit)}
           </Typography>
         </Box>
 
-        <Box sx={{ minWidth: 100 }}>
+        <Box sx={{ minWidth: 110 }}>
           <Typography
             variant="caption"
             color="text.secondary"
             sx={{ display: 'block', mb: 0.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}
           >
-            Target:
+            Cumulative:
           </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '1.1rem' }}>
-            {formatValue(alert.targetValue, alert.unit)}
+          <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '1.05rem' }}>
+            {formatValue(alert.cumulativeValue, alert.unit)}
           </Typography>
         </Box>
 
-        <Box sx={{ minWidth: 100 }}>
+        <Box sx={{ minWidth: 110 }}>
           <Typography
             variant="caption"
             color="text.secondary"
             sx={{ display: 'block', mb: 0.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}
           >
-            Threshold:
+            Scaled Target:
           </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '1.1rem' }}>
-            {formatValue(alert.threshold, alert.unit)}
+          <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '1.05rem' }}>
+            {formatValue(alert.scaledPeriodTarget, alert.unit)}
+          </Typography>
+        </Box>
+
+        <Box sx={{ minWidth: 110 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: 'block', mb: 0.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}
+          >
+            Achievement:
+          </Typography>
+          <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '1.05rem' }}>
+            {(alert.achievementRate ?? 0).toFixed(1)}%
           </Typography>
         </Box>
       </Box>

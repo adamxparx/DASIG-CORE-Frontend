@@ -184,16 +184,43 @@ export default function AlertDetailModal({ alert, open, onClose, onAcknowledge }
           >
             <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                Submitted Value:
+                Period Contribution:
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                {formatValue(alert.submittedValue, alert.unit)}
+                {formatValue(alert.periodContribution, alert.unit)}
+              </Typography>
+            </Stack>
+
+            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                Scaled Period Target:
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                {formatValue(alert.scaledPeriodTarget, alert.unit)}
+              </Typography>
+            </Stack>
+
+            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                Achievement Rate:
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                {(alert.achievementRate ?? 0).toFixed(1)}%
+              </Typography>
+            </Stack>
+
+            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                Cumulative to Date:
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                {formatValue(alert.cumulativeValue, alert.unit)}
               </Typography>
             </Stack>
             
             <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                Target Value:
+                Global KPI Target:
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary' }}>
                 {formatValue(alert.targetValue, alert.unit)}

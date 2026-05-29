@@ -8,7 +8,9 @@ export interface AlertDetailResponse {
   organizationId: number;
   organizationName: string;
   reportingPeriod: string;
-  submittedValue: number;
+  periodContribution: number;
+  cumulativeValue: number;
+  scaledPeriodTarget: number;
   submissionDate: string;
   achievementRate: number;
   performanceStatus: 'RED' | 'YELLOW' | 'GREEN';
