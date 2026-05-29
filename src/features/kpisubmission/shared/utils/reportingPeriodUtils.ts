@@ -160,3 +160,35 @@ export const sumPreviousPeriodValues = (
     })
     .reduce((total, submission) => total + submission.submittedValue, 0);
 };
+
+export const isFuturePeriod = (
+  frequency: ReportingFrequency,
+  reportingPeriod: string,
+  asOf: Date = new Date()
+): boolean => {
+  switch (frequency) {
+    case 'ONE_TIME':
+      return false;
+    case 'QUARTERLY': {
+      const match = reportingPeriod.match(/^Q([1-4])\s+(\d{4})$/);
+      if (!match) return false;
+      const quarter = Number(match[1]);
+      const year = Number(match[2]);
+      const currentQuarter = Math.floor(asOf.getMonth() / 3) + 1;
+      return year > asOf.getFullYear() || (year === asOf.getFullYear() && quarter > currentQuarter);
+    }
+    case 'ANNUAL': {
+      const year = Number(reportingPeriod);
+      return Number.isFinite(year) && year > asOf.getFullYear();
+    }
+    case 'MONTHLY': {
+      const [monthName, rawYear] = reportingPeriod.split(' ');
+      const monthIndex = MONTH_NAMES.indexOf(monthName);
+      const year = Number(rawYear);
+      if (monthIndex < 0 || !Number.isFinite(year)) return false;
+      return year > asOf.getFullYear() || (year === asOf.getFullYear() && monthIndex > asOf.getMonth());
+    }
+    default:
+      return false;
+  }
+};
