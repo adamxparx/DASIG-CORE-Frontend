@@ -12,6 +12,7 @@ import TbiManagerSubmitKpiPage from './features/kpisubmission/tbi_manager/pages/
 import OrganizationManagementPage from './features/organization/pages/OrganizationManagementPage';
 import UserManagementPage from './features/user/pages/UserManagementPage';
 import AdminAlertsPage from './features/alerts/pages/AdminAlertsPage';
+import ReportGenerationPage from './features/report/pages/ReportGenerationPage';
 import { routes } from './routes';
 
 function LandingRoute() {
@@ -47,6 +48,7 @@ function App() {
           <Route path="organizations" element={<OrganizationManagementPage />} />
           <Route path="users" element={<UserManagementPage />} />
           <Route path="alerts" element={<AdminAlertsPage />} />
+          <Route path="reports" element={<ReportGenerationPage />} />
         </Route>
 
         <Route
