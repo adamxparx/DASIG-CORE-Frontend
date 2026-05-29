@@ -15,6 +15,7 @@ import DashboardLayout from './DashboardLayout';
 import KpiDashboardCard from './KpiDashboardCard';
 import KpiFilterBar from './KpiFilterBar';
 import KpiGrid from './KpiGrid';
+import KpiPeriodHistoryDrawer from './KpiPeriodHistoryDrawer';
 import WelcomeBanner from './WelcomeBanner';
 
 interface RoleBasedDashboardPageProps {
@@ -45,6 +46,10 @@ const RoleBasedDashboardPage = ({
   // Delete Dialog States
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedKpiForDelete, setSelectedKpiForDelete] = useState<DashboardKpiItem | null>(null);
+
+  // Period history drawer
+  const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
+  const [selectedKpiForHistory, setSelectedKpiForHistory] = useState<DashboardKpiItem | null>(null);
 
   // Toast notification state
   const [toastOpen, setToastOpen] = useState(false);
@@ -88,6 +93,11 @@ const RoleBasedDashboardPage = ({
   const handleDeleteClick = (item: DashboardKpiItem) => {
     setSelectedKpiForDelete(item);
     setDeleteDialogOpen(true);
+  };
+
+  const handleViewHistoryClick = (item: DashboardKpiItem) => {
+    setSelectedKpiForHistory(item);
+    setHistoryDrawerOpen(true);
   };
 
   const showToast = (message: string, severity: 'success' | 'error') => {
@@ -196,6 +206,7 @@ const RoleBasedDashboardPage = ({
                 role={role}
                 onEdit={handleEditClick}
                 onDelete={handleDeleteClick}
+                onViewHistory={handleViewHistoryClick}
               />
             )}
           />
@@ -217,6 +228,16 @@ const RoleBasedDashboardPage = ({
         onSubmitSuccess={handleDeleteSuccess}
         kpiId={selectedKpiForDelete?.id ?? null}
         kpiName={selectedKpiForDelete?.name ?? ''}
+      />
+
+      <KpiPeriodHistoryDrawer
+        open={historyDrawerOpen}
+        kpi={selectedKpiForHistory}
+        role={role}
+        onClose={() => {
+          setHistoryDrawerOpen(false);
+          setSelectedKpiForHistory(null);
+        }}
       />
 
       {/* Snackbar Feedback */}

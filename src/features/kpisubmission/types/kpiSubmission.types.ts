@@ -8,6 +8,7 @@ export interface AssignableKpi {
   threshold: number;
   organizationId: number;
   organizationName: string;
+  reportingFrequency: 'ONE_TIME' | 'QUARTERLY' | 'ANNUAL' | 'MONTHLY';
 }
 
 export interface CreateKpiSubmissionRequest {

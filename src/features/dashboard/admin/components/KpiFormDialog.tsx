@@ -17,7 +17,8 @@ import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 import { kpiService } from '../../shared/api/kpiService';
 import type { DashboardKpiItem } from '../../shared/types/dashboard.types';
-import type { CreateKpiDefinitionRequest, Organization, UpdateKpiDefinitionRequest } from '../../shared/types/kpi.types';
+import type { CreateKpiDefinitionRequest, Organization, ReportingFrequency, UpdateKpiDefinitionRequest } from '../../shared/types/kpi.types';
+import { REPORTING_FREQUENCY_OPTIONS } from '../../../kpisubmission/shared/utils/reportingPeriodUtils';
 
 interface KpiFormDialogProps {
   open: boolean;
@@ -37,6 +38,7 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
   const [deadline, setDeadline] = useState('');
   const [threshold, setThreshold] = useState('80');
   const [organizationId, setOrganizationId] = useState<number | ''>('');
+  const [reportingFrequency, setReportingFrequency] = useState<ReportingFrequency>('QUARTERLY');
 
   // UI/API States
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -71,6 +73,7 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
     setDeadline('');
     setThreshold('80');
     setOrganizationId('');
+    setReportingFrequency('QUARTERLY');
   };
 
   const populateForEdit = (currentKpi: DashboardKpiItem, orgs: Organization[]) => {
@@ -80,8 +83,12 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
     setUnit(currentKpi.unit);
     setDeadline(formatDateForInput(currentKpi.deadline));
 
-    const itemWithThreshold = currentKpi as DashboardKpiItem & { threshold?: number };
+    const itemWithThreshold = currentKpi as DashboardKpiItem & {
+      threshold?: number;
+      reportingFrequency?: ReportingFrequency;
+    };
     setThreshold(String(itemWithThreshold.threshold ?? 80));
+    setReportingFrequency(itemWithThreshold.reportingFrequency ?? 'QUARTERLY');
 
     if (orgs.length > 0) {
       const matchedOrg = orgs.find(
@@ -177,6 +184,7 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
       deadline,
       threshold: Number(threshold),
       organizationId: organizationId as number,
+      reportingFrequency,
     };
 
     try {
@@ -386,6 +394,31 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
                   },
                 }}
               />
+            </Grid>
+
+            {/* Reporting Frequency */}
+            <Grid size={{ xs: 12 }}>
+              <Box sx={{ mb: 0.5 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#3C4043', mb: 1 }}>
+                  Reporting Frequency <span style={{ color: '#D93025' }}>*</span>
+                </Typography>
+              </Box>
+              <FormControl fullWidth disabled={isSubmitting}>
+                <Select
+                  value={reportingFrequency}
+                  onChange={(e) => setReportingFrequency(e.target.value as ReportingFrequency)}
+                  sx={{
+                    borderRadius: 2.5,
+                    bgcolor: '#FBFBFD',
+                  }}
+                >
+                  {REPORTING_FREQUENCY_OPTIONS.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
 
             {/* Assigned Organization */}

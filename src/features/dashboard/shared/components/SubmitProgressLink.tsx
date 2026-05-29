@@ -2,9 +2,10 @@ import Button from '@mui/material/Button';
 
 interface SubmitProgressLinkProps {
   onClick: () => void;
+  label?: string;
 }
 
-const SubmitProgressLink = ({ onClick }: SubmitProgressLinkProps) => {
+const SubmitProgressLink = ({ onClick, label = '[ Submit Progress Value ]' }: SubmitProgressLinkProps) => {
   return (
     <Button
       variant="text"
@@ -18,7 +19,7 @@ const SubmitProgressLink = ({ onClick }: SubmitProgressLinkProps) => {
         px: 0.75,
       }}
     >
-      [ Submit Progress Value ]
+      {label}
     </Button>
   );
 };

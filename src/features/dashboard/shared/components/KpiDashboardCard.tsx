@@ -1,6 +1,8 @@
+import ChevronRightOutlinedIcon from '@mui/icons-material/ChevronRightOutlined';
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import CorporateFareOutlinedIcon from '@mui/icons-material/CorporateFareOutlined';
 import GpsFixedOutlinedIcon from '@mui/icons-material/GpsFixedOutlined';
+import Chip from '@mui/material/Chip';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -8,6 +10,7 @@ import Divider from '@mui/material/Divider';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import type { MouseEvent } from 'react';
 import KpiAdminActions from '../../admin/components/KpiAdminActions';
 import type { DashboardKpiItem, UserRole } from '../types/dashboard.types';
 import KpiProgressBar from './KpiProgressBar';
@@ -19,6 +22,7 @@ interface KpiDashboardCardProps {
   role: UserRole;
   onEdit?: (item: DashboardKpiItem) => void;
   onDelete?: (item: DashboardKpiItem) => void;
+  onViewHistory?: (item: DashboardKpiItem) => void;
 }
 
 const formatDate = (date: string) => {
@@ -38,22 +42,57 @@ const getDaysLeftText = (date: string) => {
   return `${diffInDays} days left`;
 };
 
-const KpiDashboardCard = ({ item, role, onEdit, onDelete }: KpiDashboardCardProps) => {
+const KpiDashboardCard = ({ item, role, onEdit, onDelete, onViewHistory }: KpiDashboardCardProps) => {
   const progressPercent = (item.submittedValue / item.targetValue) * 100;
 
+  const handleCardClick = () => {
+    onViewHistory?.(item);
+  };
+
+  const handleActionClick = (event: MouseEvent) => {
+    event.stopPropagation();
+  };
+
   return (
-    <Card elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: 4, bgcolor: '#fff' }}>
+    <Card
+      elevation={0}
+      onClick={handleCardClick}
+      sx={{
+        border: 1,
+        borderColor: 'divider',
+        borderRadius: 4,
+        bgcolor: '#fff',
+        cursor: onViewHistory ? 'pointer' : 'default',
+        transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+        '&:hover': onViewHistory
+          ? {
+              boxShadow: '0 8px 24px rgba(31, 35, 41, 0.08)',
+              transform: 'translateY(-2px)',
+            }
+          : undefined,
+      }}
+    >
       <CardContent sx={{ p: 3 }}>
         <Stack spacing={2}>
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 1.5 }}>
-            <Box>
+            <Box sx={{ flex: 1 }}>
               <Typography variant="h5" sx={{ fontWeight: 700, color: '#2E3238' }}>
                 {item.name}
               </Typography>
               <Typography variant="body1" sx={{ color: '#7D8592' }}>
                 {item.description}
               </Typography>
+              {item.reportingPeriod && (
+                <Chip
+                  label={`Current period: ${item.reportingPeriod}`}
+                  size="small"
+                  sx={{ mt: 1, bgcolor: '#EEF2FF', color: '#4F46E5', fontWeight: 600 }}
+                />
+              )}
             </Box>
+            {onViewHistory && (
+              <ChevronRightOutlinedIcon sx={{ color: '#9AA0A6', mt: 0.5 }} />
+            )}
           </Stack>
 
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
@@ -106,14 +145,14 @@ const KpiDashboardCard = ({ item, role, onEdit, onDelete }: KpiDashboardCardProp
               </Typography>
             </Stack>
 
-            <Box sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'center' }, minWidth: 200 }}>
+            <Box sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'center' }, minWidth: 200 }} onClick={handleActionClick}>
               {role === 'DASIG_ADMIN' ? (
                 <KpiAdminActions
                   onEdit={() => onEdit?.(item)}
                   onDelete={() => onDelete?.(item)}
                 />
               ) : (
-                <SubmitProgressLink onClick={() => undefined} />
+                <SubmitProgressLink onClick={() => onViewHistory?.(item)} label="View period history" />
               )}
             </Box>
 
