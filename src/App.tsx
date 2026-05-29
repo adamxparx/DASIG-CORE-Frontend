@@ -9,6 +9,7 @@ import StaffDashboard from './features/dashboard/staff/pages/StaffDashboard';
 import TbiManagerDashboard from './features/dashboard/tbi_manager/pages/TbiManagerDashboard';
 import StaffSubmissionHistoryPage from './features/kpisubmission/staff/pages/StaffSubmissionHistoryPage';
 import StaffSubmitKpiPage from './features/kpisubmission/staff/pages/StaffSubmitKpiPage';
+import TbiManagerSubmissionHistoryPage from './features/kpisubmission/tbi_manager/pages/TbiManagerSubmissionHistoryPage';
 import TbiManagerSubmitKpiPage from './features/kpisubmission/tbi_manager/pages/TbiManagerSubmitKpiPage';
 import OrganizationManagementPage from './features/organization/pages/OrganizationManagementPage';
 import UserManagementPage from './features/user/pages/UserManagementPage';
@@ -143,6 +144,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="ROLE_TBI_MANAGER">
               <TbiManagerSubmitKpiPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={routes.tbiManagerSubmissionHistory}
+          element={
+            <ProtectedRoute requiredRole="ROLE_TBI_MANAGER">
+              <TbiManagerSubmissionHistoryPage />
             </ProtectedRoute>
           }
         />

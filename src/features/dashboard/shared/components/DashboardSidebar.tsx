@@ -69,6 +69,7 @@ const staffPaths: Record<string, string> = {
 const tbiPaths: Record<string, string> = {
   dashboard: routes.tbiManagerDashboard,
   submit: routes.tbiManagerSubmitKpi,
+  history: routes.tbiManagerSubmissionHistory,
 };
 
 function isItemSelected(pathname: string, item: SidebarItem): boolean {

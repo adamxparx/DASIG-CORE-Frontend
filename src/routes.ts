@@ -8,4 +8,5 @@ export const routes = {
   staffSubmissionHistory: '/dashboard/staff/submission-history',
   tbiManagerDashboard: '/dashboard/tbi_manager',
   tbiManagerSubmitKpi: '/dashboard/tbi_manager/submit-kpi',
+  tbiManagerSubmissionHistory: '/dashboard/tbi_manager/submission-history',
 } as const;
