@@ -29,6 +29,8 @@ export interface KpiSubmissionResponse {
   id: number;
   kpiDefinitionId: number;
   kpiName: string;
+  submittedByName?: string;
+  submittedByRole?: string;
   reportingPeriod: string;
   submittedValue: number;
   submissionDate: string;
