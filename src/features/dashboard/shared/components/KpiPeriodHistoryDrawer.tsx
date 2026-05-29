@@ -43,6 +43,9 @@ const formatSubmissionType = (type: 'INTERNAL' | 'FINAL', role: UserRole) => {
 const formatDate = (rawDate: string) =>
   new Date(rawDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 
+const formatMetricValue = (value: number) =>
+  value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDrawerProps) => {
   const [history, setHistory] = useState<KpiPeriodHistoryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -120,7 +123,7 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDr
           {!isLoading && !error && history && (
             <Stack spacing={2.5}>
               <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
-                <Chip label={`Target: ${history.targetValue} ${history.unit}`} size="small" />
+                <Chip label={`Total target: ${formatMetricValue(history.targetValue)} ${history.unit}`} size="small" />
                 <Chip label={`Deadline: ${formatDate(history.deadline)}`} size="small" />
                 {history.currentPeriod && (
                   <Chip label={`Current: ${history.currentPeriod}`} size="small" color="primary" variant="outlined" />
@@ -140,7 +143,7 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDr
                   <TableRow>
                     <TableCell>Period</TableCell>
                     {role === 'TBI_MANAGER' && <TableCell>Type</TableCell>}
-                    <TableCell align="right">Submitted</TableCell>
+                    <TableCell align="right">Period Value</TableCell>
                     <TableCell align="right">Achievement</TableCell>
                     <TableCell>Status</TableCell>
                   </TableRow>
