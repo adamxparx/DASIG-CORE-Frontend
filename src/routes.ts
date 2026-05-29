@@ -4,6 +4,7 @@ export const routes = {
   adminOrganizations: '/dashboard/admin/organizations',
   adminUsers: '/dashboard/admin/users',
   adminAlerts: '/dashboard/admin/alerts',
+  adminReports: '/dashboard/admin/reports',
   staffDashboard: '/dashboard/staff',
   staffSubmitKpi: '/dashboard/staff/submit-kpi',
   staffSubmissionHistory: '/dashboard/staff/submission-history',
