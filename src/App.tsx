@@ -9,6 +9,8 @@ import StaffSubmissionHistoryPage from './features/kpisubmission/staff/pages/Sta
 import StaffSubmitKpiPage from './features/kpisubmission/staff/pages/StaffSubmitKpiPage';
 import TbiManagerSubmissionHistoryPage from './features/kpisubmission/tbi_manager/pages/TbiManagerSubmissionHistoryPage';
 import TbiManagerSubmitKpiPage from './features/kpisubmission/tbi_manager/pages/TbiManagerSubmitKpiPage';
+import StaffNotificationsPage from './features/notification/staff/pages/StaffNotificationsPage';
+import TbiManagerNotificationsPage from './features/notification/tbi_manager/pages/TbiManagerNotificationsPage';
 import OrganizationManagementPage from './features/organization/pages/OrganizationManagementPage';
 import UserManagementPage from './features/user/pages/UserManagementPage';
 import AdminAlertsPage from './features/alerts/pages/AdminAlertsPage';
@@ -56,6 +58,7 @@ function App() {
           element={<ProtectedDashboardLayout requiredRole="ROLE_STAFF" dashboardRole="STAFF" />}
         >
           <Route index element={<StaffDashboard />} />
+          <Route path="notifications" element={<StaffNotificationsPage />} />
           <Route path="submit-kpi" element={<StaffSubmitKpiPage />} />
           <Route path="submission-history" element={<StaffSubmissionHistoryPage />} />
         </Route>
@@ -65,6 +68,7 @@ function App() {
           element={<ProtectedDashboardLayout requiredRole="ROLE_TBI_MANAGER" dashboardRole="TBI_MANAGER" />}
         >
           <Route index element={<TbiManagerDashboard />} />
+          <Route path="notifications" element={<TbiManagerNotificationsPage />} />
           <Route path="submit-kpi" element={<TbiManagerSubmitKpiPage />} />
           <Route path="submission-history" element={<TbiManagerSubmissionHistoryPage />} />
         </Route>

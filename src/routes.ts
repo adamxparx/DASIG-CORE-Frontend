@@ -6,9 +6,11 @@ export const routes = {
   adminAlerts: '/dashboard/admin/alerts',
   adminReports: '/dashboard/admin/reports',
   staffDashboard: '/dashboard/staff',
+  staffNotifications: '/dashboard/staff/notifications',
   staffSubmitKpi: '/dashboard/staff/submit-kpi',
   staffSubmissionHistory: '/dashboard/staff/submission-history',
   tbiManagerDashboard: '/dashboard/tbi_manager',
+  tbiManagerNotifications: '/dashboard/tbi_manager/notifications',
   tbiManagerSubmitKpi: '/dashboard/tbi_manager/submit-kpi',
   tbiManagerSubmissionHistory: '/dashboard/tbi_manager/submission-history',
 } as const;

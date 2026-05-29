@@ -18,12 +18,19 @@ import { useEffect, useState } from 'react';
 import { kpiService } from '../../shared/api/kpiService';
 import type { DashboardKpiItem } from '../../shared/types/dashboard.types';
 import type { CreateKpiDefinitionRequest, Organization, ReportingFrequency, UpdateKpiDefinitionRequest } from '../../shared/types/kpi.types';
+import { getDeadlineFieldHelperText } from '../../../notification/utils/notificationDisplay';
 import { REPORTING_FREQUENCY_OPTIONS } from '../../../kpisubmission/shared/utils/reportingPeriodUtils';
+
+export interface KpiSubmitSuccessContext {
+  deadline: string;
+  isEdit: boolean;
+  organizationName: string;
+}
 
 interface KpiFormDialogProps {
   open: boolean;
   onClose: () => void;
-  onSubmitSuccess: () => void;
+  onSubmitSuccess: (context: KpiSubmitSuccessContext) => void;
   kpi?: DashboardKpiItem | null; // If provided, we are in Edit mode
 }
 
@@ -54,10 +61,17 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
       return '';
     }
 
+    if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+      return rawDate;
+    }
+
     try {
       const dateObj = new Date(rawDate);
-      if (!isNaN(dateObj.getTime())) {
-        return dateObj.toISOString().split('T')[0];
+      if (!Number.isNaN(dateObj.getTime())) {
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
       }
       return rawDate;
     } catch {
@@ -193,7 +207,9 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
       } else {
         await kpiService.createKpiDefinition(payload as CreateKpiDefinitionRequest);
       }
-      onSubmitSuccess();
+      const orgName =
+        organizations.find((org) => org.id === organizationId)?.name ?? 'the assigned organization';
+      onSubmitSuccess({ deadline, isEdit, organizationName: orgName });
       onClose();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'An error occurred. Please try again.';
@@ -359,7 +375,7 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
                 error={!!errors.deadline}
-                helperText={errors.deadline}
+                helperText={errors.deadline ?? getDeadlineFieldHelperText(deadline)}
                 disabled={isSubmitting}
                 hiddenLabel
                 sx={{

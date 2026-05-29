@@ -17,6 +17,8 @@ import KpiFilterBar from './KpiFilterBar';
 import KpiGrid from './KpiGrid';
 import KpiPeriodHistoryDrawer from './KpiPeriodHistoryDrawer';
 import WelcomeBanner from './WelcomeBanner';
+import { getDeadlineAlertLeadDays } from '../../../notification/utils/notificationDisplay';
+import type { KpiSubmitSuccessContext } from '../../admin/components/KpiFormDialog';
 
 interface RoleBasedDashboardPageProps {
   role: UserRole;
@@ -106,9 +108,23 @@ const RoleBasedDashboardPage = ({
     setToastOpen(true);
   };
 
-  const handleCreateOrUpdateSuccess = () => {
+  const handleCreateOrUpdateSuccess = ({
+    deadline,
+    isEdit,
+    organizationName,
+  }: KpiSubmitSuccessContext) => {
     void loadDashboard(true);
-    showToast(selectedKpiForEdit ? 'KPI updated successfully.' : 'KPI created successfully.', 'success');
+
+    const baseMessage = isEdit ? 'KPI updated successfully.' : 'KPI created successfully.';
+    const leadDays = getDeadlineAlertLeadDays(deadline);
+    const alertMessage =
+      leadDays === 7
+        ? `${baseMessage} A 7-day alert was created for "${organizationName}". Staff/TBI on that organization can view it under Notifications.`
+        : leadDays === 2
+          ? `${baseMessage} A 2-day alert was created for "${organizationName}". Staff/TBI on that organization can view it under Notifications.`
+          : baseMessage;
+
+    showToast(alertMessage, 'success');
   };
 
   const handleDeleteSuccess = () => {
