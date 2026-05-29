@@ -14,6 +14,10 @@ export const kpiSubmissionService = {
     return apiClient<AssignableKpi[]>(ASSIGNABLE_ENDPOINT);
   },
 
+  getSubmissions(): Promise<KpiSubmissionResponse[]> {
+    return apiClient<KpiSubmissionResponse[]>(SUBMISSION_ENDPOINT);
+  },
+
   async createSubmission(
     request: CreateKpiSubmissionRequest,
     files: File[],
