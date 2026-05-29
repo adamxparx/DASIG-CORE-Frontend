@@ -4,34 +4,6 @@ export function isUnreadNotification(status: string): boolean {
   return status.toUpperCase() === 'UNREAD';
 }
 
-/** Calendar date only (YYYY-MM-DD), local timezone — avoids UTC shift from toISOString(). */
-export function formatCalendarDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-export function addCalendarDays(base: Date, days: number): Date {
-  const copy = new Date(base);
-  copy.setHours(12, 0, 0, 0);
-  copy.setDate(copy.getDate() + days);
-  return copy;
-}
-
-/** Dates that match backend ChronoUnit day diff (app.business-timezone, default Asia/Manila). */
-export function getDeadlineAlertTestDates(referenceDate = new Date()): {
-  sevenDayDeadline: string;
-  twoDayDeadline: string;
-} {
-  const today = new Date(referenceDate);
-  today.setHours(12, 0, 0, 0);
-  return {
-    sevenDayDeadline: formatCalendarDate(addCalendarDays(today, 7)),
-    twoDayDeadline: formatCalendarDate(addCalendarDays(today, 2)),
-  };
-}
-
 /** Whole calendar days from reference date to deadline (matches backend LocalDate day diff). */
 export function getCalendarDaysUntilDeadline(
   deadline: string,
@@ -74,20 +46,15 @@ export function getDeadlineAlertLeadDays(deadline: string): 7 | 2 | null {
   return null;
 }
 
-export function getDeadlineFieldHelperText(deadline: string): string {
-  const { sevenDayDeadline, twoDayDeadline } = getDeadlineAlertTestDates();
-  const leadDays = deadline ? getDeadlineAlertLeadDays(deadline) : null;
-
+export function getDeadlineFieldHelperText(deadline: string): string | undefined {
+  const leadDays = getDeadlineAlertLeadDays(deadline);
   if (leadDays === 7) {
     return 'Staff/TBI will get a 7-day deadline alert when you save.';
   }
   if (leadDays === 2) {
     return 'Staff/TBI will get a 2-day deadline alert when you save.';
   }
-  if (deadline) {
-    return `No alert for this date. For testing, use ${sevenDayDeadline} (7-day) or ${twoDayDeadline} (2-day).`;
-  }
-  return `Alerts only on exact dates: ${sevenDayDeadline} (7-day) or ${twoDayDeadline} (2-day). KPI creation time does not matter.`;
+  return undefined;
 }
 
 export function sortNotifications<T extends { status: string; createdAt: string }>(items: T[]): T[] {

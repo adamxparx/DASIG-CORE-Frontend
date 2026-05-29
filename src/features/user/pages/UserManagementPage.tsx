@@ -73,7 +73,6 @@ const UserManagementPage = () => {
   const handleCreated = () => {
     setSelectedUser(null);
     void loadPageData(true);
-    showToast('User account created successfully.');
   };
 
   const handleSelect = async (user: UserListItem) => {

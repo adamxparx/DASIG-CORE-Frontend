@@ -25,20 +25,5 @@ export function useUnreadNotificationCount(enabled: boolean) {
     void refresh();
   }, [refresh, pathname]);
 
-  useEffect(() => {
-    if (!enabled) {
-      return undefined;
-    }
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        void refresh();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [enabled, refresh]);
-
-  return { unreadCount, refresh };
+  return { unreadCount };
 }

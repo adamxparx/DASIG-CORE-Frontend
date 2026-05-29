@@ -14,12 +14,9 @@ import DashboardHeader from '../../dashboard/shared/components/DashboardHeader';
 import { notificationService } from '../api/notificationService';
 import NotificationsList from '../components/NotificationsList';
 import type { NotificationResponse } from '../types/notification.types';
-import NotificationTroubleshooting from '../components/NotificationTroubleshooting';
-import { getSession } from '../../auth/utils/session';
 import { isUnreadNotification, sortNotifications } from '../utils/notificationDisplay';
 
 const NotificationsPage = () => {
-  const signedInEmail = getSession()?.payload.sub;
   const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -51,17 +48,6 @@ const NotificationsPage = () => {
 
   useEffect(() => {
     void loadNotifications();
-  }, [loadNotifications]);
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        void loadNotifications(true);
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [loadNotifications]);
 
   const sortedNotifications = useMemo(
@@ -143,10 +129,6 @@ const NotificationsPage = () => {
       <Divider />
 
       {error && <Alert severity="error">{error}</Alert>}
-
-      {!isLoading && !error && notifications.length === 0 && (
-        <NotificationTroubleshooting signedInEmail={signedInEmail} />
-      )}
 
       <NotificationsList
         notifications={sortedNotifications}

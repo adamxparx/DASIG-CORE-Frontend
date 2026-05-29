@@ -119,9 +119,9 @@ const RoleBasedDashboardPage = ({
     const leadDays = getDeadlineAlertLeadDays(deadline);
     const alertMessage =
       leadDays === 7
-        ? `${baseMessage} A 7-day alert was created for "${organizationName}". Staff/TBI on that organization can view it under Notifications.`
+        ? `${baseMessage} 7-day deadline alert sent to ${organizationName}.`
         : leadDays === 2
-          ? `${baseMessage} A 2-day alert was created for "${organizationName}". Staff/TBI on that organization can view it under Notifications.`
+          ? `${baseMessage} 2-day deadline alert sent to ${organizationName}.`
           : baseMessage;
 
     showToast(alertMessage, 'success');
