@@ -98,12 +98,21 @@ function isItemSelected(pathname: string, item: SidebarItem): boolean {
   return pathname === item.path || pathname.startsWith(`${item.path}/`);
 }
 
+// Role-specific sidebar background colours (using existing theme colours)
+const roleAccent: Record<UserRole, { main: string; dark: string; label: string }> = {
+  DASIG_ADMIN: { main: '#426ef0', dark: '#2f55c7', label: 'Admin' },
+  TBI_MANAGER: { main: '#7C3AED', dark: '#5b28b0', label: 'TBI Manager' },
+  STAFF: { main: '#059669', dark: '#047350', label: 'Staff' },
+};
+
 const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const showNotificationBadge = role === 'STAFF' || role === 'TBI_MANAGER';
   const { unreadCount } = useUnreadNotificationCount(showNotificationBadge);
+
+  const accent = roleAccent[role];
 
   const pathByKey =
     role === 'DASIG_ADMIN' ? adminPaths : role === 'STAFF' ? staffPaths : tbiPaths;
@@ -132,37 +141,89 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
       sx={{
         width: '100%',
         height: '100%',
-        borderRight: 1,
-        borderColor: 'divider',
         borderRadius: 0,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
+        bgcolor: accent.main,
+        border: 'none',
       }}
     >
-      <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+      {/* ── Header ── */}
+      <Box
+        sx={{
+          p: 3,
+          pb: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 0.75,
+          borderBottom: '1px solid rgba(255,255,255,0.15)',
+        }}
+      >
+        {/* Logo + title row */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
           <Box
-            component="img"
-            src={logo}
-            alt="DASIG Logo"
             sx={{
-              width: 32,
-              height: 32,
-              objectFit: 'contain',
-              borderRadius: 1,
+              width: 44,
+              height: 44,
+              borderRadius: 2,
+              bgcolor: '#ffffff',
+              border: '2.5px solid rgba(255,255,255,0.95)',
+              boxShadow: '0 0 0 4px rgba(255,255,255,0.25), 0 4px 16px rgba(0,0,0,0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
             }}
-          />
-          <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '0.25px' }}>
+          >
+            <Box
+              component="img"
+              src={logo}
+              alt="DASIG Logo"
+              sx={{
+                width: 34,
+                height: 34,
+                objectFit: 'contain',
+                borderRadius: 1,
+              }}
+            />
+          </Box>
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 800, letterSpacing: '0.25px', color: '#fff' }}
+          >
             DASIG-CORE
           </Typography>
         </Box>
-        <Typography variant="body2" color="text.secondary" sx={{ pl: 0.25, fontSize: '0.8rem' }}>
-          Consortium KPI Platform
-        </Typography>
+
+        {/* Subtitle + role label */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pl: 0.25 }}>
+          <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>
+            Consortium KPI Platform
+          </Typography>
+          <Box
+            sx={{
+              display: 'inline-flex',
+              alignSelf: 'flex-start',
+              px: 0.9,
+              py: 0.15,
+              borderRadius: 0.75,
+              bgcolor: 'rgba(255,255,255,0.2)',
+              color: '#fff',
+              fontSize: '0.65rem',
+              fontWeight: 700,
+              letterSpacing: '0.6px',
+              textTransform: 'uppercase',
+              lineHeight: 1.7,
+            }}
+          >
+            {accent.label}
+          </Box>
+        </Box>
       </Box>
-      <Divider />
-      <List sx={{ px: 1.5, py: 1, flexGrow: 1, overflowY: 'auto' }}>
+
+      {/* ── Nav items ── */}
+      <List sx={{ px: 1.5, py: 1.5, flexGrow: 1, overflowY: 'auto' }}>
         {menuItems.map((item) => (
           <ListItemButton
             key={item.key}
@@ -171,11 +232,21 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
             sx={{
               borderRadius: 2,
               mb: 0.5,
+              color: 'rgba(255,255,255,0.85)',
+              '& .MuiListItemIcon-root': { color: 'rgba(255,255,255,0.75)' },
+              '&:hover': {
+                bgcolor: 'rgba(255,255,255,0.12)',
+                color: '#fff',
+                '& .MuiListItemIcon-root': { color: '#fff' },
+              },
               '&.Mui-selected': {
-                bgcolor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': { bgcolor: 'primary.dark' },
-                '& .MuiListItemIcon-root': { color: 'primary.contrastText' },
+                bgcolor: 'rgba(255,255,255,0.22)',
+                color: '#fff',
+                fontWeight: 700,
+                '& .MuiListItemIcon-root': { color: '#fff' },
+                '&:hover': {
+                  bgcolor: 'rgba(255,255,255,0.28)',
+                },
               },
             }}
           >
@@ -197,9 +268,23 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
           </ListItemButton>
         ))}
       </List>
-      <Divider />
+
+      {/* ── Logout ── */}
+      <Divider sx={{ borderColor: 'rgba(255,255,255,0.15)' }} />
       <List sx={{ p: 1.5 }}>
-        <ListItemButton sx={{ borderRadius: 2 }} onClick={() => setLogoutDialogOpen(true)}>
+        <ListItemButton
+          sx={{
+            borderRadius: 2,
+            color: 'rgba(255,255,255,0.8)',
+            '& .MuiListItemIcon-root': { color: 'rgba(255,255,255,0.7)' },
+            '&:hover': {
+              bgcolor: 'rgba(255,255,255,0.12)',
+              color: '#fff',
+              '& .MuiListItemIcon-root': { color: '#fff' },
+            },
+          }}
+          onClick={() => setLogoutDialogOpen(true)}
+        >
           <ListItemIcon sx={{ minWidth: 38 }}>
             <LogoutOutlinedIcon />
           </ListItemIcon>
@@ -207,6 +292,7 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
         </ListItemButton>
       </List>
 
+      {/* ── Logout dialog ── */}
       <Dialog
         open={logoutDialogOpen}
         onClose={() => setLogoutDialogOpen(false)}
@@ -255,10 +341,7 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
               textTransform: 'none',
               fontSize: '0.9rem',
               boxShadow: 'none',
-              '&:hover': {
-                bgcolor: '#B8251B',
-                boxShadow: 'none',
-              },
+              '&:hover': { bgcolor: '#B8251B', boxShadow: 'none' },
             }}
           >
             Logout
@@ -270,3 +353,4 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
 };
 
 export default DashboardSidebar;
+
