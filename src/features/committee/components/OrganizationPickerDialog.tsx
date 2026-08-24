@@ -10,7 +10,6 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import InputAdornment from '@mui/material/InputAdornment';
-import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
@@ -66,10 +65,12 @@ const OrganizationPickerDialog = ({
       onClose={handleClose}
       fullWidth
       maxWidth="sm"
-      TransitionProps={{ onEnter: handleOpen }}
       slotProps={{
         paper: {
           sx: { borderRadius: 3 },
+        },
+        transition: {
+          onEnter: handleOpen,
         },
       }}
     >
@@ -130,10 +131,10 @@ const OrganizationPickerDialog = ({
                     />
                   }
                   label={
-                    <Stack direction="row" alignItems="center" spacing={1}>
+                    <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1 }}>
                       <BusinessOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
                       <Typography variant="body2">{org.name}</Typography>
-                    </Stack>
+                    </Box>
                   }
                   sx={{ width: '100%', m: 0, py: 0.75 }}
                 />
@@ -143,7 +144,7 @@ const OrganizationPickerDialog = ({
         </Box>
 
         {localSelected.length > 0 && (
-          <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: 1.5 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 0.75, mt: 1.5 }}>
             {localSelected.map((id) => {
               const org = organizations.find((o) => o.id === id);
               return (
@@ -155,8 +156,8 @@ const OrganizationPickerDialog = ({
                   sx={{ borderRadius: 1.5, fontWeight: 500 }}
                 />
               );
-            })}
-          </Stack>
+            }            )}
+          </Box>
         )}
       </DialogContent>
 

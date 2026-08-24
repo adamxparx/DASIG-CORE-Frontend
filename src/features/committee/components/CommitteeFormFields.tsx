@@ -59,9 +59,8 @@ const CommitteeFormFields = ({
   };
 
   return (
-    <>
+    <Box>
       <Grid container spacing={2.5}>
-        {/* Committee Name */}
         <Grid size={{ xs: 12, md: 6 }}>
           <FieldLabel label="Committee Name" required />
           <TextField
@@ -77,49 +76,27 @@ const CommitteeFormFields = ({
           />
         </Grid>
 
-        {/* Add Organization button – rightmost of the first row */}
-        <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', alignItems: 'flex-end', pb: errors.name ? 3 : 0 }}>
-          <Box sx={{ width: '100%' }}>
-            <FieldLabel label="Organizations" />
-            <Button
-              variant="outlined"
-              startIcon={<AddOutlinedIcon />}
-              onClick={() => setPickerOpen(true)}
-              disabled={fieldsDisabled}
-              sx={{
-                textTransform: 'none',
-                fontWeight: 600,
-                borderRadius: 2,
-                borderColor: 'divider',
-                color: 'text.primary',
-                '&:hover': { borderColor: 'primary.main', color: 'primary.main' },
-              }}
-            >
-              Add Organization
-            </Button>
-          </Box>
-        </Grid>
-
-        {/* Description – full width */}
-        <Grid size={{ xs: 12 }}>
-          <FieldLabel label="Description" />
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            placeholder="Enter description"
-            value={form.description}
-            onChange={(e) => onFieldChange('description', e.target.value)}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <FieldLabel label="Organizations" />
+          <Button
+            variant="outlined"
+            startIcon={<AddOutlinedIcon />}
+            onClick={() => setPickerOpen(true)}
             disabled={fieldsDisabled}
-            hiddenLabel
-            sx={committeeFieldSx}
-          />
-        </Grid>
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              borderRadius: 2,
+              borderColor: 'divider',
+              color: 'text.primary',
+              '&:hover': { borderColor: 'primary.main', color: 'primary.main' },
+            }}
+          >
+            Add Organization
+          </Button>
 
-        {/* Selected orgs chips */}
-        {form.organizationIds.length > 0 && (
-          <Grid size={{ xs: 12 }}>
-            <Stack direction="row" flexWrap="wrap" gap={0.75}>
+          {form.organizationIds.length > 0 && (
+            <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75, mt: 1 }}>
               {form.organizationIds.map((id) => {
                 const org = organizations.find((o) => o.id === id);
                 return (
@@ -134,8 +111,23 @@ const CommitteeFormFields = ({
                 );
               })}
             </Stack>
-          </Grid>
-        )}
+          )}
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 6 }}>
+          <FieldLabel label="Description" />
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            placeholder="Enter description"
+            value={form.description}
+            onChange={(e) => onFieldChange('description', e.target.value)}
+            disabled={fieldsDisabled}
+            hiddenLabel
+            sx={committeeFieldSx}
+          />
+        </Grid>
       </Grid>
 
       <OrganizationPickerDialog
@@ -145,7 +137,7 @@ const CommitteeFormFields = ({
         onClose={() => setPickerOpen(false)}
         onConfirm={handleOrgConfirm}
       />
-    </>
+    </Box>
   );
 };
 

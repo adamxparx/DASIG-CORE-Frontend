@@ -103,12 +103,6 @@ const CommitteeManagementPage = () => {
         />
         <Divider />
 
-        <CommitteesList
-          committees={committees}
-          selectedId={selectedCommittee?.id ?? null}
-          onSelect={handleSelect}
-        />
-
         {selectedCommittee ? (
           <EditCommitteeForm
             key={selectedCommittee.id}
@@ -121,6 +115,14 @@ const CommitteeManagementPage = () => {
         ) : (
           <CreateCommitteeForm organizations={organizations} onCreated={handleCreated} />
         )}
+
+        <Divider />
+
+        <CommitteesList
+          committees={committees}
+          selectedId={selectedCommittee?.id ?? null}
+          onSelect={handleSelect}
+        />
       </Stack>
 
       <Snackbar
