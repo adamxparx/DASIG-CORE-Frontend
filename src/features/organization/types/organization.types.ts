@@ -8,6 +8,8 @@ export interface OrganizationResponse {
   contactEmail: string;
   contactNumber: string | null;
   status: OrganizationStatus | string;
+  committeeId: number | null;
+  committeeName: string | null;
 }
 
 export interface CreateOrganizationRequest {
@@ -16,6 +18,7 @@ export interface CreateOrganizationRequest {
   address: string;
   contactEmail: string;
   contactNumber?: string;
+  committeeId?: number | null;
 }
 
 export interface UpdateOrganizationRequest {
@@ -24,6 +27,7 @@ export interface UpdateOrganizationRequest {
   address: string;
   contactEmail: string;
   contactNumber?: string;
+  committeeId?: number | null;
 }
 
 export interface OrganizationFormValues {
@@ -32,4 +36,6 @@ export interface OrganizationFormValues {
   contactNumber: string;
   contactEmail: string;
   description: string;
+  committeeId: number | null;
+  committeeName: string;
 }

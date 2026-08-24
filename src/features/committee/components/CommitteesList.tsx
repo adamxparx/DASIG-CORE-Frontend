@@ -1,4 +1,4 @@
-import Box from '@mui/material/Box';
+﻿import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -7,21 +7,21 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
-import type { OrganizationResponse } from '../types/organization.types';
+import type { CommitteeResponse } from '../types/committee.types';
 
-interface OrganizationsListProps {
-  organizations: OrganizationResponse[];
+interface CommitteesListProps {
+  committees: CommitteeResponse[];
   selectedId: number | null;
-  onSelect: (organization: OrganizationResponse) => void;
+  onSelect: (committee: CommitteeResponse) => void;
 }
 
 const isActiveStatus = (status: string) => status.toLowerCase() === 'active';
 
-const OrganizationsList = ({ organizations, selectedId, onSelect }: OrganizationsListProps) => {
+const CommitteesList = ({ committees, selectedId, onSelect }: CommitteesListProps) => {
   return (
     <Box>
       <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
-        Organizations
+        Committees
       </Typography>
 
       <TableContainer
@@ -36,11 +36,6 @@ const OrganizationsList = ({ organizations, selectedId, onSelect }: Organization
                 Name
               </TableCell>
               <TableCell
-                sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
-              >
-                Committee
-              </TableCell>
-              <TableCell
                 align="right"
                 sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
               >
@@ -49,23 +44,23 @@ const OrganizationsList = ({ organizations, selectedId, onSelect }: Organization
             </TableRow>
           </TableHead>
           <TableBody>
-            {organizations.length === 0 ? (
+            {committees.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} sx={{ border: 0, py: 6 }}>
+                <TableCell colSpan={2} sx={{ border: 0, py: 6 }}>
                   <Typography align="center" color="text.secondary">
-                    There are no existing organizations yet.
+                    There are no existing committees yet.
                   </Typography>
                 </TableCell>
               </TableRow>
             ) : (
-              organizations.map((org) => {
-                const isSelected = selectedId === org.id;
+              committees.map((committee) => {
+                const isSelected = selectedId === committee.id;
 
                 return (
                   <TableRow
-                    key={org.id}
+                    key={committee.id}
                     hover
-                    onClick={() => onSelect(org)}
+                    onClick={() => onSelect(committee)}
                     sx={{
                       cursor: 'pointer',
                       bgcolor: isSelected ? 'action.hover' : 'transparent',
@@ -78,17 +73,16 @@ const OrganizationsList = ({ organizations, selectedId, onSelect }: Organization
                       },
                     }}
                   >
-                    <TableCell>{org.name}</TableCell>
-                    <TableCell>{org.committeeName ?? '—'}</TableCell>
+                    <TableCell>{committee.name}</TableCell>
                     <TableCell align="right">
                       <Typography
                         component="span"
                         sx={{
                           fontWeight: 600,
-                          color: isActiveStatus(org.status) ? 'success.main' : 'text.secondary',
+                          color: isActiveStatus(committee.status) ? 'success.main' : 'text.secondary',
                         }}
                       >
-                        {org.status}
+                        {committee.status}
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -102,4 +96,4 @@ const OrganizationsList = ({ organizations, selectedId, onSelect }: Organization
   );
 };
 
-export default OrganizationsList;
+export default CommitteesList;

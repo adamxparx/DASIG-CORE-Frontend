@@ -16,6 +16,7 @@ import OrganizationManagementPage from './features/organization/pages/Organizati
 import UserManagementPage from './features/user/pages/UserManagementPage';
 import AdminAlertsPage from './features/alerts/pages/AdminAlertsPage';
 import ReportGenerationPage from './features/report/pages/ReportGenerationPage';
+import CommitteeManagementPage from './features/committee/pages/CommitteeManagementPage';
 import { routes } from './routes';
 
 function LandingRoute() {
@@ -50,6 +51,7 @@ function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="organizations" element={<OrganizationManagementPage />} />
           <Route path="users" element={<UserManagementPage />} />
+          <Route path="committees" element={<CommitteeManagementPage />} />
           <Route path="alerts" element={<AdminAlertsPage />} />
           <Route path="reports" element={<ReportGenerationPage />} />
         </Route>

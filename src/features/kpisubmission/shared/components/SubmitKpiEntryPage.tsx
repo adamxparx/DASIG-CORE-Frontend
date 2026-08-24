@@ -269,7 +269,7 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
       <Stack spacing={2} sx={{ maxWidth: 1080, width: '100%', mx: 'auto' }}>
           <Stack spacing={0.75}>
             <Chip
-              label={role === 'STAFF' ? 'Staff' : 'TBI Manager'}
+              label={role === 'STAFF' ? 'Member' : 'Committee Lead'}
               size="small"
               sx={{ alignSelf: 'flex-start', bgcolor: '#ECECF8', color: '#4A4F7A', fontWeight: 600 }}
             />
