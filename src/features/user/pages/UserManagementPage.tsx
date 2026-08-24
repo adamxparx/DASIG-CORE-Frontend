@@ -127,8 +127,6 @@ const UserManagementPage = () => {
         <DashboardHeader title="User Management" subtitle="Create, Update, and Deactivate Users" />
         <Divider />
 
-        <UsersList users={users} selectedId={selectedUser?.id ?? null} onSelect={handleSelect} />
-
         {isLoadingUser ? (
           <Stack sx={{ py: 6, alignItems: 'center' }}>
             <CircularProgress size={32} />
@@ -145,6 +143,10 @@ const UserManagementPage = () => {
         ) : (
           <CreateUserAccountForm organizations={organizations} onCreated={handleCreated} />
         )}
+
+        <Divider />
+
+        <UsersList users={users} selectedId={selectedUser?.id ?? null} onSelect={handleSelect} />
       </Stack>
 
       <Snackbar

@@ -100,12 +100,6 @@ const OrganizationManagementPage = () => {
         />
         <Divider />
 
-        <OrganizationsList
-          organizations={organizations}
-          selectedId={selectedOrganization?.id ?? null}
-          onSelect={handleSelect}
-        />
-
         {selectedOrganization ? (
           <EditOrganizationForm
             key={selectedOrganization.id}
@@ -117,6 +111,14 @@ const OrganizationManagementPage = () => {
         ) : (
           <CreateOrganizationForm onCreated={handleCreated} />
         )}
+
+        <Divider />
+
+        <OrganizationsList
+          organizations={organizations}
+          selectedId={selectedOrganization?.id ?? null}
+          onSelect={handleSelect}
+        />
       </Stack>
 
       <Snackbar

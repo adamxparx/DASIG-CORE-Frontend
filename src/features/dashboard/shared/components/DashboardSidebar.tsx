@@ -1,6 +1,5 @@
 import AssignmentTurnedInOutlinedIcon from '@mui/icons-material/AssignmentTurnedInOutlined';
 import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
-import CorporateFareOutlinedIcon from '@mui/icons-material/CorporateFareOutlined';
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
 import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
@@ -348,11 +347,11 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
                           }}
                         >
                           <ListItemText 
-                            primary={child.label} 
-                            primaryTypographyProps={{ 
-                              fontSize: '0.875rem',
-                              fontWeight: isChildSelected ? 600 : 400
-                            }} 
+                            primary={
+                              <Typography sx={{ fontSize: '0.875rem', fontWeight: isChildSelected ? 600 : 400 }}>
+                                {child.label}
+                              </Typography>
+                            } 
                           />
                         </ListItemButton>
                       );
