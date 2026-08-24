@@ -6,6 +6,8 @@ export const emptyOrganizationForm: OrganizationFormValues = {
   contactNumber: '',
   contactEmail: '',
   description: '',
+  committeeId: null,
+  committeeName: '',
 };
 
 export function organizationToFormValues(org: OrganizationResponse): OrganizationFormValues {
@@ -15,6 +17,8 @@ export function organizationToFormValues(org: OrganizationResponse): Organizatio
     contactNumber: org.contactNumber ?? '',
     contactEmail: org.contactEmail,
     description: org.description ?? '',
+    committeeId: org.committeeId ?? null,
+    committeeName: org.committeeName ?? 'None',
   };
 }
 
@@ -43,6 +47,7 @@ export function formValuesToPayload(form: OrganizationFormValues) {
     contactEmail: form.contactEmail.trim(),
     ...(form.contactNumber.trim() ? { contactNumber: form.contactNumber.trim() } : {}),
     ...(form.description.trim() ? { description: form.description.trim() } : {}),
+    committeeId: form.committeeId,
   };
 }
 

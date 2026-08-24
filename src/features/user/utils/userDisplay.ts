@@ -2,8 +2,8 @@ import type { AccountRole } from '../types/user.types';
 
 const ROLE_LABELS: Record<AccountRole, string> = {
   DASIG_ADMIN: 'DASIG Admin',
-  TBI_MANAGER: 'TBI Manager',
-  STAFF: 'Staff',
+  TBI_MANAGER: 'Committee Lead',
+  STAFF: 'Member',
 };
 
 export function formatRoleLabel(role: string): string {
@@ -15,8 +15,8 @@ export function formatRoleLabel(role: string): string {
 
 export const ROLE_OPTIONS: { value: AccountRole; label: string }[] = [
   { value: 'DASIG_ADMIN', label: 'DASIG Admin' },
-  { value: 'TBI_MANAGER', label: 'TBI Manager' },
-  { value: 'STAFF', label: 'Staff' },
+  { value: 'TBI_MANAGER', label: 'Committee Lead' },
+  { value: 'STAFF', label: 'Member' },
 ];
 
 export function isActiveAccount(status: string): boolean {

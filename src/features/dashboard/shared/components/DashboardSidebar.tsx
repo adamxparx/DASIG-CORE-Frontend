@@ -7,8 +7,11 @@ import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined
 import PostAddOutlinedIcon from '@mui/icons-material/PostAddOutlined';
 import SpaceDashboardOutlinedIcon from '@mui/icons-material/SpaceDashboardOutlined';
 import SummarizeOutlinedIcon from '@mui/icons-material/SummarizeOutlined';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import ExpandMore from '@mui/icons-material/ExpandMore';
 import Badge from '@mui/material/Badge';
 import Box from '@mui/material/Box';
+import Collapse from '@mui/material/Collapse';
 import Divider from '@mui/material/Divider';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -35,17 +38,25 @@ interface DashboardSidebarProps {
   role: UserRole;
 }
 
+interface SidebarChildItem {
+  key: string;
+  label: string;
+  path: string;
+}
+
 interface SidebarItem {
   key: string;
   label: string;
   icon: ReactElement;
   path?: string;
+  children?: SidebarChildItem[];
 }
 
 const adminPaths: Record<string, string> = {
   dashboard: routes.adminDashboard,
   users: routes.adminUsers,
   organizations: routes.adminOrganizations,
+  committees: routes.adminCommittees,
   alerts: routes.adminAlerts,
   reports: routes.adminReports,
 };
@@ -53,19 +64,27 @@ const adminPaths: Record<string, string> = {
 const roleMenus: Record<UserRole, SidebarItem[]> = {
   DASIG_ADMIN: [
     { key: 'dashboard', label: 'Admin Dashboard', icon: <SpaceDashboardOutlinedIcon />, path: adminPaths.dashboard },
-    { key: 'users', label: 'User Management', icon: <ManageAccountsOutlinedIcon />, path: adminPaths.users },
-    { key: 'organizations', label: 'Organization Management', icon: <CorporateFareOutlinedIcon />, path: adminPaths.organizations },
+    {
+      key: 'user-admin',
+      label: 'User Administration',
+      icon: <ManageAccountsOutlinedIcon />,
+      children: [
+        { key: 'users', label: 'Users', path: adminPaths.users },
+        { key: 'organizations', label: 'Organizations', path: adminPaths.organizations },
+        { key: 'committees', label: 'Committees', path: adminPaths.committees },
+      ],
+    },
     { key: 'alerts', label: 'Alerts', icon: <CampaignOutlinedIcon /> },
     { key: 'reports', label: 'Report Generation', icon: <SummarizeOutlinedIcon /> },
   ],
   TBI_MANAGER: [
-    { key: 'dashboard', label: 'TBI Dashboard', icon: <SpaceDashboardOutlinedIcon /> },
+    { key: 'dashboard', label: 'Committee Lead Dashboard', icon: <SpaceDashboardOutlinedIcon /> },
     { key: 'notifications', label: 'Notifications', icon: <NotificationsOutlinedIcon /> },
     { key: 'history', label: 'Submission History', icon: <AssignmentTurnedInOutlinedIcon /> },
     { key: 'submit', label: 'Submit KPI', icon: <PostAddOutlinedIcon /> },
   ],
   STAFF: [
-    { key: 'dashboard', label: 'Staff Dashboard', icon: <SpaceDashboardOutlinedIcon /> },
+    { key: 'dashboard', label: 'Member Dashboard', icon: <SpaceDashboardOutlinedIcon /> },
     { key: 'notifications', label: 'Notifications', icon: <NotificationsOutlinedIcon /> },
     { key: 'submit', label: 'Submit KPI', icon: <PostAddOutlinedIcon /> },
     { key: 'history', label: 'Submission History', icon: <AssignmentTurnedInOutlinedIcon /> },
@@ -101,8 +120,8 @@ function isItemSelected(pathname: string, item: SidebarItem): boolean {
 // Role-specific sidebar background colours (using existing theme colours)
 const roleAccent: Record<UserRole, { main: string; dark: string; label: string }> = {
   DASIG_ADMIN: { main: '#426ef0', dark: '#2f55c7', label: 'Admin' },
-  TBI_MANAGER: { main: '#7C3AED', dark: '#5b28b0', label: 'TBI Manager' },
-  STAFF: { main: '#059669', dark: '#047350', label: 'Staff' },
+  TBI_MANAGER: { main: '#7C3AED', dark: '#5b28b0', label: 'Committee Lead' },
+  STAFF: { main: '#059669', dark: '#047350', label: 'Member' },
 };
 
 const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
@@ -117,10 +136,30 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
   const pathByKey =
     role === 'DASIG_ADMIN' ? adminPaths : role === 'STAFF' ? staffPaths : tbiPaths;
 
-  const menuItems = roleMenus[role].map((item) => ({
-    ...item,
-    path: item.path ?? pathByKey[item.key],
-  }));
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    roleMenus[role].forEach((item) => {
+      if (item.children) {
+        const hasActiveChild = item.children.some(
+          (child) => pathname === child.path || pathname.startsWith(`${child.path}/`)
+        );
+        if (hasActiveChild) {
+          initial[item.key] = true;
+        }
+      }
+    });
+    return initial;
+  });
+
+  const menuItems = roleMenus[role].map((item) => {
+    if (item.children) {
+      return item;
+    }
+    return {
+      ...item,
+      path: item.path ?? pathByKey[item.key],
+    };
+  });
 
   const handleLogout = () => {
     setLogoutDialogOpen(false);
@@ -129,7 +168,14 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
   };
 
   const handleNavClick = (item: SidebarItem) => {
-    const target = item.path ?? pathByKey[item.key];
+    if (item.children) {
+      setExpandedMenus((prev) => ({
+        ...prev,
+        [item.key]: !prev[item.key],
+      }));
+      return;
+    }
+    const target = item.path;
     if (target) {
       navigate(target);
     }
@@ -224,49 +270,99 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
 
       {/* ── Nav items ── */}
       <List sx={{ px: 1.5, py: 1.5, flexGrow: 1, overflowY: 'auto' }}>
-        {menuItems.map((item) => (
-          <ListItemButton
-            key={item.key}
-            selected={isItemSelected(pathname, item)}
-            onClick={() => handleNavClick(item)}
-            sx={{
-              borderRadius: 2,
-              mb: 0.5,
-              color: 'rgba(255,255,255,0.85)',
-              '& .MuiListItemIcon-root': { color: 'rgba(255,255,255,0.75)' },
-              '&:hover': {
-                bgcolor: 'rgba(255,255,255,0.12)',
-                color: '#fff',
-                '& .MuiListItemIcon-root': { color: '#fff' },
-              },
-              '&.Mui-selected': {
-                bgcolor: 'rgba(255,255,255,0.22)',
-                color: '#fff',
-                fontWeight: 700,
-                '& .MuiListItemIcon-root': { color: '#fff' },
-                '&:hover': {
-                  bgcolor: 'rgba(255,255,255,0.28)',
-                },
-              },
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 38, color: 'inherit' }}>
-              {item.key === 'notifications' && showNotificationBadge ? (
-                <Badge
-                  badgeContent={unreadCount}
-                  color="error"
-                  invisible={unreadCount === 0}
-                  max={99}
-                >
-                  {item.icon}
-                </Badge>
-              ) : (
-                item.icon
+        {menuItems.map((item) => {
+          const hasChildren = !!item.children;
+          const isExpanded = !!expandedMenus[item.key];
+
+          return (
+            <Box key={item.key}>
+              <ListItemButton
+                selected={!hasChildren && isItemSelected(pathname, item)}
+                onClick={() => handleNavClick(item)}
+                sx={{
+                  borderRadius: 2,
+                  mb: 0.5,
+                  color: 'rgba(255,255,255,0.85)',
+                  '& .MuiListItemIcon-root': { color: 'rgba(255,255,255,0.75)' },
+                  '&:hover': {
+                    bgcolor: 'rgba(255,255,255,0.12)',
+                    color: '#fff',
+                    '& .MuiListItemIcon-root': { color: '#fff' },
+                  },
+                  '&.Mui-selected': {
+                    bgcolor: 'rgba(255,255,255,0.22)',
+                    color: '#fff',
+                    fontWeight: 700,
+                    '& .MuiListItemIcon-root': { color: '#fff' },
+                    '&:hover': {
+                      bgcolor: 'rgba(255,255,255,0.28)',
+                    },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 38, color: 'inherit' }}>
+                  {item.key === 'notifications' && showNotificationBadge ? (
+                    <Badge
+                      badgeContent={unreadCount}
+                      color="error"
+                      invisible={unreadCount === 0}
+                      max={99}
+                    >
+                      {item.icon}
+                    </Badge>
+                  ) : (
+                    item.icon
+                  )}
+                </ListItemIcon>
+                <ListItemText primary={item.label} />
+                {hasChildren && (isExpanded ? <ExpandLess /> : <ExpandMore />)}
+              </ListItemButton>
+
+              {hasChildren && item.children && (
+                <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding sx={{ pl: 2.5 }}>
+                    {item.children.map((child) => {
+                      const isChildSelected = pathname === child.path || pathname.startsWith(`${child.path}/`);
+                      return (
+                        <ListItemButton
+                          key={child.key}
+                          selected={isChildSelected}
+                          onClick={() => navigate(child.path)}
+                          sx={{
+                            borderRadius: 2,
+                            mb: 0.5,
+                            py: 0.75,
+                            color: 'rgba(255,255,255,0.75)',
+                            '&:hover': {
+                              bgcolor: 'rgba(255,255,255,0.08)',
+                              color: '#fff',
+                            },
+                            '&.Mui-selected': {
+                              bgcolor: 'rgba(255,255,255,0.18)',
+                              color: '#fff',
+                              fontWeight: 700,
+                              '&:hover': {
+                                bgcolor: 'rgba(255,255,255,0.24)',
+                              },
+                            },
+                          }}
+                        >
+                          <ListItemText 
+                            primary={child.label} 
+                            primaryTypographyProps={{ 
+                              fontSize: '0.875rem',
+                              fontWeight: isChildSelected ? 600 : 400
+                            }} 
+                          />
+                        </ListItemButton>
+                      );
+                    })}
+                  </List>
+                </Collapse>
               )}
-            </ListItemIcon>
-            <ListItemText primary={item.label} />
-          </ListItemButton>
-        ))}
+            </Box>
+          );
+        })}
       </List>
 
       {/* ── Logout ── */}

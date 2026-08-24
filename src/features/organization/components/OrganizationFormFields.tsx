@@ -28,81 +28,98 @@ const OrganizationFormFields = ({
   const fieldsDisabled = isSubmitting || readOnly;
 
   return (
-    <Grid container spacing={2.5}>
-      <Grid size={{ xs: 12, md: 6 }}>
-        <FieldLabel label="Name" required />
-        <TextField
-          fullWidth
-          placeholder="Name"
-          value={form.name}
-          onChange={(e) => onFieldChange('name', e.target.value)}
-          error={!!errors.name}
-          helperText={errors.name}
-          disabled={fieldsDisabled}
-          hiddenLabel
-          sx={organizationFieldSx}
-        />
-      </Grid>
+      <Grid container spacing={2.5}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <FieldLabel label="Name" required />
+          <TextField
+            fullWidth
+            placeholder="Name"
+            value={form.name}
+            onChange={(e) => onFieldChange('name', e.target.value)}
+            error={!!errors.name}
+            helperText={errors.name}
+            disabled={fieldsDisabled}
+            hiddenLabel
+            sx={organizationFieldSx}
+          />
+        </Grid>
 
-      <Grid size={{ xs: 12, md: 6 }}>
-        <FieldLabel label="Address" required />
-        <TextField
-          fullWidth
-          placeholder="Address"
-          value={form.address}
-          onChange={(e) => onFieldChange('address', e.target.value)}
-          error={!!errors.address}
-          helperText={errors.address}
-          disabled={fieldsDisabled}
-          hiddenLabel
-          sx={organizationFieldSx}
-        />
-      </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <FieldLabel label="Address" required />
+          <TextField
+            fullWidth
+            placeholder="Address"
+            value={form.address}
+            onChange={(e) => onFieldChange('address', e.target.value)}
+            error={!!errors.address}
+            helperText={errors.address}
+            disabled={fieldsDisabled}
+            hiddenLabel
+            sx={organizationFieldSx}
+          />
+        </Grid>
 
-      <Grid size={{ xs: 12, md: 6 }}>
-        <FieldLabel label="Contact Number" />
-        <TextField
-          fullWidth
-          placeholder="Number"
-          value={form.contactNumber}
-          onChange={(e) => onFieldChange('contactNumber', e.target.value)}
-          disabled={fieldsDisabled}
-          hiddenLabel
-          sx={organizationFieldSx}
-        />
-      </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <FieldLabel label="Contact Number" />
+          <TextField
+            fullWidth
+            placeholder="Number"
+            value={form.contactNumber}
+            onChange={(e) => onFieldChange('contactNumber', e.target.value)}
+            disabled={fieldsDisabled}
+            hiddenLabel
+            sx={organizationFieldSx}
+          />
+        </Grid>
 
-      <Grid size={{ xs: 12, md: 6 }}>
-        <FieldLabel label="Contact Email" required />
-        <TextField
-          fullWidth
-          type="email"
-          placeholder="contact@organization.com"
-          value={form.contactEmail}
-          onChange={(e) => onFieldChange('contactEmail', e.target.value)}
-          error={!!errors.contactEmail}
-          helperText={errors.contactEmail}
-          disabled={fieldsDisabled}
-          hiddenLabel
-          sx={organizationFieldSx}
-        />
-      </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <FieldLabel label="Contact Email" required />
+          <TextField
+            fullWidth
+            type="email"
+            placeholder="contact@organization.com"
+            value={form.contactEmail}
+            onChange={(e) => onFieldChange('contactEmail', e.target.value)}
+            error={!!errors.contactEmail}
+            helperText={errors.contactEmail}
+            disabled={fieldsDisabled}
+            hiddenLabel
+            sx={organizationFieldSx}
+          />
+        </Grid>
 
-      <Grid size={{ xs: 12 }}>
-        <FieldLabel label="Description" />
-        <TextField
-          fullWidth
-          multiline
-          rows={4}
-          placeholder="Enter description"
-          value={form.description}
-          onChange={(e) => onFieldChange('description', e.target.value)}
-          disabled={fieldsDisabled}
-          hiddenLabel
-          sx={organizationFieldSx}
-        />
+        <Grid size={{ xs: 12, md: 6 }}>
+          <FieldLabel label="Committee" />
+          <TextField
+            fullWidth
+            placeholder="None"
+            value={form.committeeName}
+            disabled
+            hiddenLabel
+            sx={{
+              ...organizationFieldSx,
+              '& .MuiInputBase-input.Mui-disabled': {
+                WebkitTextFillColor: 'text.disabled',
+              },
+            }}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12 }}>
+          <FieldLabel label="Description" />
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            placeholder="Enter description"
+            value={form.description}
+            onChange={(e) => onFieldChange('description', e.target.value)}
+            disabled={fieldsDisabled}
+            hiddenLabel
+            sx={organizationFieldSx}
+          />
+        </Grid>
       </Grid>
-    </Grid>
   );
 };
 
