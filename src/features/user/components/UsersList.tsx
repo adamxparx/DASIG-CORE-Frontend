@@ -7,8 +7,10 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
+import { useState } from 'react';
 import type { UserResponse } from '../types/user.types';
 import { formatRoleLabel } from '../utils/userDisplay';
+import TablePaginationBar, { TABLE_PAGE_SIZE } from '../../dashboard/shared/components/TablePaginationBar';
 
 export interface UserListItem extends UserResponse {
   organizationName: string | null;
@@ -23,6 +25,12 @@ interface UsersListProps {
 const isActiveStatus = (status: string) => status.toLowerCase() === 'active';
 
 const UsersList = ({ users, selectedId, onSelect }: UsersListProps) => {
+  const [page, setPage] = useState(1);
+
+  const totalPages = Math.max(1, Math.ceil(users.length / TABLE_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedUsers = users.slice((safePage - 1) * TABLE_PAGE_SIZE, safePage * TABLE_PAGE_SIZE);
+
   return (
     <Box>
       <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
@@ -64,7 +72,7 @@ const UsersList = ({ users, selectedId, onSelect }: UsersListProps) => {
                 </TableCell>
               </TableRow>
             ) : (
-              users.map((user) => {
+              pagedUsers.map((user) => {
                 const isSelected = selectedId === user.id;
 
                 return (
@@ -105,6 +113,8 @@ const UsersList = ({ users, selectedId, onSelect }: UsersListProps) => {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <TablePaginationBar total={users.length} page={safePage} onPageChange={setPage} />
     </Box>
   );
 };

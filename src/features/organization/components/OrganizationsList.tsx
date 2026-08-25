@@ -7,7 +7,9 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
+import { useState } from 'react';
 import type { OrganizationResponse } from '../types/organization.types';
+import TablePaginationBar, { TABLE_PAGE_SIZE } from '../../dashboard/shared/components/TablePaginationBar';
 
 interface OrganizationsListProps {
   organizations: OrganizationResponse[];
@@ -18,6 +20,12 @@ interface OrganizationsListProps {
 const isActiveStatus = (status: string) => status.toLowerCase() === 'active';
 
 const OrganizationsList = ({ organizations, selectedId, onSelect }: OrganizationsListProps) => {
+  const [page, setPage] = useState(1);
+
+  const totalPages = Math.max(1, Math.ceil(organizations.length / TABLE_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedOrganizations = organizations.slice((safePage - 1) * TABLE_PAGE_SIZE, safePage * TABLE_PAGE_SIZE);
+
   return (
     <Box>
       <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
@@ -58,7 +66,7 @@ const OrganizationsList = ({ organizations, selectedId, onSelect }: Organization
                 </TableCell>
               </TableRow>
             ) : (
-              organizations.map((org) => {
+              pagedOrganizations.map((org) => {
                 const isSelected = selectedId === org.id;
 
                 return (
@@ -98,6 +106,8 @@ const OrganizationsList = ({ organizations, selectedId, onSelect }: Organization
           </TableBody>
         </Table>
       </TableContainer>
+
+      <TablePaginationBar total={organizations.length} page={safePage} onPageChange={setPage} />
     </Box>
   );
 };

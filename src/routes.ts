@@ -1,6 +1,8 @@
 export const routes = {
   auth: '/auth',
   adminDashboard: '/dashboard/admin',
+  adminKpis: '/dashboard/admin/kpis',
+  adminKpiDetail: '/dashboard/admin/kpis/:id',
   adminOrganizations: '/dashboard/admin/organizations',
   adminUsers: '/dashboard/admin/users',
   adminCommittees: '/dashboard/admin/committees',

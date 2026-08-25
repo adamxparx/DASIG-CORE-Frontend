@@ -8,10 +8,13 @@ import SpaceDashboardOutlinedIcon from '@mui/icons-material/SpaceDashboardOutlin
 import SummarizeOutlinedIcon from '@mui/icons-material/SummarizeOutlined';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
+import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
+import MenuOpenOutlinedIcon from '@mui/icons-material/MenuOpenOutlined';
 import Badge from '@mui/material/Badge';
 import Box from '@mui/material/Box';
 import Collapse from '@mui/material/Collapse';
 import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -24,6 +27,8 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
+import Tooltip from '@mui/material/Tooltip';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -31,6 +36,7 @@ import { routes } from '../../../../routes';
 import logo from '../../../../assets/logo.png';
 import { tokenStorage } from '../../../auth/utils/tokenStorage';
 import { useUnreadNotificationCount } from '../../../notification/hooks/useUnreadNotificationCount';
+import { useDashboardShell } from '../components/DashboardShellContext';
 import type { UserRole } from '../types/dashboard.types';
 
 interface DashboardSidebarProps {
@@ -104,6 +110,22 @@ const tbiPaths: Record<string, string> = {
   history: routes.tbiManagerSubmissionHistory,
 };
 
+const CloseButton = () => {
+  const { toggleSidebar } = useDashboardShell();
+
+  return (
+    <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
+      <IconButton
+        onClick={toggleSidebar}
+        size="small"
+        sx={{ color: 'rgba(255,255,255,0.75)', '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.12)' } }}
+      >
+        <ArrowBackOutlinedIcon fontSize="small" />
+      </IconButton>
+    </Box>
+  );
+};
+
 function isItemSelected(pathname: string, item: SidebarItem): boolean {
   if (!item.path) {
     return false;
@@ -123,9 +145,56 @@ const roleAccent: Record<UserRole, { main: string; dark: string; label: string }
   STAFF: { main: '#059669', dark: '#047350', label: 'Member' },
 };
 
+const RailLogo = ({ color }: { color: string }) => {
+  const { toggleSidebar } = useDashboardShell();
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <Tooltip title="Expand sidebar" placement="right">
+      <IconButton
+        onClick={toggleSidebar}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        size="small"
+        aria-label="Expand sidebar"
+        sx={{
+          width: 44,
+          height: 44,
+          borderRadius: 2,
+          bgcolor: '#ffffff',
+          border: '2.5px solid rgba(255,255,255,0.95)',
+          boxShadow: '0 0 0 4px rgba(255,255,255,0.25), 0 4px 16px rgba(0,0,0,0.25)',
+          color,
+          p: 0,
+          transition: 'all 0.2s ease',
+          '&:hover': {
+            color,
+            bgcolor: '#ffffff',
+          },
+        }}
+      >
+        {hovered ? (
+          <MenuOpenOutlinedIcon sx={{ fontSize: 24 }} />
+        ) : (
+          <Box
+            component="img"
+            src={logo}
+            alt="DASIG Logo"
+            sx={{ width: 30, height: 30, objectFit: 'contain', borderRadius: 1 }}
+          />
+        )}
+      </IconButton>
+    </Tooltip>
+  );
+};
+
 const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const { sidebarOpen, toggleSidebar, setMobileOpen } = useDashboardShell();
+  const isDesktop = useMediaQuery((theme) => theme.breakpoints.up('md'));
+  const expanded = isDesktop ? sidebarOpen : true;
+  const isRail = !expanded;
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const showNotificationBadge = role === 'STAFF' || role === 'TBI_MANAGER';
   const { unreadCount } = useUnreadNotificationCount(showNotificationBadge);
@@ -160,6 +229,12 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
     };
   });
 
+  const closeMobileDrawer = () => {
+    if (!isDesktop) {
+      setMobileOpen(false);
+    }
+  };
+
   const handleLogout = () => {
     setLogoutDialogOpen(false);
     tokenStorage.clear();
@@ -168,6 +243,10 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
 
   const handleNavClick = (item: SidebarItem) => {
     if (item.children) {
+      if (isRail) {
+        toggleSidebar();
+        return;
+      }
       setExpandedMenus((prev) => ({
         ...prev,
         [item.key]: !prev[item.key],
@@ -177,6 +256,7 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
     const target = item.path;
     if (target) {
       navigate(target);
+      closeMobileDrawer();
     }
   };
 
@@ -195,129 +275,149 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
       }}
     >
       {/* ── Header ── */}
-      <Box
-        sx={{
-          p: 3,
-          pb: 2,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 0.75,
-          borderBottom: '1px solid rgba(255,255,255,0.15)',
-        }}
-      >
-        {/* Logo + title row */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-          <Box
-            sx={{
-              width: 44,
-              height: 44,
-              borderRadius: 2,
-              bgcolor: '#ffffff',
-              border: '2.5px solid rgba(255,255,255,0.95)',
-              boxShadow: '0 0 0 4px rgba(255,255,255,0.25), 0 4px 16px rgba(0,0,0,0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
-            <Box
-              component="img"
-              src={logo}
-              alt="DASIG Logo"
-              sx={{
-                width: 34,
-                height: 34,
-                objectFit: 'contain',
-                borderRadius: 1,
-              }}
-            />
-          </Box>
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 800, letterSpacing: '0.25px', color: '#fff' }}
-          >
-            DASIG-CORE
-          </Typography>
+      {isRail ? (
+        <Box
+          sx={{
+            py: 3,
+            px: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            borderBottom: '1px solid rgba(255,255,255,0.15)',
+          }}
+        >
+          <RailLogo color={accent.main} />
         </Box>
+      ) : (
+        <Box
+          sx={{
+            p: 3,
+            pb: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 0.75,
+            borderBottom: '1px solid rgba(255,255,255,0.15)',
+            position: 'relative',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+              <Box
+                sx={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 2,
+                  bgcolor: '#ffffff',
+                  border: '2.5px solid rgba(255,255,255,0.95)',
+                  boxShadow: '0 0 0 4px rgba(255,255,255,0.25), 0 4px 16px rgba(0,0,0,0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <Box
+                  component="img"
+                  src={logo}
+                  alt="DASIG Logo"
+                  sx={{
+                    width: 34,
+                    height: 34,
+                    objectFit: 'contain',
+                    borderRadius: 1,
+                  }}
+                />
+              </Box>
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 800, letterSpacing: '0.25px', color: '#fff' }}
+              >
+                DASIG-CORE
+              </Typography>
+            </Box>
+            <CloseButton />
+          </Box>
 
-        {/* Subtitle + role label */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pl: 0.25 }}>
-          <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>
-            Consortium KPI Platform
-          </Typography>
-          <Box
-            sx={{
-              display: 'inline-flex',
-              alignSelf: 'flex-start',
-              px: 0.9,
-              py: 0.15,
-              borderRadius: 0.75,
-              bgcolor: 'rgba(255,255,255,0.2)',
-              color: '#fff',
-              fontSize: '0.65rem',
-              fontWeight: 700,
-              letterSpacing: '0.6px',
-              textTransform: 'uppercase',
-              lineHeight: 1.7,
-            }}
-          >
-            {accent.label}
+          {/* Subtitle */}
+          <Box sx={{ pl: 0.25 }}>
+            <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>
+              Consortium KPI Platform
+            </Typography>
           </Box>
         </Box>
-      </Box>
+      )}
 
       {/* ── Nav items ── */}
-      <List sx={{ px: 1.5, py: 1.5, flexGrow: 1, overflowY: 'auto' }}>
+      <List sx={{ px: isRail ? 1 : 1.5, py: 1.5, flexGrow: 1, overflowY: 'auto' }}>
         {menuItems.map((item) => {
           const hasChildren = !!item.children;
           const isExpanded = !!expandedMenus[item.key];
 
+          const iconNode = (
+            <ListItemIcon
+              sx={{
+                minWidth: isRail ? 0 : 38,
+                color: 'inherit',
+                justifyContent: 'center',
+              }}
+            >
+              {item.key === 'notifications' && showNotificationBadge ? (
+                <Badge
+                  badgeContent={unreadCount}
+                  color="error"
+                  invisible={unreadCount === 0}
+                  max={99}
+                >
+                  {item.icon}
+                </Badge>
+              ) : (
+                item.icon
+              )}
+            </ListItemIcon>
+          );
+
+          const buttonNode = (
+            <ListItemButton
+              selected={!hasChildren && isItemSelected(pathname, item)}
+              onClick={() => handleNavClick(item)}
+              sx={{
+                borderRadius: 2,
+                mb: 0.5,
+                justifyContent: isRail ? 'center' : 'flex-start',
+                color: 'rgba(255,255,255,0.85)',
+                '& .MuiListItemIcon-root': { color: 'rgba(255,255,255,0.75)' },
+                '&:hover': {
+                  bgcolor: 'rgba(255,255,255,0.12)',
+                  color: '#fff',
+                  '& .MuiListItemIcon-root': { color: '#fff' },
+                },
+                '&.Mui-selected': {
+                  bgcolor: 'rgba(255,255,255,0.22)',
+                  color: '#fff',
+                  fontWeight: 700,
+                  '& .MuiListItemIcon-root': { color: '#fff' },
+                  '&:hover': {
+                    bgcolor: 'rgba(255,255,255,0.28)',
+                  },
+                },
+              }}
+            >
+              {iconNode}
+              {!isRail && <ListItemText primary={item.label} />}
+              {!isRail && hasChildren && (isExpanded ? <ExpandLess /> : <ExpandMore />)}
+            </ListItemButton>
+          );
+
           return (
             <Box key={item.key}>
-              <ListItemButton
-                selected={!hasChildren && isItemSelected(pathname, item)}
-                onClick={() => handleNavClick(item)}
-                sx={{
-                  borderRadius: 2,
-                  mb: 0.5,
-                  color: 'rgba(255,255,255,0.85)',
-                  '& .MuiListItemIcon-root': { color: 'rgba(255,255,255,0.75)' },
-                  '&:hover': {
-                    bgcolor: 'rgba(255,255,255,0.12)',
-                    color: '#fff',
-                    '& .MuiListItemIcon-root': { color: '#fff' },
-                  },
-                  '&.Mui-selected': {
-                    bgcolor: 'rgba(255,255,255,0.22)',
-                    color: '#fff',
-                    fontWeight: 700,
-                    '& .MuiListItemIcon-root': { color: '#fff' },
-                    '&:hover': {
-                      bgcolor: 'rgba(255,255,255,0.28)',
-                    },
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 38, color: 'inherit' }}>
-                  {item.key === 'notifications' && showNotificationBadge ? (
-                    <Badge
-                      badgeContent={unreadCount}
-                      color="error"
-                      invisible={unreadCount === 0}
-                      max={99}
-                    >
-                      {item.icon}
-                    </Badge>
-                  ) : (
-                    item.icon
-                  )}
-                </ListItemIcon>
-                <ListItemText primary={item.label} />
-                {hasChildren && (isExpanded ? <ExpandLess /> : <ExpandMore />)}
-              </ListItemButton>
+              {isRail ? (
+                <Tooltip title={item.label} placement="right">
+                  {buttonNode}
+                </Tooltip>
+              ) : (
+                buttonNode
+              )}
 
-              {hasChildren && item.children && (
+              {!isRail && hasChildren && item.children && (
                 <Collapse in={isExpanded} timeout="auto" unmountOnExit>
                   <List component="div" disablePadding sx={{ pl: 2.5 }}>
                     {item.children.map((child) => {
@@ -326,7 +426,10 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
                         <ListItemButton
                           key={child.key}
                           selected={isChildSelected}
-                          onClick={() => navigate(child.path)}
+                          onClick={() => {
+                            navigate(child.path);
+                            closeMobileDrawer();
+                          }}
                           sx={{
                             borderRadius: 2,
                             mb: 0.5,
@@ -366,25 +469,28 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
 
       {/* ── Logout ── */}
       <Divider sx={{ borderColor: 'rgba(255,255,255,0.15)' }} />
-      <List sx={{ p: 1.5 }}>
-        <ListItemButton
-          sx={{
-            borderRadius: 2,
-            color: 'rgba(255,255,255,0.8)',
-            '& .MuiListItemIcon-root': { color: 'rgba(255,255,255,0.7)' },
-            '&:hover': {
-              bgcolor: 'rgba(255,255,255,0.12)',
-              color: '#fff',
-              '& .MuiListItemIcon-root': { color: '#fff' },
-            },
-          }}
-          onClick={() => setLogoutDialogOpen(true)}
-        >
-          <ListItemIcon sx={{ minWidth: 38 }}>
-            <LogoutOutlinedIcon />
-          </ListItemIcon>
-          <ListItemText primary="Logout" />
-        </ListItemButton>
+      <List sx={{ p: isRail ? 1 : 1.5 }}>
+        <Tooltip title="Logout" placement="right">
+          <ListItemButton
+            sx={{
+              borderRadius: 2,
+              justifyContent: isRail ? 'center' : 'flex-start',
+              color: 'rgba(255,255,255,0.8)',
+              '& .MuiListItemIcon-root': { color: 'rgba(255,255,255,0.7)' },
+              '&:hover': {
+                bgcolor: 'rgba(255,255,255,0.12)',
+                color: '#fff',
+                '& .MuiListItemIcon-root': { color: '#fff' },
+              },
+            }}
+            onClick={() => setLogoutDialogOpen(true)}
+          >
+            <ListItemIcon sx={{ minWidth: isRail ? 0 : 38, justifyContent: 'center' }}>
+              <LogoutOutlinedIcon />
+            </ListItemIcon>
+            {!isRail && <ListItemText primary="Logout" />}
+          </ListItemButton>
+        </Tooltip>
       </List>
 
       {/* ── Logout dialog ── */}

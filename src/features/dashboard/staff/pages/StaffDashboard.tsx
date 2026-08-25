@@ -6,7 +6,6 @@ const StaffDashboard = () => {
       role="STAFF"
       title="Organization KPI Dashboard"
       subtitle="Track assigned KPIs and maintain on-time submissions."
-      welcomeMessage="Welcome, Member"
     />
   );
 };

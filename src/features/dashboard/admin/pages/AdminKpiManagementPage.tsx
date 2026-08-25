@@ -2,55 +2,34 @@ import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import Stack from '@mui/material/Stack';
 import Snackbar from '@mui/material/Snackbar';
+import TextField from '@mui/material/TextField';
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../../../../lib/api/client';
-import DashboardViewToggle from '../../admin/components/DashboardViewToggle';
 import CreateKpiButton from '../../admin/components/CreateKpiButton';
 import KpiFormDialog from '../../admin/components/KpiFormDialog';
 import DeleteKpiDialog from '../../admin/components/DeleteKpiDialog';
-import { dashboardService } from '../api/dashboardService';
-import type { DashboardApiResponse, DashboardKpiItem, DashboardStatus, DashboardViewMode, UserRole } from '../types/dashboard.types';
-import DashboardHeader from './DashboardHeader';
-import DashboardLayout from './DashboardLayout';
-import KpiDashboardCard from './KpiDashboardCard';
-import KpiFilterBar from './KpiFilterBar';
-import KpiGrid from './KpiGrid';
-import KpiPeriodHistoryDrawer from './KpiPeriodHistoryDrawer';
+import { dashboardService } from '../../shared/api/dashboardService';
+import type { DashboardApiResponse, DashboardKpiItem } from '../../shared/types/dashboard.types';
+import DashboardHeader from '../../shared/components/DashboardHeader';
+import DashboardLayout from '../../shared/components/DashboardLayout';
+import KpisList from '../../shared/components/KpisList';
 import { getDeadlineAlertLeadDays } from '../../../notification/utils/notificationDisplay';
 import type { KpiSubmitSuccessContext } from '../../admin/components/KpiFormDialog';
 
-interface RoleBasedDashboardPageProps {
-  role: UserRole;
-  title: string;
-  subtitle: string;
-}
-
-const RoleBasedDashboardPage = ({
-  role,
-  title,
-  subtitle,
-}: RoleBasedDashboardPageProps) => {
+const AdminKpiManagementPage = () => {
+  const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState<DashboardApiResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState<DashboardStatus | 'ALL'>('ALL');
-  const [organization, setOrganization] = useState<string>('ALL');
-  const [viewMode, setViewMode] = useState<DashboardViewMode>('grid');
 
-  // Form Dialog States
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [selectedKpiForEdit, setSelectedKpiForEdit] = useState<DashboardKpiItem | null>(null);
 
-  // Delete Dialog States
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedKpiForDelete, setSelectedKpiForDelete] = useState<DashboardKpiItem | null>(null);
+  const [selectedKpiForDelete] = useState<DashboardKpiItem | null>(null);
 
-  // Period history drawer
-  const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
-  const [selectedKpiForHistory, setSelectedKpiForHistory] = useState<DashboardKpiItem | null>(null);
-
-  // Toast notification state
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastSeverity, setToastSeverity] = useState<'success' | 'error'>('success');
@@ -62,9 +41,6 @@ const RoleBasedDashboardPage = ({
     try {
       const response = await dashboardService.getDashboard();
       setDashboardData(response);
-      if (response.organizationName && role !== 'DASIG_ADMIN') {
-        setOrganization(response.organizationName);
-      }
       setError(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to load dashboard data.');
@@ -73,7 +49,7 @@ const RoleBasedDashboardPage = ({
         setIsLoading(false);
       }
     }
-  }, [role]);
+  }, []);
 
   useEffect(() => {
     void loadDashboard();
@@ -84,19 +60,8 @@ const RoleBasedDashboardPage = ({
     setFormDialogOpen(true);
   };
 
-  const handleEditClick = (item: DashboardKpiItem) => {
-    setSelectedKpiForEdit(item);
-    setFormDialogOpen(true);
-  };
-
-  const handleDeleteClick = (item: DashboardKpiItem) => {
-    setSelectedKpiForDelete(item);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleViewHistoryClick = (item: DashboardKpiItem) => {
-    setSelectedKpiForHistory(item);
-    setHistoryDrawerOpen(true);
+  const handleSelectKpi = (kpi: DashboardKpiItem) => {
+    navigate(`/dashboard/admin/kpis/${kpi.id}`);
   };
 
   const showToast = (message: string, severity: 'success' | 'error') => {
@@ -129,12 +94,6 @@ const RoleBasedDashboardPage = ({
     showToast('KPI deleted successfully.', 'success');
   };
 
-  const organizations = useMemo(() => {
-    const kpis = dashboardData?.kpis ?? [];
-    const uniqueOrgs = [...new Set(kpis.map((item) => item.organization))];
-    return ['ALL', ...uniqueOrgs];
-  }, [dashboardData]);
-
   const filteredKpis = useMemo(() => {
     const kpis = dashboardData?.kpis ?? [];
 
@@ -142,30 +101,9 @@ const RoleBasedDashboardPage = ({
       if (search && !item.name.toLowerCase().includes(search.toLowerCase())) {
         return false;
       }
-
-      if (organization !== 'ALL' && item.organization !== organization) {
-        return false;
-      }
-
-      if (status !== 'ALL' && item.status !== status) {
-        return false;
-      }
       return true;
     });
-  }, [dashboardData, organization, search, status]);
-
-  const topActions =
-    role === 'DASIG_ADMIN' ? (
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ justifyContent: 'space-between' }}>
-        <CreateKpiButton onClick={handleCreateClick} />
-        <DashboardViewToggle viewMode={viewMode} onChange={setViewMode} />
-      </Stack>
-    ) : null;
-
-  const resolvedTitle =
-    role === 'DASIG_ADMIN'
-      ? title
-      : `${dashboardData?.organizationName ?? 'Organization'} KPI Dashboard`;
+  }, [dashboardData, search]);
 
   if (isLoading) {
     return (
@@ -186,36 +124,25 @@ const RoleBasedDashboardPage = ({
   return (
     <>
       <DashboardLayout
-        header={<DashboardHeader title={resolvedTitle} subtitle={subtitle} />}
-        topActions={topActions}
-        filterBar={
-          <KpiFilterBar
-            search={search}
-            status={status}
-            organization={organization}
-            organizations={organizations}
-            organizationLocked={role !== 'DASIG_ADMIN'}
-            onSearchChange={setSearch}
-            onStatusChange={setStatus}
-            onOrganizationChange={setOrganization}
-          />
+        header={<DashboardHeader title="KPI Management Hub" subtitle="Monitor consortium-wide KPI definitions and performance updates." />}
+        topActions={
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ justifyContent: 'space-between' }}>
+            <TextField
+              label="Search KPI"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              size="small"
+              sx={{ minWidth: 280 }}
+            />
+            <CreateKpiButton onClick={handleCreateClick} />
+          </Stack>
         }
+        filterBar={null}
         content={
-          <KpiGrid
-            title={role === 'DASIG_ADMIN' ? 'All KPIs' : 'Organization KPIs'}
-            items={filteredKpis}
-            viewMode={viewMode}
-            gridColumns={3}
-            renderItem={(item) => (
-              <KpiDashboardCard
-                key={item.id}
-                item={item}
-                role={role}
-                onEdit={handleEditClick}
-                onDelete={handleDeleteClick}
-                onViewHistory={handleViewHistoryClick}
-              />
-            )}
+          <KpisList
+            kpis={filteredKpis}
+            selectedId={null}
+            onSelectKpi={handleSelectKpi}
           />
         }
       />
@@ -235,16 +162,6 @@ const RoleBasedDashboardPage = ({
         onSubmitSuccess={handleDeleteSuccess}
         kpiId={selectedKpiForDelete?.id ?? null}
         kpiName={selectedKpiForDelete?.name ?? ''}
-      />
-
-      <KpiPeriodHistoryDrawer
-        open={historyDrawerOpen}
-        kpi={selectedKpiForHistory}
-        role={role}
-        onClose={() => {
-          setHistoryDrawerOpen(false);
-          setSelectedKpiForHistory(null);
-        }}
       />
 
       {/* Snackbar Feedback */}
@@ -270,4 +187,4 @@ const RoleBasedDashboardPage = ({
   );
 };
 
-export default RoleBasedDashboardPage;
+export default AdminKpiManagementPage;
