@@ -1,14 +1,7 @@
-import RoleBasedDashboardPage from '../../shared/components/RoleBasedDashboardPage';
+import AdminKpiManagementPage from './AdminKpiManagementPage';
 
 const AdminDashboard = () => {
-  return (
-    <RoleBasedDashboardPage
-      role="DASIG_ADMIN"
-      title="KPI Management Hub"
-      subtitle="Monitor consortium-wide KPI definitions and performance updates."
-      welcomeMessage="Welcome, DASIG Admin"
-    />
-  );
+  return <AdminKpiManagementPage />;
 };
 
 export default AdminDashboard;

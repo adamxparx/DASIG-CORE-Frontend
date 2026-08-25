@@ -6,7 +6,6 @@ const TbiManagerDashboard = () => {
       role="TBI_MANAGER"
       title="Organization KPI Dashboard"
       subtitle="Review assigned KPIs and submit progress updates."
-      welcomeMessage="Welcome, Committee Lead"
     />
   );
 };

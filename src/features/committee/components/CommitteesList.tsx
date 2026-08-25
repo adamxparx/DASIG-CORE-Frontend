@@ -7,7 +7,9 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
+import { useState } from 'react';
 import type { CommitteeResponse } from '../types/committee.types';
+import TablePaginationBar, { TABLE_PAGE_SIZE } from '../../dashboard/shared/components/TablePaginationBar';
 
 interface CommitteesListProps {
   committees: CommitteeResponse[];
@@ -18,6 +20,12 @@ interface CommitteesListProps {
 const isActiveStatus = (status: string) => status.toLowerCase() === 'active';
 
 const CommitteesList = ({ committees, selectedId, onSelect }: CommitteesListProps) => {
+  const [page, setPage] = useState(1);
+
+  const totalPages = Math.max(1, Math.ceil(committees.length / TABLE_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedCommittees = committees.slice((safePage - 1) * TABLE_PAGE_SIZE, safePage * TABLE_PAGE_SIZE);
+
   return (
     <Box>
       <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
@@ -53,7 +61,7 @@ const CommitteesList = ({ committees, selectedId, onSelect }: CommitteesListProp
                 </TableCell>
               </TableRow>
             ) : (
-              committees.map((committee) => {
+              pagedCommittees.map((committee) => {
                 const isSelected = selectedId === committee.id;
 
                 return (
@@ -92,6 +100,8 @@ const CommitteesList = ({ committees, selectedId, onSelect }: CommitteesListProp
           </TableBody>
         </Table>
       </TableContainer>
+
+      <TablePaginationBar total={committees.length} page={safePage} onPageChange={setPage} />
     </Box>
   );
 };

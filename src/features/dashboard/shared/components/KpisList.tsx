@@ -1,0 +1,143 @@
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Typography from '@mui/material/Typography';
+import { useState } from 'react';
+import type { DashboardKpiItem } from '../types/dashboard.types';
+import TablePaginationBar, { TABLE_PAGE_SIZE } from './TablePaginationBar';
+
+interface KpisListProps {
+  kpis: DashboardKpiItem[];
+  selectedId: number | null;
+  onSelectKpi: (kpi: DashboardKpiItem) => void;
+}
+
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const formatMetricValue = (value: number) =>
+  value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const KpisList = ({ kpis, selectedId, onSelectKpi }: KpisListProps) => {
+  const [page, setPage] = useState(1);
+
+  const totalPages = Math.max(1, Math.ceil(kpis.length / TABLE_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedKpis = kpis.slice((safePage - 1) * TABLE_PAGE_SIZE, safePage * TABLE_PAGE_SIZE);
+
+  return (
+    <Box>
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
+        All KPIs
+      </Typography>
+
+      <TableContainer
+        component={Paper}
+        elevation={0}
+        sx={{ border: 1, borderColor: 'divider', borderRadius: 2 }}
+      >
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
+                KPI Title
+              </TableCell>
+              <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
+                Description
+              </TableCell>
+              <TableCell
+                align="right"
+                sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
+              >
+                Target
+              </TableCell>
+              <TableCell
+                align="right"
+                sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
+              >
+                Progress
+              </TableCell>
+              <TableCell
+                sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
+              >
+                Deadline
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {kpis.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} sx={{ border: 0, py: 6 }}>
+                  <Typography align="center" color="text.secondary">
+                    There are no existing KPIs yet.
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              pagedKpis.map((kpi) => {
+                const isSelected = selectedId === kpi.id;
+                const periodTargetValue = kpi.periodTargetValue ?? kpi.targetValue;
+                const progressPercent = periodTargetValue > 0 ? (kpi.submittedValue / periodTargetValue) * 100 : 0;
+
+                return (
+                  <TableRow
+                    key={kpi.id}
+                    hover
+                    sx={{
+                      cursor: 'pointer',
+                      bgcolor: isSelected ? 'action.hover' : 'transparent',
+                      outline: isSelected ? 2 : 'none',
+                      outlineColor: 'primary.main',
+                      outlineOffset: -2,
+                      '& td': {
+                        borderBottom: 1,
+                        borderColor: 'divider',
+                      },
+                    }}
+                  >
+                    <TableCell
+                      onClick={() => onSelectKpi(kpi)}
+                      sx={{ color: 'primary.main', fontWeight: 600 }}
+                    >
+                      {kpi.name}
+                    </TableCell>
+                    <TableCell sx={{ color: 'text.secondary', fontSize: '0.875rem', maxWidth: 300 }}>
+                      <Box sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {kpi.description}
+                      </Box>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {formatMetricValue(kpi.targetValue)} {kpi.unit}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                        {progressPercent.toFixed(1)}%
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        {formatDate(kpi.deadline)}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <TablePaginationBar total={kpis.length} page={safePage} onPageChange={setPage} />
+    </Box>
+  );
+};
+
+export default KpisList;

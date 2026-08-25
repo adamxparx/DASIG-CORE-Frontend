@@ -17,6 +17,7 @@ import UserManagementPage from './features/user/pages/UserManagementPage';
 import AdminAlertsPage from './features/alerts/pages/AdminAlertsPage';
 import ReportGenerationPage from './features/report/pages/ReportGenerationPage';
 import CommitteeManagementPage from './features/committee/pages/CommitteeManagementPage';
+import KpiDetailPage from './features/dashboard/admin/pages/KpiDetailPage';
 import { routes } from './routes';
 
 function LandingRoute() {
@@ -54,6 +55,7 @@ function App() {
           <Route path="committees" element={<CommitteeManagementPage />} />
           <Route path="alerts" element={<AdminAlertsPage />} />
           <Route path="reports" element={<ReportGenerationPage />} />
+          <Route path="kpis/:id" element={<KpiDetailPage />} />
         </Route>
 
         <Route

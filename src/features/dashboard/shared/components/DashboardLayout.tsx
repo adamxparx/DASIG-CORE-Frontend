@@ -18,9 +18,11 @@ const DashboardLayout = ({ header, welcomeBanner, topActions, filterBar, content
         {header}
         {welcomeBanner}
         {topActions}
-        <Paper elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2 }}>
-          {filterBar}
-        </Paper>
+        {filterBar ? (
+          <Paper elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            {filterBar}
+          </Paper>
+        ) : null}
         <Box>{content}</Box>
       </Stack>
     </Box>
