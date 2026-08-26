@@ -78,10 +78,8 @@ export default function ReportGenerationPage() {
         if (kpiData.length > 0) {
           const firstKpi = kpiData[0];
           setSelectedKpiId(String(firstKpi.id));
-          setSelectedOrgId(String(firstKpi.organizationId));
         } else {
           setSelectedKpiId('');
-          setSelectedOrgId('');
         }
       } catch (err) {
         showToast('Failed to load KPI list.');
@@ -150,7 +148,7 @@ export default function ReportGenerationPage() {
   // Generate new report
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedOrgId || !periodFrom || !periodTo || (reportScope === 'KPI' && !selectedKpiId)) {
+    if (!periodFrom || !periodTo || (reportScope === 'ORGANIZATIONAL' && !selectedOrgId) || (reportScope === 'KPI' && !selectedKpiId)) {
       showToast('Please select all filter parameters.');
       return;
     }
@@ -181,7 +179,9 @@ export default function ReportGenerationPage() {
 
       setActiveReport(report);
       showToast('AI Narrative Report generated successfully.');
-      void loadHistory(selectedOrgId); // Refresh history log
+      if (selectedOrgId) {
+        void loadHistory(selectedOrgId); // Refresh history log
+      }
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Unable to generate performance report.');
     } finally {
@@ -359,10 +359,6 @@ export default function ReportGenerationPage() {
                     onChange={(e) => {
                       const kpiId = e.target.value;
                       setSelectedKpiId(kpiId);
-                      const selectedKpi = kpis.find((k) => String(k.id) === kpiId);
-                      if (selectedKpi) {
-                        setSelectedOrgId(String(selectedKpi.organizationId));
-                      }
                     }}
                     disabled={isKpisLoading || kpis.length === 0}
                     sx={{ borderRadius: 2 }}
@@ -384,7 +380,7 @@ export default function ReportGenerationPage() {
                               {kpi.name}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
-                              Incubator: {kpi.organizationName}
+                              Committee: {kpi.committeeName}
                             </Typography>
                           </Box>
                         </MenuItem>
