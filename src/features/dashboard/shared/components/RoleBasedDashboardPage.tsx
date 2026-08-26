@@ -62,9 +62,6 @@ const RoleBasedDashboardPage = ({
     try {
       const response = await dashboardService.getDashboard();
       setDashboardData(response);
-      if (response.organizationName && role !== 'DASIG_ADMIN') {
-        setOrganization(response.organizationName);
-      }
       setError(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to load dashboard data.');

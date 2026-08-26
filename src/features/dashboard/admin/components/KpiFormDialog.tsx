@@ -17,7 +17,7 @@ import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 import { kpiService } from '../../shared/api/kpiService';
 import type { DashboardKpiItem } from '../../shared/types/dashboard.types';
-import type { CreateKpiDefinitionRequest, Organization, ReportingFrequency, UpdateKpiDefinitionRequest } from '../../shared/types/kpi.types';
+import type { Committee, CreateKpiDefinitionRequest, ReportingFrequency, UpdateKpiDefinitionRequest } from '../../shared/types/kpi.types';
 import { getDeadlineFieldHelperText } from '../../../notification/utils/notificationDisplay';
 import { REPORTING_FREQUENCY_OPTIONS } from '../../../kpisubmission/shared/utils/reportingPeriodUtils';
 
@@ -52,12 +52,12 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
   const [unit, setUnit] = useState('');
   const [deadline, setDeadline] = useState('');
   const [threshold, setThreshold] = useState('80');
-  const [organizationId, setOrganizationId] = useState<number | ''>('');
+  const [committeeId, setCommitteeId] = useState<number | ''>('');
   const [reportingFrequency, setReportingFrequency] = useState<ReportingFrequency>('QUARTERLY');
 
   // UI/API States
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [isLoadingOrgs, setIsLoadingOrgs] = useState(false);
+  const [committees, setCommittees] = useState<Committee[]>([]);
+  const [isLoadingCommittees, setIsLoadingCommittees] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -94,11 +94,11 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
     setUnit('');
     setDeadline('');
     setThreshold('80');
-    setOrganizationId('');
+    setCommitteeId('');
     setReportingFrequency('QUARTERLY');
   };
 
-  const populateForEdit = (currentKpi: DashboardKpiItem, orgs: Organization[]) => {
+  const populateForEdit = (currentKpi: DashboardKpiItem, comms: Committee[]) => {
     setName(currentKpi.name);
     setDescription(currentKpi.description);
     setTargetValue(String(currentKpi.targetValue));
@@ -112,44 +112,43 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
     setThreshold(String(itemWithThreshold.threshold ?? 80));
     setReportingFrequency(itemWithThreshold.reportingFrequency ?? 'QUARTERLY');
 
-    if (orgs.length > 0) {
-      const matchedOrg = orgs.find(
-        (org) => org.name.toLowerCase() === currentKpi.organization.toLowerCase()
+    if (comms.length > 0) {
+      const matchedComm = comms.find(
+        (c) => c.name.toLowerCase() === currentKpi.organization.toLowerCase()
       );
-      setOrganizationId(matchedOrg ? matchedOrg.id : '');
+      setCommitteeId(matchedComm ? matchedComm.id : '');
     } else {
-      setOrganizationId('');
+      setCommitteeId('');
     }
   };
 
-  const initializeForm = (orgs: Organization[]) => {
+  const initializeForm = (comms: Committee[]) => {
     setErrorMessage(null);
     setErrors({});
     if (kpi) {
-      populateForEdit(kpi, orgs);
+      populateForEdit(kpi, comms);
       return;
     }
     resetForCreate();
   };
 
-  // Fetch organizations on mount
+  // Fetch committees on mount
   useEffect(() => {
-    const loadOrgs = async () => {
-      setIsLoadingOrgs(true);
+    const loadCommittees = async () => {
+      setIsLoadingCommittees(true);
       try {
-        const data = await kpiService.getOrganizations();
-        setOrganizations(data);
+        const data = await kpiService.getCommittees();
+        setCommittees(data);
         initializeForm(data);
       } catch {
-        // Fallback is handled in kpiService, but we set an empty array just in case
-        setOrganizations([]);
+        setCommittees([]);
         initializeForm([]);
       } finally {
-        setIsLoadingOrgs(false);
+        setIsLoadingCommittees(false);
       }
     };
     if (open) {
-      void loadOrgs();
+      void loadCommittees();
     }
   }, [open]);
 
@@ -191,8 +190,8 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
         newErrors.threshold = 'Threshold must be a percentage between 0 and 100';
       }
     }
-    if (organizationId === '') {
-      newErrors.organizationId = 'Assigned Organization is required';
+    if (committeeId === '') {
+      newErrors.committeeId = 'Assigned Committee is required';
     }
 
     setErrors(newErrors);
@@ -215,7 +214,7 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
       unit: unit.trim(),
       deadline,
       threshold: Number(threshold),
-      organizationId: organizationId as number,
+      committeeId: committeeId as number,
       reportingFrequency,
     };
 
@@ -225,9 +224,9 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
       } else {
         await kpiService.createKpiDefinition(payload as CreateKpiDefinitionRequest);
       }
-      const orgName =
-        organizations.find((org) => org.id === organizationId)?.name ?? 'the assigned organization';
-      onSubmitSuccess({ deadline, isEdit, organizationName: orgName });
+      const commName =
+        committees.find((c) => c.id === committeeId)?.name ?? 'the assigned committee';
+      onSubmitSuccess({ deadline, isEdit, organizationName: commName });
       onClose();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'An error occurred. Please try again.';
@@ -245,7 +244,7 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
       maxWidth="sm"
       slotProps={{
         transition: {
-          onEnter: () => initializeForm(organizations),
+          onEnter: () => initializeForm(committees),
         },
         paper: {
           sx: {
@@ -460,17 +459,17 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
               </FormControl>
             </Grid>
 
-            {/* Assigned Organization */}
+            {/* Assigned Committee */}
             <Grid size={{ xs: 12 }}>
               <Box sx={{ mb: 0.5 }}>
                 <Typography variant="body2" sx={{ fontWeight: 600, color: '#3C4043', mb: 1 }}>
-                  Assigned Organization <span style={{ color: '#D93025' }}>*</span>
+                  Assigned Committee <span style={{ color: '#D93025' }}>*</span>
                 </Typography>
               </Box>
-              <FormControl fullWidth error={!!errors.organizationId} disabled={isSubmitting || isLoadingOrgs}>
+              <FormControl fullWidth error={!!errors.committeeId} disabled={isSubmitting || isLoadingCommittees}>
                 <Select
-                  value={organizationId}
-                  onChange={(e) => setOrganizationId(e.target.value as number)}
+                  value={committeeId}
+                  onChange={(e) => setCommitteeId(e.target.value as number)}
                   displayEmpty
                   sx={{
                     borderRadius: 2.5,
@@ -478,23 +477,27 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
                   }}
                 >
                   <MenuItem value="" disabled>
-                    {isLoadingOrgs ? 'Loading organizations...' : 'Select assigned organization...'}
+                    {isLoadingCommittees ? 'Loading committees...' : 'Select assigned committee...'}
                   </MenuItem>
-                  {organizations
-                    .filter((org) => {
-                      const isActive = !org.status || org.status.toLowerCase() === 'active';
-                      const isCurrentlySelected = org.id === organizationId;
+                  {committees
+                    .filter((c) => {
+                      const isActive = !c.status || c.status.toLowerCase() === 'active';
+                      const isCurrentlySelected = c.id === committeeId;
                       return isActive || isCurrentlySelected;
                     })
-                    .map((org) => (
-                      <MenuItem key={org.id} value={org.id}>
-                        {org.name}
+                    .map((c) => (
+                      <MenuItem key={c.id} value={c.id}>
+                        {c.name}
                       </MenuItem>
                     ))}
                 </Select>
-                {errors.organizationId && (
+                {errors.committeeId ? (
                   <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
-                    {errors.organizationId}
+                    {errors.committeeId}
+                  </Typography>
+                ) : (
+                  <Typography variant="caption" sx={{ color: '#5F6368', mt: 0.5, ml: 1.75, display: 'block' }}>
+                    This KPI will automatically be assigned to all active organizations under this committee.
                   </Typography>
                 )}
               </FormControl>

@@ -3,6 +3,8 @@ export const routes = {
   adminDashboard: '/dashboard/admin',
   adminKpis: '/dashboard/admin/kpis',
   adminKpiDetail: '/dashboard/admin/kpis/:id',
+  adminCreateKpi: '/dashboard/admin/kpis/create',
+  adminEditKpi: '/dashboard/admin/kpis/:id/edit',
   adminOrganizations: '/dashboard/admin/organizations',
   adminUsers: '/dashboard/admin/users',
   adminCommittees: '/dashboard/admin/committees',
