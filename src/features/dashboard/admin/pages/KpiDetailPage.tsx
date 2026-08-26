@@ -17,7 +17,7 @@ import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ApiError } from '../../../../lib/api/client';
 import { dashboardService } from '../../shared/api/dashboardService';
@@ -28,6 +28,7 @@ import KpiProgressChart from '../../shared/components/KpiProgressChart';
 import DeleteKpiDialog from '../../admin/components/DeleteKpiDialog';
 import KpiFormDialog from '../../admin/components/KpiFormDialog';
 import type { KpiSubmitSuccessContext } from '../../admin/components/KpiFormDialog';
+import { useRealtimeUpdates } from '../../../../hooks/useRealtimeUpdates';
 
 const formatDate = (date: string) =>
   new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -64,46 +65,81 @@ const KpiDetailPage = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [toastSeverity, setToastSeverity] = useState<'success' | 'error'>('success');
 
-  useEffect(() => {
-    const loadKpi = async () => {
+  const loadKpi = useCallback(async (silent = false) => {
+    if (!kpiId) return;
+    if (!silent) {
       setIsLoadingKpi(true);
-      setError(null);
-      try {
-        const data = await dashboardService.getDashboard();
-        const found = data.kpis.find((item) => item.id === kpiId);
-        if (found) {
-          setKpi(found);
-        } else {
-          setError('KPI not found.');
-        }
-      } catch (err) {
-        setError(err instanceof ApiError ? err.message : 'Unable to load KPI details.');
-      } finally {
+    }
+    setError(null);
+    try {
+      const data = await dashboardService.getDashboard();
+      const found = data.kpis.find((item) => item.id === kpiId);
+      if (found) {
+        setKpi(found);
+      } else {
+        setError('KPI not found.');
+      }
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Unable to load KPI details.');
+    } finally {
+      if (!silent) {
         setIsLoadingKpi(false);
       }
-    };
+    }
+  }, [kpiId]);
 
-    if (kpiId) {
-      void loadKpi();
+  const loadHistory = useCallback(async (silent = false) => {
+    if (!kpiId) return;
+    if (!silent) {
+      setIsLoadingHistory(true);
+    }
+    try {
+      const data = await dashboardService.getKpiPeriodHistory(kpiId);
+      setHistory(data);
+    } catch {
+      setHistory(null);
+    } finally {
+      if (!silent) {
+        setIsLoadingHistory(false);
+      }
     }
   }, [kpiId]);
 
   useEffect(() => {
-    const loadHistory = async () => {
-      if (!kpiId) return;
-      setIsLoadingHistory(true);
-      try {
-        const data = await dashboardService.getKpiPeriodHistory(kpiId);
-        setHistory(data);
-      } catch {
-        setHistory(null);
-      } finally {
-        setIsLoadingHistory(false);
-      }
-    };
+    void loadKpi();
+  }, [loadKpi]);
 
+  useEffect(() => {
     void loadHistory();
-  }, [kpiId]);
+  }, [loadHistory]);
+
+  const handleRealtimeKpiUpdate = useCallback((payload: { submissionId?: number }) => {
+    void loadKpi(true);
+    void loadHistory(true);
+
+    if (payload?.submissionId) {
+      showToast(`Realtime update: KPI submission #${payload.submissionId} recorded.`, 'success');
+    }
+  }, [loadKpi, loadHistory]);
+
+  const handleRealtimeKpiDefinitionChange = useCallback((payload: { kpiDefinitionId?: number; eventType?: string }) => {
+    if (payload?.kpiDefinitionId && payload.kpiDefinitionId !== kpiId) {
+      return;
+    }
+
+    void loadKpi(true);
+    void loadHistory(true);
+
+    const changeLabel =
+      payload?.eventType === 'KPI_DEFINITION_DELETED' ? 'This KPI was removed.' : 'This KPI was updated.';
+
+    showToast(changeLabel, 'success');
+  }, [loadKpi, loadHistory, kpiId]);
+
+  useRealtimeUpdates({
+    onKpiUpdate: handleRealtimeKpiUpdate,
+    onKpiDefinitionChange: handleRealtimeKpiDefinitionChange,
+  });
 
   const handleEditClick = () => {
     setFormDialogOpen(true);

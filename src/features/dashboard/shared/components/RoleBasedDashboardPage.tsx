@@ -19,6 +19,8 @@ import KpiPeriodHistoryDrawer from './KpiPeriodHistoryDrawer';
 import { getDeadlineAlertLeadDays } from '../../../notification/utils/notificationDisplay';
 import type { KpiSubmitSuccessContext } from '../../admin/components/KpiFormDialog';
 
+import { useRealtimeUpdates } from '../../../../hooks/useRealtimeUpdates'
+
 interface RoleBasedDashboardPageProps {
   role: UserRole;
   title: string;
@@ -78,6 +80,33 @@ const RoleBasedDashboardPage = ({
   useEffect(() => {
     void loadDashboard();
   }, [loadDashboard]);
+
+  const handleRealtimeKpiUpdate = useCallback((payload: { submissionId?: number }) => {
+    void loadDashboard(true);
+
+    if (payload?.submissionId) {
+      showToast(`Realtime update: KPI submission #${payload.submissionId} recorded.`, 'success');
+    }
+  }, [loadDashboard]);
+
+  const handleRealtimeKpiDefinitionChange = useCallback((payload: { eventType?: string }) => {
+    void loadDashboard(true);
+
+    const changeLabel =
+      payload?.eventType === 'KPI_DEFINITION_CREATED'
+        ? 'A new KPI was added.'
+        : payload?.eventType === 'KPI_DEFINITION_DELETED'
+          ? 'A KPI was removed.'
+          : 'A KPI was updated.';
+
+      showToast(changeLabel, 'success');
+  }, [loadDashboard]);
+
+  // 3. Connect to live updates
+  useRealtimeUpdates({
+    onKpiUpdate: handleRealtimeKpiUpdate,
+    onKpiDefinitionChange: handleRealtimeKpiDefinitionChange,
+  });
 
   const handleCreateClick = () => {
     setSelectedKpiForEdit(null);
