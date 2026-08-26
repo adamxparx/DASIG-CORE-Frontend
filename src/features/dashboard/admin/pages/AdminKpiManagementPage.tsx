@@ -7,15 +7,13 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../../../../lib/api/client';
 import CreateKpiButton from '../../admin/components/CreateKpiButton';
-import KpiFormDialog from '../../admin/components/KpiFormDialog';
 import DeleteKpiDialog from '../../admin/components/DeleteKpiDialog';
 import { dashboardService } from '../../shared/api/dashboardService';
 import type { DashboardApiResponse, DashboardKpiItem } from '../../shared/types/dashboard.types';
 import DashboardHeader from '../../shared/components/DashboardHeader';
 import DashboardLayout from '../../shared/components/DashboardLayout';
 import KpisList from '../../shared/components/KpisList';
-import { getDeadlineAlertLeadDays } from '../../../notification/utils/notificationDisplay';
-import type { KpiSubmitSuccessContext } from '../../admin/components/KpiFormDialog';
+import { routes } from '../../../../routes';
 
 const AdminKpiManagementPage = () => {
   const navigate = useNavigate();
@@ -23,9 +21,6 @@ const AdminKpiManagementPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-
-  const [formDialogOpen, setFormDialogOpen] = useState(false);
-  const [selectedKpiForEdit, setSelectedKpiForEdit] = useState<DashboardKpiItem | null>(null);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedKpiForDelete] = useState<DashboardKpiItem | null>(null);
@@ -56,8 +51,7 @@ const AdminKpiManagementPage = () => {
   }, [loadDashboard]);
 
   const handleCreateClick = () => {
-    setSelectedKpiForEdit(null);
-    setFormDialogOpen(true);
+    navigate(routes.adminCreateKpi);
   };
 
   const handleSelectKpi = (kpi: DashboardKpiItem) => {
@@ -68,25 +62,6 @@ const AdminKpiManagementPage = () => {
     setToastMessage(message);
     setToastSeverity(severity);
     setToastOpen(true);
-  };
-
-  const handleCreateOrUpdateSuccess = ({
-    deadline,
-    isEdit,
-    organizationName,
-  }: KpiSubmitSuccessContext) => {
-    void loadDashboard(true);
-
-    const baseMessage = isEdit ? 'KPI updated successfully.' : 'KPI created successfully.';
-    const leadDays = getDeadlineAlertLeadDays(deadline);
-    const alertMessage =
-      leadDays === 7
-        ? `${baseMessage} 7-day deadline alert sent to ${organizationName}.`
-        : leadDays === 2
-          ? `${baseMessage} 2-day deadline alert sent to ${organizationName}.`
-          : baseMessage;
-
-    showToast(alertMessage, 'success');
   };
 
   const handleDeleteSuccess = () => {
@@ -145,14 +120,6 @@ const AdminKpiManagementPage = () => {
             onSelectKpi={handleSelectKpi}
           />
         }
-      />
-
-      {/* KPI Form Modal */}
-      <KpiFormDialog
-        open={formDialogOpen}
-        onClose={() => setFormDialogOpen(false)}
-        onSubmitSuccess={handleCreateOrUpdateSuccess}
-        kpi={selectedKpiForEdit}
       />
 
       {/* Delete Confirmation Modal */}

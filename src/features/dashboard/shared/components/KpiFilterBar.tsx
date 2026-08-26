@@ -36,7 +36,7 @@ const KpiFilterBar = ({
 
       <TextField
         select
-        label="Organization"
+        label="Committee"
         value={organization}
         onChange={(event) => onOrganizationChange(event.target.value)}
         size="small"

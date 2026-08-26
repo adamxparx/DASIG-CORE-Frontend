@@ -14,6 +14,8 @@ import type { DashboardKpiItem } from '../types/dashboard.types';
 import { useDashboardShell } from './DashboardShellContext';
 
 const KPI_DETAIL_PATTERN = /^\/dashboard\/admin\/kpis\/\d+$/;
+const KPI_CREATE_PATTERN = /^\/dashboard\/admin\/kpis\/create$/;
+const KPI_EDIT_PATTERN = /^\/dashboard\/admin\/kpis\/\d+\/edit$/;
 
 const DashboardUserHeader = () => {
   const { setMobileOpen } = useDashboardShell();
@@ -22,6 +24,8 @@ const DashboardUserHeader = () => {
   const session = getSession();
 
   const isKpiDetail = KPI_DETAIL_PATTERN.test(location.pathname);
+  const isKpiCreate = KPI_CREATE_PATTERN.test(location.pathname);
+  const isKpiEdit = KPI_EDIT_PATTERN.test(location.pathname);
   const kpiIdMatch = location.pathname.match(/\/kpis\/(\d+)$/);
   const kpiId = kpiIdMatch ? Number(kpiIdMatch[1]) : null;
 
@@ -68,7 +72,7 @@ const DashboardUserHeader = () => {
         gap: 1,
       }}
     >
-      {isKpiDetail ? (
+      {(isKpiDetail || isKpiCreate || isKpiEdit) ? (
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center', minWidth: 0 }}>
           <IconButton
             onClick={() => navigate('/dashboard/admin')}
@@ -91,7 +95,11 @@ const DashboardUserHeader = () => {
               KPI Management Hub
             </Link>
             <Typography variant="body2" noWrap sx={{ color: 'text.primary', fontWeight: 600 }}>
-              {kpiName ?? 'KPI Details'}
+              {isKpiCreate
+                ? 'Create New KPI'
+                : isKpiEdit
+                  ? 'Edit KPI'
+                  : (kpiName ?? 'KPI Details')}
             </Typography>
           </Breadcrumbs>
         </Stack>

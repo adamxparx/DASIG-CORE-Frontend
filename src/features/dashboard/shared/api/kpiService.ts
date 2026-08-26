@@ -1,5 +1,6 @@
 import { apiClient } from '../../../../lib/api/client';
 import type {
+  Committee,
   CreateKpiDefinitionRequest,
   KpiDefinitionResponse,
   Organization,
@@ -8,6 +9,7 @@ import type {
 
 const KPI_ENDPOINT = '/api/kpi-definitions';
 const ORGANIZATIONS_ENDPOINT = '/api/organizations';
+const COMMITTEES_ENDPOINT = '/api/committees';
 
 const DEFAULT_ORGANIZATIONS: Organization[] = [
   { id: 1, name: 'Organization A', status: 'Active' },
@@ -58,6 +60,18 @@ export const kpiService = {
     } catch {
       // Fallback in case /api/organizations is not implemented
       return DEFAULT_ORGANIZATIONS;
+    }
+  },
+
+  async getCommittees(): Promise<Committee[]> {
+    try {
+      const response = await apiClient<Committee[]>(COMMITTEES_ENDPOINT);
+      if (Array.isArray(response)) {
+        return response;
+      }
+      return [];
+    } catch {
+      return [];
     }
   },
 };

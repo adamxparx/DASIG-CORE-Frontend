@@ -6,6 +6,14 @@ export interface Organization {
   status?: string;
 }
 
+export interface Committee {
+  id: number;
+  name: string;
+  description?: string | null;
+  status?: string;
+  organizationIds?: number[];
+}
+
 export interface CreateKpiDefinitionRequest {
   name: string;
   description: string;
@@ -13,7 +21,7 @@ export interface CreateKpiDefinitionRequest {
   unit: string;
   deadline: string; // Format: YYYY-MM-DD
   threshold: number; // Percentage, e.g. 80
-  organizationId: number;
+  committeeId: number;
   reportingFrequency: ReportingFrequency;
 }
 
@@ -35,7 +43,7 @@ export interface KpiDefinitionResponse {
   unit: string;
   deadline: string;
   threshold: number;
-  organizationId: number;
-  organizationName: string;
+  committeeId: number;
+  committeeName: string;
   reportingFrequency: ReportingFrequency;
 }
