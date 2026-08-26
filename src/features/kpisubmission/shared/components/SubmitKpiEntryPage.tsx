@@ -232,15 +232,6 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
       return;
     }
 
-    if (existingSubmission) {
-      setError(
-        existingSubmission.submissionType === 'FINAL'
-          ? 'A TBI final submission already exists for this KPI and period.'
-          : 'You have already submitted this KPI for the selected period.'
-      );
-      return;
-    }
-
     const payload: CreateKpiSubmissionRequest = {
       kpiDefinitionId: selectedKpi.id,
       reportingPeriod: period,
@@ -294,10 +285,10 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                 {error && <Alert severity="error">{error}</Alert>}
                 {success && <Alert severity="success">{success}</Alert>}
                 {existingSubmission && (
-                  <Alert severity="warning">
+                  <Alert severity="info">
                     {existingSubmission.submissionType === 'FINAL'
-                      ? 'A TBI final submission already exists for this KPI and period. This period is locked.'
-                      : 'You have already submitted this KPI for the selected period.'}
+                      ? 'An official final submission already exists for this KPI and period. New entries will be recorded as additional contributions.'
+                      : `You already have a ${existingSubmission.reviewStatus?.toLowerCase() ?? 'pending'} staff submission for this period. You may submit another attempt if needed.`}
                   </Alert>
                 )}
                 {prefillMessage && <Alert severity="info">{prefillMessage}</Alert>}
@@ -477,11 +468,12 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                     <InfoOutlinedIcon sx={{ color: '#6870DC', mt: 0.2 }} fontSize="small" />
                     <Box>
                       <Typography sx={{ fontWeight: 600, fontSize: '0.92rem', color: '#374151' }}>
-                        Submissions are auto-applied
+                        {role === 'STAFF' ? 'Submissions require TBI review' : 'Final submissions are official'}
                       </Typography>
                       <Typography variant="caption" sx={{ color: '#6B7280' }}>
-                        This KPI is configured for automatic approval. Once submitted, the values will immediately
-                        reflect in the organization&apos;s dashboard without requiring managerial review.
+                        {role === 'STAFF'
+                          ? 'Your staff submission will start as Pending. A TBI Manager can approve it for official progress or return it with comments.'
+                          : 'TBI Manager submissions are saved as approved final contributions for Admin dashboards and reports.'}
                       </Typography>
                     </Box>
                   </Stack>
@@ -498,7 +490,7 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                 <Button variant="outlined" disabled>
                   Save Draft
                 </Button>
-                <Button variant="contained" onClick={handleSubmit} disabled={isSubmitting || isLoadingKpis || Boolean(existingSubmission)}>
+                <Button variant="contained" onClick={handleSubmit} disabled={isSubmitting || isLoadingKpis}>
                   {isSubmitting ? 'Submitting...' : 'Submit KPI'}
                 </Button>
               </Stack>
