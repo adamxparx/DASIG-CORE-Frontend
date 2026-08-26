@@ -33,14 +33,18 @@ const buildChartPoints = (history: KpiPeriodHistoryResponse): ChartPoint[] => {
   let finalCumulative = 0;
 
   return chronologicalPeriods.map((period, index) => {
-    const internalSubmission = period.submissions.find((submission) => submission.submissionType === 'INTERNAL');
-    const finalSubmission = period.submissions.find((submission) => submission.submissionType === 'FINAL');
+    const internalSubmittedValue = period.submissions
+      .filter((submission) => submission.submissionType === 'INTERNAL')
+      .reduce((total, submission) => total + submission.submittedValue, 0);
+    const finalSubmittedValue = period.submissions
+      .filter((submission) => submission.submissionType === 'FINAL')
+      .reduce((total, submission) => total + submission.submittedValue, 0);
 
-    if (internalSubmission) {
-      internalCumulative += internalSubmission.submittedValue;
+    if (internalSubmittedValue > 0) {
+      internalCumulative += internalSubmittedValue;
     }
-    if (finalSubmission) {
-      finalCumulative += finalSubmission.submittedValue;
+    if (finalSubmittedValue > 0) {
+      finalCumulative += finalSubmittedValue;
     }
 
     return {

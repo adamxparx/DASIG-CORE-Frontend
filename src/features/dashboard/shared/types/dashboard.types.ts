@@ -6,6 +6,8 @@ export type DashboardStatus = 'ON_TRACK' | 'AT_RISK' | 'DELAYED';
 
 export type DashboardViewMode = 'grid' | 'list';
 
+export type SubmissionReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
 export interface DashboardKpiItem {
   id: number;
   name: string;
@@ -37,6 +39,9 @@ export interface KpiPeriodSubmissionEntry {
   submittedValue: number;
   achievementRate: number;
   performanceStatus: string;
+  reviewStatus?: SubmissionReviewStatus;
+  rejectionReason?: string;
+  reviewedByName?: string;
   submittedByName: string;
   submittedByRole: string;
   submissionDate: string;

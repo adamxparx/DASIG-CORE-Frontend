@@ -5,6 +5,8 @@ import type {
   AssignableKpi,
   CreateKpiSubmissionRequest,
   KpiSubmissionResponse,
+  ReviewKpiSubmissionRequest,
+  SubmissionReviewStatus,
 } from '../types/kpiSubmission.types';
  
 const SUBMISSION_ENDPOINT = '/api/kpi-submissions';
@@ -19,6 +21,7 @@ export const kpiSubmissionService = {
     kpiDefinitionId?: number;
     reportingPeriod?: string;
     submissionType?: 'INTERNAL' | 'FINAL';
+    reviewStatus?: SubmissionReviewStatus;
   }): Promise<KpiSubmissionResponse[]> {
     const searchParams = new URLSearchParams();
     if (params?.kpiDefinitionId !== undefined) {
@@ -30,9 +33,22 @@ export const kpiSubmissionService = {
     if (params?.submissionType) {
       searchParams.set('submissionType', params.submissionType);
     }
+    if (params?.reviewStatus) {
+      searchParams.set('reviewStatus', params.reviewStatus);
+    }
  
     const query = searchParams.toString();
     return apiClient<KpiSubmissionResponse[]>(query ? `${SUBMISSION_ENDPOINT}?${query}` : SUBMISSION_ENDPOINT);
+  },
+
+  reviewSubmission(
+    submissionId: number,
+    request: ReviewKpiSubmissionRequest,
+  ): Promise<KpiSubmissionResponse> {
+    return apiClient<KpiSubmissionResponse>(`${SUBMISSION_ENDPOINT}/${submissionId}/review`, {
+      method: 'PATCH',
+      body: request,
+    });
   },
  
   async downloadDocument(documentId: number): Promise<Blob> {

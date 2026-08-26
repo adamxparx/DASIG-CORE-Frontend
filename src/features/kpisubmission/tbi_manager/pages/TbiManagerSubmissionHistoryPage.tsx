@@ -2,6 +2,8 @@ import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined';
 
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
 
+import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
+
 import CloseIcon from '@mui/icons-material/Close';
 
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
@@ -64,7 +66,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { kpiSubmissionService } from '../../api/kpiSubmissionService';
 
-import type { AssignableKpi, KpiSubmissionResponse, SubmissionDocumentResponse } from '../../types/kpiSubmission.types';
+import type { AssignableKpi, KpiSubmissionResponse, SubmissionDocumentResponse, SubmissionReviewStatus } from '../../types/kpiSubmission.types';
+
+import ReviewActionDialog from '../../shared/components/ReviewActionDialog';
+
+import RejectionFeedbackPanel from '../../shared/components/RejectionFeedbackPanel';
+
+import SubmissionReviewBadge from '../../shared/components/SubmissionReviewBadge';
 
 
 
@@ -282,6 +290,8 @@ const TbiManagerSubmissionHistoryPage = () => {
 
   const [selectedStatus, setSelectedStatus] = useState<'ALL' | string>('ALL');
 
+  const [selectedReviewStatus, setSelectedReviewStatus] = useState<'ALL' | SubmissionReviewStatus>('ALL');
+
   const [selectedKpiName, setSelectedKpiName] = useState<'ALL' | string>('ALL');
 
   const [submissions, setSubmissions] = useState<KpiSubmissionResponse[]>([]);
@@ -295,6 +305,10 @@ const TbiManagerSubmissionHistoryPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   const [selectedSubmission, setSelectedSubmission] = useState<KpiSubmissionResponse | null>(null);
+
+  const [reviewDialogAction, setReviewDialogAction] = useState<Exclude<SubmissionReviewStatus, 'PENDING'> | null>(null);
+
+  const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
 
   const [documentPreview, setDocumentPreview] = useState<DocumentPreview | null>(null);
 
@@ -372,6 +386,8 @@ const TbiManagerSubmissionHistoryPage = () => {
 
       if (selectedStatus !== 'ALL' && mapStatus(submission.performanceStatus).label !== selectedStatus) return false;
 
+      if (selectedReviewStatus !== 'ALL' && submission.reviewStatus !== selectedReviewStatus) return false;
+
       if (selectedKpiName !== 'ALL' && submission.kpiName !== selectedKpiName) return false;
 
 
@@ -390,7 +406,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
     });
 
-  }, [search, selectedPeriod, selectedStatus, selectedKpiName, submissions]);
+  }, [search, selectedPeriod, selectedStatus, selectedReviewStatus, selectedKpiName, submissions]);
 
 
 
@@ -417,6 +433,9 @@ const TbiManagerSubmissionHistoryPage = () => {
     ? assignableById.get(selectedSubmission.kpiDefinitionId) ?? null
 
     : null;
+
+  const canReviewSelectedSubmission = selectedSubmission?.submissionType === 'INTERNAL'
+    && (selectedSubmission.reviewStatus ?? 'PENDING') === 'PENDING';
 
 
 
@@ -559,6 +578,30 @@ const TbiManagerSubmissionHistoryPage = () => {
     setDocumentError(null);
     setSelectedSubmission(null);
   }, [clearDocumentPreview]);
+
+  const handleSubmitReview = async (rejectionReason?: string) => {
+    if (!selectedSubmission || !reviewDialogAction) {
+      return;
+    }
+
+    setIsReviewSubmitting(true);
+    setError(null);
+    try {
+      const reviewedSubmission = await kpiSubmissionService.reviewSubmission(selectedSubmission.id, {
+        reviewStatus: reviewDialogAction,
+        rejectionReason,
+      });
+      setSubmissions((current) =>
+        current.map((submission) => submission.id === reviewedSubmission.id ? reviewedSubmission : submission)
+      );
+      setSelectedSubmission(reviewedSubmission);
+      setReviewDialogAction(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to review submission.');
+    } finally {
+      setIsReviewSubmitting(false);
+    }
+  };
 
 
 
@@ -770,6 +813,30 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                   select
 
+                  value={selectedReviewStatus}
+
+                  onChange={(event) => setSelectedReviewStatus(event.target.value as 'ALL' | SubmissionReviewStatus)}
+
+                  sx={{ minWidth: { xs: '100%', lg: 150 }, ...inputFieldSx }}
+
+                >
+
+                  {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((status) => (
+
+                    <MenuItem key={status} value={status}>
+
+                      {status === 'ALL' ? 'All Reviews' : status.charAt(0) + status.slice(1).toLowerCase()}
+
+                    </MenuItem>
+
+                  ))}
+
+                </TextField>
+
+                <TextField
+
+                  select
+
                   value={selectedKpiName}
 
                   onChange={(event) => setSelectedKpiName(event.target.value)}
@@ -850,6 +917,8 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                         'Status',
 
+                        'Review',
+
                       ].map((header) => (
 
                         <TableCell key={header} sx={tableHeaderCellSx}>
@@ -870,7 +939,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                       <TableRow>
 
-                        <TableCell colSpan={7} sx={{ borderBottom: 0 }}>
+                        <TableCell colSpan={8} sx={{ borderBottom: 0 }}>
 
                           <Typography sx={{ textAlign: 'center', py: 4, color: '#9BA1AE', lineHeight: 1.6 }}>
 
@@ -1027,6 +1096,12 @@ const TbiManagerSubmissionHistoryPage = () => {
                               }}
 
                             />
+
+                          </TableCell>
+
+                          <TableCell sx={tableBodyCellSx}>
+
+                            <SubmissionReviewBadge status={submission.reviewStatus} />
 
                           </TableCell>
 
@@ -1308,6 +1383,12 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                   </Typography>
 
+                  <Box sx={{ mt: 1 }}>
+
+                    <SubmissionReviewBadge status={selectedSubmission.reviewStatus} />
+
+                  </Box>
+
                 </Box>
 
                 <IconButton
@@ -1425,6 +1506,9 @@ const TbiManagerSubmissionHistoryPage = () => {
                   </Paper>
 
                 </Box>
+
+
+
 
 
 
@@ -1737,6 +1821,68 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                 </Box>
 
+                <Box>
+
+                  <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', mb: 1.75 }}>
+
+                    <ChatBubbleOutlineOutlinedIcon sx={{ fontSize: 16, color: '#6B7280' }} />
+
+                    <Typography sx={sectionLabelSx}>SUBMISSION NOTES</Typography>
+
+                  </Stack>
+
+                  <Paper
+
+                    variant="outlined"
+
+                    sx={{ p: 2.5, borderRadius: 2.5, borderColor: '#E2E5EC', bgcolor: '#fff' }}
+
+                  >
+
+                    <Typography
+
+                      variant="body2"
+
+                      sx={{
+
+                        fontStyle: selectedSubmission.notes ? 'italic' : 'normal',
+
+                        color: '#4E5563',
+
+                        lineHeight: 1.85,
+
+                        fontSize: '0.9rem',
+
+                      }}
+
+                    >
+
+                      {selectedSubmission.notes ? `"${selectedSubmission.notes}"` : 'No notes provided.'}
+
+                    </Typography>
+
+                  </Paper>
+
+                  {selectedSubmission.reviewStatus === 'REJECTED' && (
+
+                    <Box sx={{ mt: 2 }}>
+
+                      <RejectionFeedbackPanel
+
+                        rejectionReason={selectedSubmission.rejectionReason}
+
+                        reviewedByName={selectedSubmission.reviewedByName}
+
+                        reviewedAt={selectedSubmission.reviewedAt}
+
+                      />
+
+                    </Box>
+
+                  )}
+
+                </Box>
+
               </Stack>
 
             </Box>
@@ -1779,35 +1925,61 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                 </Button>
 
-                <Button
+                {canReviewSelectedSubmission && (
 
-                  variant="outlined"
+                  <>
 
-                  sx={{
+                    <Button
 
-                    ...outlinedActionButtonSx,
+                      variant="contained"
 
-                    borderColor: '#FCA5A5',
+                      color="success"
 
-                    color: '#DC2626',
+                      onClick={() => setReviewDialogAction('APPROVED')}
 
-                    '&:hover': {
+                      sx={{ ...primaryActionButtonSx, bgcolor: '#14945F', '&:hover': { bgcolor: '#0F7A4E' } }}
 
-                      borderColor: '#F87171',
+                    >
 
-                      bgcolor: '#FEF2F2',
+                      Approve
 
-                      boxShadow: 'none',
+                    </Button>
 
-                    },
+                    <Button
 
-                  }}
+                      variant="outlined"
 
-                >
+                      onClick={() => setReviewDialogAction('REJECTED')}
 
-                  Return with Comment
+                      sx={{
 
-                </Button>
+                        ...outlinedActionButtonSx,
+
+                        borderColor: '#FCA5A5',
+
+                        color: '#DC2626',
+
+                        '&:hover': {
+
+                          borderColor: '#F87171',
+
+                          bgcolor: '#FEF2F2',
+
+                          boxShadow: 'none',
+
+                        },
+
+                      }}
+
+                    >
+
+                      Return with Comment
+
+                    </Button>
+
+                  </>
+
+                )}
 
               </Stack>
 
@@ -1818,6 +1990,14 @@ const TbiManagerSubmissionHistoryPage = () => {
         )}
 
       </Drawer>
+
+      <ReviewActionDialog
+        open={Boolean(reviewDialogAction)}
+        action={reviewDialogAction}
+        isSubmitting={isReviewSubmitting}
+        onClose={() => setReviewDialogAction(null)}
+        onSubmit={(rejectionReason) => void handleSubmitReview(rejectionReason)}
+      />
 
     </>
 

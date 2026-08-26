@@ -19,6 +19,13 @@ export interface CreateKpiSubmissionRequest {
   notes?: string;
 }
 
+export type SubmissionReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface ReviewKpiSubmissionRequest {
+  reviewStatus: Exclude<SubmissionReviewStatus, 'PENDING'>;
+  rejectionReason?: string;
+}
+
 export interface SubmissionDocumentResponse {
   id: number;
   fileName: string;
@@ -39,6 +46,11 @@ export interface KpiSubmissionResponse {
   submissionType: 'INTERNAL' | 'FINAL';
   achievementRate: number;
   performanceStatus: string;
+  reviewStatus?: SubmissionReviewStatus;
+  rejectionReason?: string;
+  reviewedByName?: string;
+  reviewedAt?: string;
+  sourceSubmissionId?: number;
   documents: SubmissionDocumentResponse[];
   createdAt: string;
 }

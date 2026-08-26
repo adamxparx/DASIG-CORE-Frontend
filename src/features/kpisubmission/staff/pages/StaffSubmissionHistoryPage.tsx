@@ -26,7 +26,9 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { kpiSubmissionService } from '../../api/kpiSubmissionService';
-import type { AssignableKpi, KpiSubmissionResponse, SubmissionDocumentResponse } from '../../types/kpiSubmission.types';
+import type { AssignableKpi, KpiSubmissionResponse, SubmissionDocumentResponse, SubmissionReviewStatus } from '../../types/kpiSubmission.types';
+import RejectionFeedbackPanel from '../../shared/components/RejectionFeedbackPanel';
+import SubmissionReviewBadge from '../../shared/components/SubmissionReviewBadge';
 
 const PAGE_SIZE = 5;
 
@@ -112,6 +114,7 @@ const StaffSubmissionHistoryPage = () => {
   const [search, setSearch] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState<'ALL' | string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<'ALL' | string>('ALL');
+  const [selectedReviewStatus, setSelectedReviewStatus] = useState<'ALL' | SubmissionReviewStatus>('ALL');
   const [submissions, setSubmissions] = useState<KpiSubmissionResponse[]>([]);
   const [assignableKpis, setAssignableKpis] = useState<AssignableKpi[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -163,6 +166,10 @@ const StaffSubmissionHistoryPage = () => {
         return false;
       }
 
+      if (selectedReviewStatus !== 'ALL' && submission.reviewStatus !== selectedReviewStatus) {
+        return false;
+      }
+
       if (!normalized) {
         return true;
       }
@@ -173,7 +180,7 @@ const StaffSubmissionHistoryPage = () => {
         submission.reportingPeriod.toLowerCase().includes(normalized)
       );
     });
-  }, [search, selectedPeriod, selectedStatus, submissions]);
+  }, [search, selectedPeriod, selectedStatus, selectedReviewStatus, submissions]);
 
   const totalPages = Math.max(1, Math.ceil(filteredSubmissions.length / PAGE_SIZE));
   const pagedSubmissions = filteredSubmissions.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -387,6 +394,18 @@ const StaffSubmissionHistoryPage = () => {
                     </MenuItem>
                   ))}
                 </TextField>
+                <TextField
+                  select
+                  value={selectedReviewStatus}
+                  onChange={(event) => setSelectedReviewStatus(event.target.value as 'ALL' | SubmissionReviewStatus)}
+                  sx={{ minWidth: { xs: '100%', md: 160 }, ...inputFieldSx }}
+                >
+                  {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((status) => (
+                    <MenuItem key={status} value={status}>
+                      {status === 'ALL' ? 'All Reviews' : status.charAt(0) + status.slice(1).toLowerCase()}
+                    </MenuItem>
+                  ))}
+                </TextField>
               </Stack>
             </Paper>
 
@@ -407,7 +426,7 @@ const StaffSubmissionHistoryPage = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      {['SUB ID', 'KPI NAME', 'PERIOD', 'VALUE', 'TARGET', 'STATUS', 'DATE'].map((header) => (
+                      {['SUB ID', 'KPI NAME', 'PERIOD', 'VALUE', 'TARGET', 'STATUS', 'REVIEW', 'DATE'].map((header) => (
                         <TableCell key={header} sx={tableHeaderCellSx}>
                           {header}
                         </TableCell>
@@ -417,7 +436,7 @@ const StaffSubmissionHistoryPage = () => {
                   <TableBody>
                     {!isLoading && pagedSubmissions.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={7} sx={{ borderBottom: 0 }}>
+                        <TableCell colSpan={8} sx={{ borderBottom: 0 }}>
                           <Typography sx={{ textAlign: 'center', py: 4, color: '#9BA1AE', lineHeight: 1.6 }}>
                             No submission records found.
                           </Typography>
@@ -469,6 +488,9 @@ const StaffSubmissionHistoryPage = () => {
                                 px: 0.5,
                               }}
                             />
+                          </TableCell>
+                          <TableCell sx={tableBodyCellSx}>
+                            <SubmissionReviewBadge status={submission.reviewStatus} />
                           </TableCell>
                           <TableCell sx={{ ...tableBodyCellSx, color: '#6B7280' }}>
                             {formatDisplayDate(submission.submissionDate)}
@@ -863,6 +885,16 @@ const StaffSubmissionHistoryPage = () => {
               </Box>
 
               <Box>
+                {selectedSubmission.reviewStatus === 'REJECTED' && (
+                  <Box sx={{ mb: 2.5 }}>
+                    <RejectionFeedbackPanel
+                      rejectionReason={selectedSubmission.rejectionReason}
+                      reviewedByName={selectedSubmission.reviewedByName}
+                      reviewedAt={selectedSubmission.reviewedAt}
+                    />
+                  </Box>
+                )}
+
                 <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
                   <ChatBubbleOutlineOutlinedIcon sx={{ color: '#374151', fontSize: 20 }} />
                   <Typography sx={{ fontWeight: 700, color: '#111827', lineHeight: 1.6 }}>

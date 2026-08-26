@@ -20,6 +20,7 @@ import type { DashboardKpiItem, KpiPeriodHistoryResponse, UserRole } from '../ty
 import KpiProgressChart from './KpiProgressChart';
 import KpiStatusBadge from './KpiStatusBadge';
 import type { DashboardStatus } from '../types/dashboard.types';
+import SubmissionReviewBadge from '../../../kpisubmission/shared/components/SubmissionReviewBadge';
 
 interface KpiPeriodHistoryDrawerProps {
   open: boolean;
@@ -208,6 +209,7 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDr
                         <TableCell align="right">Value</TableCell>
                         <TableCell align="right">Achievement</TableCell>
                         <TableCell>Status</TableCell>
+                        <TableCell>Review</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -230,7 +232,7 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDr
                                 )}
                               </Stack>
                             </TableCell>
-                            <TableCell colSpan={5}>
+                            <TableCell colSpan={6}>
                               <Box
                                 sx={{
                                   border: '1px dashed #CBD5E1',
@@ -313,6 +315,9 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDr
                               </TableCell>
                               <TableCell>
                                 <KpiStatusBadge status={mapPerformanceStatus(submission.performanceStatus)} />
+                              </TableCell>
+                              <TableCell>
+                                <SubmissionReviewBadge status={submission.reviewStatus} />
                               </TableCell>
                             </TableRow>
                           ))
