@@ -1,8 +1,16 @@
-
+import ApartmentOutlinedIcon from '@mui/icons-material/ApartmentOutlined';
+import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
+import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Alert from '@mui/material/Alert';
+import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
+import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import Grid from '@mui/material/Grid';
@@ -12,11 +20,14 @@ import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { committeeService } from '../../../committee/api/committeeService';
+import type { CommitteeResponse } from '../../../committee/types/committee.types';
+import { organizationService } from '../../../organization/api/organizationService';
+import type { OrganizationResponse } from '../../../organization/types/organization.types';
 import { kpiService } from '../../shared/api/kpiService';
 import type {
-  Committee,
   CreateKpiDefinitionRequest,
   ReportingFrequency,
   UpdateKpiDefinitionRequest,
@@ -88,8 +99,9 @@ const CreateKpiPage = () => {
   const [reportingFrequency, setReportingFrequency] = useState<ReportingFrequency>('QUARTERLY');
 
   /* ── UI / API state ─────────────────────── */
-  const [committees, setCommittees] = useState<Committee[]>([]);
-  const [isLoadingCommittees, setIsLoadingCommittees] = useState(false);
+  const [committees, setCommittees] = useState<CommitteeResponse[]>([]);
+  const [organizations, setOrganizations] = useState<OrganizationResponse[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(false);
   const [isLoadingKpi, setIsLoadingKpi] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -106,24 +118,29 @@ const CreateKpiPage = () => {
     setToastOpen(true);
   };
 
-  /* ── Load committees ────────────────────── */
-  const loadCommittees = useCallback(async () => {
-    setIsLoadingCommittees(true);
+  /* ── Load committees and organizations ───── */
+  const loadCommitteesAndOrgs = useCallback(async () => {
+    setIsLoadingData(true);
     try {
-      const data = await kpiService.getCommittees();
-      setCommittees(data);
-      return data;
+      const [committeeData, orgData] = await Promise.all([
+        committeeService.getAll().catch(() => [] as CommitteeResponse[]),
+        organizationService.getAll().catch(() => [] as OrganizationResponse[]),
+      ]);
+      setCommittees(committeeData);
+      setOrganizations(orgData);
+      return { committees: committeeData, organizations: orgData };
     } catch {
       setCommittees([]);
-      return [] as Committee[];
+      setOrganizations([]);
+      return { committees: [], organizations: [] };
     } finally {
-      setIsLoadingCommittees(false);
+      setIsLoadingData(false);
     }
   }, []);
 
   /* ── Load existing KPI for edit ─────────── */
   const loadKpiForEdit = useCallback(
-    async (loadedCommittees: Committee[]) => {
+    async (loadedCommittees: CommitteeResponse[]) => {
       if (!id) return;
       setIsLoadingKpi(true);
       try {
@@ -155,13 +172,45 @@ const CreateKpiPage = () => {
 
   useEffect(() => {
     const init = async () => {
-      const loadedCommittees = await loadCommittees();
+      const data = await loadCommitteesAndOrgs();
       if (isEdit) {
-        await loadKpiForEdit(loadedCommittees);
+        await loadKpiForEdit(data.committees);
       }
     };
     void init();
-  }, [loadCommittees, loadKpiForEdit, isEdit]);
+  }, [loadCommitteesAndOrgs, loadKpiForEdit, isEdit]);
+
+  /* ── Organizations mapping helper ─────────── */
+  const getOrganizationsForCommittee = useCallback(
+    (commId: number): OrganizationResponse[] => {
+      const comm = committees.find((c) => c.id === commId);
+      if (!comm) return [];
+      return organizations.filter((org) => {
+        const inOrgIds = Array.isArray(comm.organizationIds) && comm.organizationIds.includes(org.id);
+        const isCommIdMatch = org.committeeId === comm.id;
+        return inOrgIds || isCommIdMatch;
+      });
+    },
+    [committees, organizations]
+  );
+
+  const selectedCommittee = useMemo(() => {
+    if (committeeId === '') return null;
+    return committees.find((c) => c.id === committeeId) ?? null;
+  }, [committees, committeeId]);
+
+  const selectedCommitteeOrganizations = useMemo(() => {
+    if (!selectedCommittee) return [];
+    return getOrganizationsForCommittee(selectedCommittee.id);
+  }, [selectedCommittee, getOrganizationsForCommittee]);
+
+  const activeCommittees = useMemo(() => {
+    return committees.filter((c) => {
+      const isActive = !c.status || c.status.toLowerCase() === 'active';
+      const isCurrent = c.id === committeeId;
+      return isActive || isCurrent;
+    });
+  }, [committees, committeeId]);
 
   /* ── Validation ─────────────────────────── */
   const validate = (): boolean => {
@@ -251,7 +300,6 @@ const CreateKpiPage = () => {
   ───────────────────────────────────────── */
   return (
     <Box sx={{ px: { xs: 3, sm: 5 }, py: { xs: 3, md: 4 }, maxWidth: 860 }}>
-
       {/* ── Page title ── */}
       <Typography
         variant="h5"
@@ -282,7 +330,10 @@ const CreateKpiPage = () => {
               variant="outlined"
               placeholder="e.g., Number of Startups Incubated"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (errors.name) setErrors((prev) => ({ ...prev, name: '' }));
+              }}
               error={!!errors.name}
               helperText={errors.name}
               disabled={isSubmitting}
@@ -301,7 +352,10 @@ const CreateKpiPage = () => {
               variant="outlined"
               placeholder="Describe the KPI and its purpose..."
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                if (errors.description) setErrors((prev) => ({ ...prev, description: '' }));
+              }}
               error={!!errors.description}
               helperText={errors.description}
               disabled={isSubmitting}
@@ -318,7 +372,10 @@ const CreateKpiPage = () => {
               variant="outlined"
               placeholder="100"
               value={targetValue}
-              onChange={(e) => setTargetValue(e.target.value)}
+              onChange={(e) => {
+                setTargetValue(e.target.value);
+                if (errors.targetValue) setErrors((prev) => ({ ...prev, targetValue: '' }));
+              }}
               error={!!errors.targetValue}
               helperText={errors.targetValue}
               disabled={isSubmitting}
@@ -334,7 +391,10 @@ const CreateKpiPage = () => {
               variant="outlined"
               placeholder="startups, sessions, etc."
               value={unit}
-              onChange={(e) => setUnit(e.target.value)}
+              onChange={(e) => {
+                setUnit(e.target.value);
+                if (errors.unit) setErrors((prev) => ({ ...prev, unit: '' }));
+              }}
               error={!!errors.unit}
               helperText={errors.unit}
               disabled={isSubmitting}
@@ -351,7 +411,10 @@ const CreateKpiPage = () => {
               type="date"
               variant="outlined"
               value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
+              onChange={(e) => {
+                setDeadline(e.target.value);
+                if (errors.deadline) setErrors((prev) => ({ ...prev, deadline: '' }));
+              }}
               error={!!errors.deadline}
               helperText={errors.deadline ?? getDeadlineFieldHelperText(deadline)}
               disabled={isSubmitting}
@@ -368,7 +431,10 @@ const CreateKpiPage = () => {
               variant="outlined"
               placeholder="80"
               value={threshold}
-              onChange={(e) => setThreshold(e.target.value)}
+              onChange={(e) => {
+                setThreshold(e.target.value);
+                if (errors.threshold) setErrors((prev) => ({ ...prev, threshold: '' }));
+              }}
               error={!!errors.threshold}
               helperText={errors.threshold}
               disabled={isSubmitting}
@@ -377,8 +443,8 @@ const CreateKpiPage = () => {
             />
           </Grid>
 
-          {/* Reporting Frequency & Assigned Committee */}
-          <Grid size={{ xs: 12, sm: 6 }}>
+          {/* Reporting Frequency */}
+          <Grid size={{ xs: 12 }}>
             <FieldLabel>Reporting Frequency</FieldLabel>
             <FormControl fullWidth disabled={isSubmitting}>
               <Select
@@ -394,48 +460,244 @@ const CreateKpiPage = () => {
               </Select>
             </FormControl>
           </Grid>
-
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <FieldLabel>Assigned Committee</FieldLabel>
-            <FormControl
-              fullWidth
-              error={!!errors.committeeId}
-              disabled={isSubmitting || isLoadingCommittees || isEdit}
-            >
-              <Select
-                value={committeeId}
-                onChange={(e) => setCommitteeId(e.target.value as number)}
-                displayEmpty
-                sx={{ borderRadius: 2, bgcolor: '#FAFBFF', fontSize: '0.94rem' }}
-              >
-                <MenuItem value="" disabled>
-                  {isLoadingCommittees ? 'Loading committees...' : 'Select a committee...'}
-                </MenuItem>
-                {committees
-                  .filter((c) => {
-                    const isActive = !c.status || c.status.toLowerCase() === 'active';
-                    const isCurrent = c.id === committeeId;
-                    return isActive || isCurrent;
-                  })
-                  .map((c) => (
-                    <MenuItem key={c.id} value={c.id}>
-                      {c.name}
-                    </MenuItem>
-                  ))}
-              </Select>
-              {errors.committeeId && <FormHelperText>{errors.committeeId}</FormHelperText>}
-              {isEdit ? (
-                <FormHelperText>Committee assignment cannot be changed after creation.</FormHelperText>
-              ) : (
-                committeeId !== '' && (
-                  <FormHelperText sx={{ color: 'text.secondary' }}>
-                    This KPI will automatically be assigned to all active organizations under this committee.
-                  </FormHelperText>
-                )
-              )}
-            </FormControl>
-          </Grid>
         </Grid>
+
+        {/* ─────────────────────────────────────────────
+            Assignment Container (Below other fields)
+        ───────────────────────────────────────────── */}
+        <Box sx={{ mt: 4 }}>
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 700, color: '#1A1C1E', fontSize: '1.1rem', mb: 0.5 }}
+          >
+            Committee & Organization Assignment
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#6B7280', mb: 2 }}>
+            {isEdit
+              ? 'View the committee and the member organizations assigned to this KPI.'
+              : 'Select the committee to assign this KPI. All active organizations part of the selected committee will be assigned.'}
+          </Typography>
+
+          {!isEdit ? (
+            <Box sx={{ mb: 2 }}>
+              <FieldLabel>Assigned Committee</FieldLabel>
+              <Autocomplete
+                disabled={isSubmitting || isLoadingData}
+                options={activeCommittees}
+                value={selectedCommittee}
+                onChange={(_, newValue) => {
+                  setCommitteeId(newValue ? newValue.id : '');
+                  if (errors.committeeId) setErrors((prev) => ({ ...prev, committeeId: '' }));
+                }}
+                getOptionLabel={(option) => option.name}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                loading={isLoadingData}
+                noOptionsText={isLoadingData ? 'Loading committees...' : 'No committees found'}
+                renderOption={(props, option) => {
+                  const orgs = getOrganizationsForCommittee(option.id);
+                  const activeOrgs = orgs.filter((o) => !o.status || o.status.toLowerCase() === 'active');
+                  const { key, ...otherProps } = props;
+
+                  return (
+                    <Box
+                      key={key}
+                      component="li"
+                      {...otherProps}
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        py: 1.25,
+                        px: 2,
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        '&:last-child': { borderBottom: 'none' },
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', mb: 0.5 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1A1C1E' }}>
+                          {option.name}
+                        </Typography>
+                        <Chip
+                          size="small"
+                          label={
+                            activeOrgs.length === 1
+                              ? '1 Organization'
+                              : `${activeOrgs.length} Organizations`
+                          }
+                          sx={{
+                            height: 22,
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            bgcolor: activeOrgs.length > 0 ? '#E8F0FE' : '#F1F3F4',
+                            color: activeOrgs.length > 0 ? '#1A73E8' : '#5F6368',
+                            borderRadius: '12px',
+                          }}
+                        />
+                      </Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: activeOrgs.length > 0 ? '#5F6368' : '#9AA0A6',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                        }}
+                      >
+                        <ApartmentOutlinedIcon sx={{ fontSize: 14 }} />
+                        {activeOrgs.length > 0
+                          ? activeOrgs.map((o) => o.name).join(', ')
+                          : 'No organizations assigned yet'}
+                      </Typography>
+                    </Box>
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Search and select a committee..."
+                    error={!!errors.committeeId}
+                    helperText={errors.committeeId}
+                    sx={inputSx}
+                  />
+                )}
+              />
+            </Box>
+          ) : null}
+
+          {/* Selected Committee & Organizations Preview */}
+          {selectedCommittee ? (
+            <Card
+              variant="outlined"
+              sx={{
+                mt: 2,
+                borderRadius: 2,
+                bgcolor: '#FAFBFF',
+                borderColor: '#E2E8F0',
+              }}
+            >
+              <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 1.5,
+                  }}
+                >
+                  <Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1A1C1E' }}>
+                      {selectedCommittee.name}
+                    </Typography>
+                    {selectedCommittee.description && (
+                      <Typography variant="caption" sx={{ color: '#5F6368', display: 'block' }}>
+                        {selectedCommittee.description}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                    <Chip
+                      size="small"
+                      icon={<CheckCircleOutlinedIcon sx={{ fontSize: '14px !important' }} />}
+                      label={selectedCommittee.status || 'Active'}
+                      color={
+                        !selectedCommittee.status || selectedCommittee.status.toLowerCase() === 'active'
+                          ? 'success'
+                          : 'default'
+                      }
+                      sx={{ fontWeight: 600, height: 24, fontSize: '0.75rem' }}
+                    />
+                    {isEdit && (
+                      <Chip
+                        size="small"
+                        label="Cannot be changed"
+                        sx={{ bgcolor: '#F1F3F4', color: '#5F6368', fontWeight: 600, height: 24, fontSize: '0.75rem' }}
+                      />
+                    )}
+                  </Stack>
+                </Box>
+
+                <Divider sx={{ my: 1.5 }} />
+
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontWeight: 700,
+                    color: '#3C4043',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    display: 'block',
+                    mb: 1,
+                  }}
+                >
+                  Organizations part of this committee ({selectedCommitteeOrganizations.length})
+                </Typography>
+
+                {selectedCommitteeOrganizations.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary" sx={{ py: 0.5 }}>
+                    No member organizations assigned yet to this committee.
+                  </Typography>
+                ) : (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {selectedCommitteeOrganizations.map((org) => {
+                      const isActive = !org.status || org.status.toLowerCase() === 'active';
+                      return (
+                        <Chip
+                          key={org.id}
+                          icon={<BusinessOutlinedIcon sx={{ fontSize: '15px !important', color: '#3F6DF6' }} />}
+                          label={
+                            <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                              <span>{org.name}</span>
+                              {!isActive && (
+                                <span style={{ fontSize: '0.7rem', color: '#D93025' }}>(Inactive)</span>
+                              )}
+                            </Box>
+                          }
+                          variant="outlined"
+                          sx={{
+                            bgcolor: '#FFFFFF',
+                            borderColor: '#D0E1FD',
+                            borderRadius: '8px',
+                            fontWeight: 500,
+                            color: '#1A1C1E',
+                            fontSize: '0.84rem',
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+                )}
+
+                <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <InfoOutlinedIcon sx={{ fontSize: 15, color: '#1A73E8' }} />
+                  <Typography variant="caption" sx={{ color: '#5F6368' }}>
+                    This KPI will automatically be assigned to all active organizations listed above.
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          ) : !isEdit ? (
+            <Box
+              sx={{
+                p: 2.5,
+                textAlign: 'center',
+                bgcolor: '#FAFBFF',
+                borderRadius: 2,
+                border: '1px dashed #CBD5E1',
+              }}
+            >
+              <Typography variant="body2" sx={{ color: '#64748B' }}>
+                Select a committee above to view the organizations part of it.
+              </Typography>
+            </Box>
+          ) : null}
+
+          {errors.committeeId && !selectedCommittee && (
+            <FormHelperText error sx={{ mt: 1 }}>
+              {errors.committeeId}
+            </FormHelperText>
+          )}
+        </Box>
 
         {/* ── Actions ── */}
         <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end', mt: 4 }}>
