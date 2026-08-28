@@ -136,7 +136,7 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDr
                 {role === 'DASIG_ADMIN'
                   ? 'Official TBI final submissions by reporting period.'
                   : role === 'STAFF'
-                    ? 'Your organization’s staff submissions by reporting period.'
+                    ? 'Official approved submissions by reporting period.'
                     : 'Staff internal drafts and TBI final submissions by period.'}
               </Typography>
 
