@@ -17,12 +17,12 @@ interface ChartPoint {
 const chartSeriesConfig: Record<ChartSeriesKey | 'EXPECTED', { label: string; color: string }> = {
   EXPECTED: { label: 'Expected target', color: '#64748B' },
   INTERNAL: { label: 'Staff internal progress', color: '#2563EB' },
-  FINAL: { label: 'TBI final progress', color: '#059669' },
+  FINAL: { label: 'Official final progress', color: '#059669' },
 };
 
 const getChartSeriesKeys = (role: UserRole): ChartSeriesKey[] => {
   if (role === 'DASIG_ADMIN') return ['FINAL'];
-  if (role === 'STAFF') return ['INTERNAL'];
+  if (role === 'STAFF') return ['FINAL'];
   return ['INTERNAL', 'FINAL'];
 };
 
