@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../../../../lib/api/client';
 import CreateKpiButton from '../../admin/components/CreateKpiButton';
 import DeleteKpiDialog from '../../admin/components/DeleteKpiDialog';
+import AdminKpiSummaryCards from '../../admin/components/AdminKpiSummaryCards';
 import { dashboardService } from '../../shared/api/dashboardService';
 import type { DashboardApiResponse, DashboardKpiItem } from '../../shared/types/dashboard.types';
 import DashboardHeader from '../../shared/components/DashboardHeader';
@@ -99,9 +100,17 @@ const AdminKpiManagementPage = () => {
   return (
     <>
       <DashboardLayout
-        header={<DashboardHeader title="KPI Management Hub" subtitle="Monitor consortium-wide KPI definitions and performance updates." />}
+        header={
+          <DashboardHeader
+            title="KPI Management Hub"
+            subtitle="Monitor consortium-wide KPI definitions and performance updates."
+          />
+        }
+        welcomeBanner={
+          <AdminKpiSummaryCards kpis={dashboardData?.kpis ?? []} />
+        }
         topActions={
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ justifyContent: 'space-between' }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ justifyContent: 'space-between', mt: 1 }}>
             <TextField
               label="Search KPI"
               value={search}
