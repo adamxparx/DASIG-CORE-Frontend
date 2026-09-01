@@ -11,10 +11,11 @@ import Divider from '@mui/material/Divider';
 import LinearProgress from '@mui/material/LinearProgress';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
+import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEventHandler } from 'react';
 import { kpiSubmissionService } from '../../api/kpiSubmissionService';
 import {
@@ -42,6 +43,23 @@ const formatDeadline = (rawDate: string) =>
 const formatMetricValue = (value: number) =>
   value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+const getSelectablePeriodOptionsForKpi = (kpi: AssignableKpi) => {
+  const frequency = kpi.reportingFrequency ?? 'QUARTERLY';
+  return getPeriodOptions(frequency, kpi.deadline).filter((option) => !isFuturePeriod(frequency, option));
+};
+
+const getDefaultPeriodForKpi = (kpi: AssignableKpi) => {
+  const frequency = kpi.reportingFrequency ?? 'QUARTERLY';
+  const selectableOptions = getSelectablePeriodOptionsForKpi(kpi);
+  const currentPeriod = getCurrentPeriod(frequency, kpi.deadline);
+  return currentPeriod && selectableOptions.includes(currentPeriod)
+    ? currentPeriod
+    : selectableOptions[selectableOptions.length - 1] ?? '';
+};
+
+const getDefaultSubmissionDateForKpi = (kpi: AssignableKpi, today: string) =>
+  kpi.deadline >= today ? today : '';
+
 const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const today = new Date().toISOString().slice(0, 10);
@@ -56,9 +74,15 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
   const [notes, setNotes] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [prefillMessage, setPrefillMessage] = useState<string | null>(null);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastSeverity, setToastSeverity] = useState<'success' | 'error'>('success');
+
+  const showToast = useCallback((message: string, severity: 'success' | 'error') => {
+    setToastMessage(message);
+    setToastSeverity(severity);
+    setToastOpen(true);
+  }, []);
 
   useEffect(() => {
     const loadKpis = async () => {
@@ -73,105 +97,98 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
           : [];
         setAssignableKpis(data);
         setSubmissions([...submissionData, ...finalSubmissionData]);
-        if (data.length > 0) {
-          setSelectedKpiId(data[0].id);
-        }
+        setSelectedKpiId('');
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load assigned KPIs.');
+        showToast(err instanceof Error ? err.message : 'Failed to load assigned KPIs.', 'error');
       } finally {
         setIsLoadingKpis(false);
       }
     };
 
     void loadKpis();
-  }, [role]);
+  }, [role, showToast]);
 
   const selectedKpi = assignableKpis.find((kpi) => kpi.id === selectedKpiId) ?? null;
+  const submissionDateMin = today;
+  const submissionDateMax = selectedKpi?.deadline ?? undefined;
+  const hasValidSubmissionDateRange = Boolean(
+    selectedKpi && submissionDateMax && submissionDateMax >= submissionDateMin
+  );
   const periodOptions = useMemo(() => {
     if (!selectedKpi) {
       return [];
     }
     return getPeriodOptions(selectedKpi.reportingFrequency ?? 'QUARTERLY', selectedKpi.deadline);
   }, [selectedKpi]);
-  const selectablePeriodOptions = useMemo(() => {
-    if (!selectedKpi) {
-      return [];
-    }
-    return periodOptions.filter((option) =>
-      !isFuturePeriod(selectedKpi.reportingFrequency ?? 'QUARTERLY', option)
-    );
-  }, [periodOptions, selectedKpi]);
-
-  useEffect(() => {
-    if (!selectedKpi) {
-      setPeriod('');
-      return;
-    }
-    const currentPeriod = getCurrentPeriod(selectedKpi.reportingFrequency ?? 'QUARTERLY', selectedKpi.deadline);
-    const defaultPeriod = currentPeriod && selectablePeriodOptions.includes(currentPeriod)
-      ? currentPeriod
-      : selectablePeriodOptions[selectablePeriodOptions.length - 1];
-    setPeriod(defaultPeriod ?? '');
-  }, [selectedKpi, selectablePeriodOptions]);
-
   const submissionType = role === 'STAFF' ? 'INTERNAL' : 'FINAL';
-  const staffInternalSubmission = selectedKpi && role === 'TBI_MANAGER'
-    ? submissions.find((submission) =>
-        submission.kpiDefinitionId === selectedKpi.id &&
-        submission.reportingPeriod === period &&
-        submission.submissionType === 'INTERNAL'
-      )
-    : null;
-  const tbiFinalSubmission = selectedKpi && role === 'TBI_MANAGER'
-    ? submissions.find((submission) =>
-        submission.kpiDefinitionId === selectedKpi.id &&
-        submission.reportingPeriod === period &&
-        submission.submissionType === 'FINAL'
-      )
-    : null;
-  const existingSubmission = selectedKpi
-    ? submissions.find((submission) =>
-        submission.kpiDefinitionId === selectedKpi.id &&
-        submission.reportingPeriod === period &&
-        (
-          submission.submissionType === submissionType ||
-          submission.submissionType === 'FINAL'
-        )
-      )
-    : null;
 
-  useEffect(() => {
+  const applyTbiPrefill = (kpi: AssignableKpi | null, nextPeriod: string, nextSubmissionDate: string) => {
     if (role !== 'TBI_MANAGER') {
-      setPrefillMessage(null);
       return;
     }
 
-    if (!selectedKpi || !period) {
-      setPrefillMessage(null);
+    if (!kpi || !nextPeriod) {
       return;
     }
 
+    const tbiFinalSubmission = submissions.find((submission) =>
+      submission.kpiDefinitionId === kpi.id &&
+      submission.reportingPeriod === nextPeriod &&
+      submission.submissionType === 'FINAL'
+    );
     if (tbiFinalSubmission) {
-      setPrefillMessage('A TBI final submission already exists for this period.');
       return;
     }
 
+    const staffInternalSubmission = submissions.find((submission) =>
+      submission.kpiDefinitionId === kpi.id &&
+      submission.reportingPeriod === nextPeriod &&
+      submission.submissionType === 'INTERNAL'
+    );
     if (!staffInternalSubmission) {
-      setPrefillMessage('No staff internal submission found for this period. You can enter the final values manually.');
       return;
     }
 
     setSubmittedValue(String(staffInternalSubmission.submittedValue));
-    setSubmissionDate(today);
+    setSubmissionDate(nextSubmissionDate);
     setNotes(staffInternalSubmission.notes ?? '');
-    setPrefillMessage('Loaded values from the staff internal submission for this period. Review before submitting final KPI.');
-  }, [
-    role,
-    selectedKpi,
-    period,
-    staffInternalSubmission,
-    tbiFinalSubmission,
-  ]);
+  };
+
+  const handleKpiChange = (nextValue: string | number) => {
+    if (nextValue === '') {
+      setSelectedKpiId('');
+      setPeriod('');
+      setSubmittedValue('');
+      setSubmissionDate(today);
+      setNotes('');
+      setFiles([]);
+      return;
+    }
+
+    const nextKpiId = Number(nextValue);
+    const nextKpi = assignableKpis.find((kpi) => kpi.id === nextKpiId) ?? null;
+    const nextPeriod = nextKpi ? getDefaultPeriodForKpi(nextKpi) : '';
+    const nextSubmissionDate = nextKpi ? getDefaultSubmissionDateForKpi(nextKpi, today) : today;
+
+    setSelectedKpiId(nextKpiId);
+    setPeriod(nextPeriod);
+    setSubmittedValue('');
+    setSubmissionDate(nextSubmissionDate);
+    setNotes('');
+    setFiles([]);
+    applyTbiPrefill(nextKpi, nextPeriod, nextSubmissionDate);
+  };
+
+  const handlePeriodChange = (nextPeriod: string) => {
+    setPeriod(nextPeriod);
+    if (selectedKpi && role === 'TBI_MANAGER') {
+      applyTbiPrefill(
+        selectedKpi,
+        nextPeriod,
+        getDefaultSubmissionDateForKpi(selectedKpi, today)
+      );
+    }
+  };
 
   const numericSubmittedValue = Number(submittedValue) || 0;
   const relatedSubmissions = selectedKpi
@@ -214,21 +231,40 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
   };
 
   const handleSubmit = async () => {
-    setError(null);
-    setSuccess(null);
+    setToastOpen(false);
 
     if (!selectedKpi) {
-      setError('Please select an assigned KPI.');
+      showToast('Please select an assigned KPI.', 'error');
       return;
     }
 
     if (!submittedValue || Number.isNaN(Number(submittedValue))) {
-      setError('Please enter a valid submitted value.');
+      showToast('Please enter a valid submitted value.', 'error');
       return;
     }
 
     if (!period) {
-      setError('Please select a reporting period.');
+      showToast('Please select a reporting period.', 'error');
+      return;
+    }
+
+    if (!hasValidSubmissionDateRange) {
+      showToast('This KPI is no longer accepting submissions because its deadline has passed.', 'error');
+      return;
+    }
+
+    if (!submissionDate) {
+      showToast('Please select a submission date.', 'error');
+      return;
+    }
+
+    if (submissionDate < submissionDateMin) {
+      showToast('Submission date cannot be before today.', 'error');
+      return;
+    }
+
+    if (submissionDateMax && submissionDate > submissionDateMax) {
+      showToast('Submission date cannot be after the KPI deadline.', 'error');
       return;
     }
 
@@ -244,18 +280,19 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
     try {
       const response: KpiSubmissionResponse = await kpiSubmissionService.createSubmission(payload, files);
       setSubmissions((current) => [response, ...current]);
-      setSuccess(`KPI submitted successfully as ${response.submissionType}.`);
+      showToast(`KPI submitted successfully as pending for approval.`, 'success');
       setSubmittedValue('');
       setNotes('');
       setFiles([]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to submit KPI entry.');
+      showToast(err instanceof Error ? err.message : 'Unable to submit KPI entry.', 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
+    <>
     <Box sx={{ minHeight: '100%', bgcolor: '#F7F8FB', p: { xs: 2, md: 4 } }}>
       <Stack spacing={2} sx={{ maxWidth: 1080, width: '100%', mx: 'auto' }}>
           <Stack spacing={0.75}>
@@ -282,16 +319,6 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                 </Box>
 
                 {isLoadingKpis && <LinearProgress />}
-                {error && <Alert severity="error">{error}</Alert>}
-                {success && <Alert severity="success">{success}</Alert>}
-                {existingSubmission && (
-                  <Alert severity="info">
-                    {existingSubmission.submissionType === 'FINAL'
-                      ? 'An official final submission already exists for this KPI and period. New entries will be recorded as additional contributions.'
-                      : `You already have a ${existingSubmission.reviewStatus?.toLowerCase() ?? 'pending'} staff submission for this period. You may submit another attempt if needed.`}
-                  </Alert>
-                )}
-                {prefillMessage && <Alert severity="info">{prefillMessage}</Alert>}
 
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                   <TextField
@@ -299,9 +326,14 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                     fullWidth
                     label="Assigned KPI"
                     value={selectedKpiId}
-                    onChange={(event) => setSelectedKpiId(Number(event.target.value))}
+                    onChange={(event) => {
+                      handleKpiChange(event.target.value);
+                    }}
                     disabled={isLoadingKpis || assignableKpis.length === 0}
                   >
+                    <MenuItem value="" disabled>
+                      Select KPI
+                    </MenuItem>
                     {assignableKpis.map((kpi) => (
                       <MenuItem key={kpi.id} value={kpi.id}>
                         {kpi.name}
@@ -314,8 +346,8 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                     fullWidth
                     label="Period"
                     value={period}
-                    onChange={(event) => setPeriod(event.target.value)}
-                    disabled={periodOptions.length === 0}
+                    onChange={(event) => handlePeriodChange(event.target.value)}
+                    disabled={!selectedKpi || periodOptions.length === 0}
                     helperText={
                       selectedKpi
                         ? `${selectedKpi.reportingFrequency.replace('_', ' ').toLowerCase()} reporting`
@@ -376,7 +408,21 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                     type="date"
                     value={submissionDate}
                     onChange={(event) => setSubmissionDate(event.target.value)}
-                    slotProps={{ inputLabel: { shrink: true } }}
+                    disabled={!selectedKpi || !hasValidSubmissionDateRange}
+                    helperText={
+                      selectedKpi && !hasValidSubmissionDateRange
+                        ? 'The KPI deadline has already passed.'
+                        : selectedKpi
+                          ? 'Submission date must be from today through the KPI deadline.'
+                          : undefined
+                    }
+                    slotProps={{
+                      inputLabel: { shrink: true },
+                      htmlInput: {
+                        min: selectedKpi ? submissionDateMin : undefined,
+                        max: submissionDateMax,
+                      },
+                    }}
                   />
                 </Stack>
 
@@ -490,7 +536,11 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                 <Button variant="outlined" disabled>
                   Save Draft
                 </Button>
-                <Button variant="contained" onClick={handleSubmit} disabled={isSubmitting || isLoadingKpis}>
+                <Button
+                  variant="contained"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || isLoadingKpis || !selectedKpi || !period || !hasValidSubmissionDateRange}
+                >
                   {isSubmitting ? 'Submitting...' : 'Submit KPI'}
                 </Button>
               </Stack>
@@ -498,6 +548,21 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
           </Paper>
         </Stack>
     </Box>
+    <Snackbar
+      open={toastOpen}
+      autoHideDuration={5000}
+      onClose={() => setToastOpen(false)}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+    >
+      <Alert
+        severity={toastSeverity}
+        onClose={() => setToastOpen(false)}
+        sx={{ borderRadius: 3, fontWeight: 600 }}
+      >
+        {toastMessage}
+      </Alert>
+    </Snackbar>
+    </>
   );
 };
 
