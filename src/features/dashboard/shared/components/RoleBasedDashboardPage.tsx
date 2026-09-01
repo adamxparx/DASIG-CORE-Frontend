@@ -3,6 +3,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Stack from '@mui/material/Stack';
 import Snackbar from '@mui/material/Snackbar';
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../../../../lib/api/client';
 import DashboardViewToggle from '../../admin/components/DashboardViewToggle';
 import CreateKpiButton from '../../admin/components/CreateKpiButton';
@@ -15,6 +16,7 @@ import DashboardLayout from './DashboardLayout';
 import KpiDashboardCard from './KpiDashboardCard';
 import KpiFilterBar from './KpiFilterBar';
 import KpiGrid from './KpiGrid';
+import KpisList from './KpisList';
 import KpiPeriodHistoryDrawer from './KpiPeriodHistoryDrawer';
 import { getDeadlineAlertLeadDays } from '../../../notification/utils/notificationDisplay';
 import type { KpiSubmitSuccessContext } from '../../admin/components/KpiFormDialog';
@@ -30,6 +32,7 @@ const RoleBasedDashboardPage = ({
   title,
   subtitle,
 }: RoleBasedDashboardPageProps) => {
+  const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState<DashboardApiResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +97,16 @@ const RoleBasedDashboardPage = ({
   const handleViewHistoryClick = (item: DashboardKpiItem) => {
     setSelectedKpiForHistory(item);
     setHistoryDrawerOpen(true);
+  };
+
+  const handleSelectKpi = (item: DashboardKpiItem) => {
+    if (role === 'STAFF') {
+      navigate(`/dashboard/staff/kpis/${item.id}`);
+    } else if (role === 'TBI_MANAGER') {
+      navigate(`/dashboard/tbi_manager/kpis/${item.id}`);
+    } else {
+      navigate(`/dashboard/admin/kpis/${item.id}`);
+    }
   };
 
   const showToast = (message: string, severity: 'success' | 'error') => {
@@ -198,22 +211,31 @@ const RoleBasedDashboardPage = ({
           />
         }
         content={
-          <KpiGrid
-            title={role === 'DASIG_ADMIN' ? 'All KPIs' : 'Organization KPIs'}
-            items={filteredKpis}
-            viewMode={viewMode}
-            gridColumns={3}
-            renderItem={(item) => (
-              <KpiDashboardCard
-                key={item.id}
-                item={item}
-                role={role}
-                onEdit={handleEditClick}
-                onDelete={handleDeleteClick}
-                onViewHistory={handleViewHistoryClick}
-              />
-            )}
-          />
+          role === 'DASIG_ADMIN' ? (
+            <KpiGrid
+              title="All KPIs"
+              items={filteredKpis}
+              viewMode={viewMode}
+              gridColumns={3}
+              renderItem={(item) => (
+                <KpiDashboardCard
+                  key={item.id}
+                  item={item}
+                  role={role}
+                  onEdit={handleEditClick}
+                  onDelete={handleDeleteClick}
+                  onViewHistory={handleViewHistoryClick}
+                />
+              )}
+            />
+          ) : (
+            <KpisList
+              title={role === 'STAFF' ? 'Member KPIs' : 'Organization KPIs'}
+              kpis={filteredKpis}
+              selectedId={null}
+              onSelectKpi={handleSelectKpi}
+            />
+          )
         }
       />
 

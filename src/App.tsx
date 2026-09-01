@@ -69,6 +69,7 @@ function App() {
           <Route path="notifications" element={<StaffNotificationsPage />} />
           <Route path="submit-kpi" element={<StaffSubmitKpiPage />} />
           <Route path="submission-history" element={<StaffSubmissionHistoryPage />} />
+          <Route path="kpis/:id" element={<KpiDetailPage />} />
         </Route>
 
         <Route
@@ -79,6 +80,7 @@ function App() {
           <Route path="notifications" element={<TbiManagerNotificationsPage />} />
           <Route path="submit-kpi" element={<TbiManagerSubmitKpiPage />} />
           <Route path="submission-history" element={<TbiManagerSubmissionHistoryPage />} />
+          <Route path="kpis/:id" element={<KpiDetailPage />} />
         </Route>
 
         <Route path="*" element={<LandingRoute />} />

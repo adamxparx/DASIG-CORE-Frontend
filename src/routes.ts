@@ -14,8 +14,10 @@ export const routes = {
   staffNotifications: '/dashboard/staff/notifications',
   staffSubmitKpi: '/dashboard/staff/submit-kpi',
   staffSubmissionHistory: '/dashboard/staff/submission-history',
+  staffKpiDetail: '/dashboard/staff/kpis/:id',
   tbiManagerDashboard: '/dashboard/tbi_manager',
   tbiManagerNotifications: '/dashboard/tbi_manager/notifications',
   tbiManagerSubmitKpi: '/dashboard/tbi_manager/submit-kpi',
   tbiManagerSubmissionHistory: '/dashboard/tbi_manager/submission-history',
+  tbiManagerKpiDetail: '/dashboard/tbi_manager/kpis/:id',
 } as const;
