@@ -2,6 +2,9 @@ import { apiClient } from '../../../lib/api/client';
 import { kpiService } from '../../dashboard/shared/api/kpiService';
 import type { AlertDetailResponse, AlertResponse } from '../types/alerts.types';
 
+/** Fired whenever an alert's acknowledgment state changes, so listeners (e.g. the sidebar badge) can refresh. */
+export const ALERTS_CHANGED_EVENT = 'alerts:changed';
+
 export const alertsService = {
   /**
    * Fetches raw alert summaries (id, submissionId, status, detectedAt).
@@ -22,6 +25,8 @@ export const alertsService = {
         targetValue: kpi.targetValue,
         threshold: kpi.threshold,
         unit: kpi.unit,
+        committeeId: kpi.committeeId,
+        committeeName: kpi.committeeName,
       };
     } catch {
       return alert;
@@ -35,6 +40,7 @@ export const alertsService = {
     const alert = await apiClient<AlertDetailResponse>(`/api/alerts/${id}/acknowledge`, {
       method: 'PATCH',
     });
+    window.dispatchEvent(new Event(ALERTS_CHANGED_EVENT));
     try {
       const kpi = await kpiService.getKpiDefinitionById(alert.kpiDefinitionId);
       return {
@@ -42,6 +48,8 @@ export const alertsService = {
         targetValue: kpi.targetValue,
         threshold: kpi.threshold,
         unit: kpi.unit,
+        committeeId: kpi.committeeId,
+        committeeName: kpi.committeeName,
       };
     } catch {
       return alert;
@@ -86,6 +94,8 @@ export const alertsService = {
               targetValue: kpi.targetValue,
               threshold: kpi.threshold,
               unit: kpi.unit,
+              committeeId: kpi.committeeId,
+              committeeName: kpi.committeeName,
             };
           } else {
             // Fallback to individual retrieval if bulk lookup misses
@@ -96,6 +106,8 @@ export const alertsService = {
                 targetValue: singleKpi.targetValue,
                 threshold: singleKpi.threshold,
                 unit: singleKpi.unit,
+                committeeId: singleKpi.committeeId,
+                committeeName: singleKpi.committeeName,
               };
             } catch {
               return detail;

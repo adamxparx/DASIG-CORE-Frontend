@@ -19,6 +19,8 @@ export interface AlertDetailResponse {
   targetValue?: number;
   threshold?: number;
   unit?: string;
+  committeeId?: number;
+  committeeName?: string;
 }
 
 export interface AlertResponse {
