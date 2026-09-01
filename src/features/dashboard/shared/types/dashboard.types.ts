@@ -29,6 +29,7 @@ export interface DashboardApiResponse {
   role: UserRole;
   organizationId: number | null;
   organizationName: string | null;
+  committeeName: string | null;
   reportingPeriod?: string | null;
   kpis: DashboardKpiItem[];
 }
