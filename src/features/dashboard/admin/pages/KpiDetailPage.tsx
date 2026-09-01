@@ -18,7 +18,7 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ApiError } from '../../../../lib/api/client';
 import { dashboardService } from '../../shared/api/dashboardService';
 import type { DashboardKpiItem, KpiPeriodHistoryResponse } from '../../shared/types/dashboard.types';
@@ -49,7 +49,12 @@ const formatSubmissionType = (type: 'INTERNAL' | 'FINAL') => {
 const KpiDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const kpiId = Number(id);
+
+  const roleMatch = location.pathname.match(/^\/dashboard\/(admin|staff|tbi_manager)/);
+  const userRole = roleMatch ? roleMatch[1] : 'DASIG_ADMIN';
+  const isAdmin = userRole === 'DASIG_ADMIN';
 
   const [kpi, setKpi] = useState<DashboardKpiItem | null>(null);
   const [history, setHistory] = useState<KpiPeriodHistoryResponse | null>(null);
@@ -156,38 +161,40 @@ const KpiDetailPage = () => {
       <Stack spacing={3}>
         <DashboardHeader title={kpi.name} subtitle={kpi.description} />
 
-        <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end' }}>
-          <Button
-            variant="outlined"
-            startIcon={<EditOutlinedIcon />}
-            onClick={handleEditClick}
-            sx={{
-              textTransform: 'none',
-              fontWeight: 600,
-              borderRadius: 2,
-              px: 2.5,
-              borderColor: 'divider',
-              color: 'text.primary',
-            }}
-          >
-            Edit
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<DeleteOutlineIcon />}
-            onClick={handleDeleteClick}
-            sx={{
-              textTransform: 'none',
-              fontWeight: 600,
-              borderRadius: 2,
-              px: 2.5,
-              borderColor: 'divider',
-              color: 'error.main',
-            }}
-          >
-            Delete
-          </Button>
-        </Stack>
+        {isAdmin && (
+          <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end' }}>
+            <Button
+              variant="outlined"
+              startIcon={<EditOutlinedIcon />}
+              onClick={handleEditClick}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                borderRadius: 2,
+                px: 2.5,
+                borderColor: 'divider',
+                color: 'text.primary',
+              }}
+            >
+              Edit
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<DeleteOutlineIcon />}
+              onClick={handleDeleteClick}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                borderRadius: 2,
+                px: 2.5,
+                borderColor: 'divider',
+                color: 'error.main',
+              }}
+            >
+              Delete
+            </Button>
+          </Stack>
+        )}
 
         <Divider />
 
@@ -390,20 +397,24 @@ const KpiDetailPage = () => {
         </Paper>
       </Stack>
 
-      <KpiFormDialog
-        open={formDialogOpen}
-        onClose={() => setFormDialogOpen(false)}
-        onSubmitSuccess={handleCreateOrUpdateSuccess}
-        kpi={kpi}
-      />
+      {isAdmin && (
+        <>
+          <KpiFormDialog
+            open={formDialogOpen}
+            onClose={() => setFormDialogOpen(false)}
+            onSubmitSuccess={handleCreateOrUpdateSuccess}
+            kpi={kpi}
+          />
 
-      <DeleteKpiDialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        onSubmitSuccess={handleDeleteSuccess}
-        kpiId={kpi.id}
-        kpiName={kpi.name}
-      />
+          <DeleteKpiDialog
+            open={deleteDialogOpen}
+            onClose={() => setDeleteDialogOpen(false)}
+            onSubmitSuccess={handleDeleteSuccess}
+            kpiId={kpi.id}
+            kpiName={kpi.name}
+          />
+        </>
+      )}
 
       <Snackbar
         open={toastOpen}

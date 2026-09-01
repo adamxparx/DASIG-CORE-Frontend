@@ -13,7 +13,7 @@ import { dashboardService } from '../api/dashboardService';
 import type { DashboardKpiItem } from '../types/dashboard.types';
 import { useDashboardShell } from './DashboardShellContext';
 
-const KPI_DETAIL_PATTERN = /^\/dashboard\/admin\/kpis\/\d+$/;
+const KPI_DETAIL_PATTERN = /^\/dashboard\/(admin|staff|tbi_manager)\/kpis\/\d+$/;
 const KPI_CREATE_PATTERN = /^\/dashboard\/admin\/kpis\/create$/;
 const KPI_EDIT_PATTERN = /^\/dashboard\/admin\/kpis\/\d+\/edit$/;
 
@@ -28,6 +28,14 @@ const DashboardUserHeader = () => {
   const isKpiEdit = KPI_EDIT_PATTERN.test(location.pathname);
   const kpiIdMatch = location.pathname.match(/\/kpis\/(\d+)$/);
   const kpiId = kpiIdMatch ? Number(kpiIdMatch[1]) : null;
+
+  const roleMatch = location.pathname.match(/^\/dashboard\/(admin|staff|tbi_manager)/);
+  const userRole = roleMatch ? roleMatch[1] : null;
+
+  const dashboardPath =
+    userRole === 'staff' ? '/dashboard/staff' : userRole === 'tbi_manager' ? '/dashboard/tbi_manager' : '/dashboard/admin';
+
+  const breadcrumbLabel = userRole === 'staff' ? 'Member Dashboard' : userRole === 'tbi_manager' ? 'Committee Lead Dashboard' : 'KPI Management Hub';
 
   const [kpiName, setKpiName] = useState<string | null>(null);
 
@@ -75,24 +83,24 @@ const DashboardUserHeader = () => {
       {(isKpiDetail || isKpiCreate || isKpiEdit) ? (
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center', minWidth: 0 }}>
           <IconButton
-            onClick={() => navigate('/dashboard/admin')}
+            onClick={() => navigate(dashboardPath)}
             size="small"
-            aria-label="Back to KPI Management Hub"
+            aria-label="Back to dashboard"
             sx={{ color: 'text.secondary', flexShrink: 0 }}
           >
             <ArrowBackOutlinedIcon fontSize="small" />
           </IconButton>
           <Breadcrumbs separator="/" sx={{ fontSize: '0.875rem', minWidth: 0 }}>
             <Link
-              href="/dashboard/admin"
+              href={dashboardPath}
               onClick={(e) => {
                 e.preventDefault();
-                navigate('/dashboard/admin');
+                navigate(dashboardPath);
               }}
               variant="body2"
               sx={{ color: 'text.secondary', textDecoration: 'none', '&:hover': { color: 'primary.main' } }}
             >
-              KPI Management Hub
+              {breadcrumbLabel}
             </Link>
             <Typography variant="body2" noWrap sx={{ color: 'text.primary', fontWeight: 600 }}>
               {isKpiCreate

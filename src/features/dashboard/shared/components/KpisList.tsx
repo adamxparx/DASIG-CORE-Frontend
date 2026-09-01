@@ -15,6 +15,7 @@ interface KpisListProps {
   kpis: DashboardKpiItem[];
   selectedId: number | null;
   onSelectKpi: (kpi: DashboardKpiItem) => void;
+  title?: string;
 }
 
 const formatDate = (date: string) => {
@@ -24,7 +25,7 @@ const formatDate = (date: string) => {
 const formatMetricValue = (value: number) =>
   value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const KpisList = ({ kpis, selectedId, onSelectKpi }: KpisListProps) => {
+const KpisList = ({ kpis, selectedId, onSelectKpi, title = 'All KPIs' }: KpisListProps) => {
   const [page, setPage] = useState(1);
 
   const totalPages = Math.max(1, Math.ceil(kpis.length / TABLE_PAGE_SIZE));
@@ -34,7 +35,7 @@ const KpisList = ({ kpis, selectedId, onSelectKpi }: KpisListProps) => {
   return (
     <Box>
       <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
-        All KPIs
+        {title}
       </Typography>
 
       <TableContainer
