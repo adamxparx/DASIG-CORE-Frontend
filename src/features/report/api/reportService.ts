@@ -1,14 +1,14 @@
 import { getApiUrl } from '../../../config/api';
 import { apiClient } from '../../../lib/api/client';
 import { tokenStorage } from '../../auth/utils/tokenStorage';
-import type { GenerateOrgReportRequest, GenerateKpiReportRequest, ReportResponse } from '../types/report.types';
+import type { GenerateCommitteeReportRequest, GenerateKpiReportRequest, ReportResponse } from '../types/report.types';
 
 export const reportService = {
   /**
-   * Triggers the generation of an AI-powered Organizational Performance Report narrative.
+   * Triggers the generation of an AI-powered Committee Performance Report narrative.
    */
-  generateOrgReport: (request: GenerateOrgReportRequest): Promise<ReportResponse> => {
-    return apiClient<ReportResponse>('/api/reports/generate/organization', {
+  generateCommitteeReport: (request: GenerateCommitteeReportRequest): Promise<ReportResponse> => {
+    return apiClient<ReportResponse>('/api/reports/generate/committee', {
       method: 'POST',
       body: request,
     });
@@ -32,10 +32,10 @@ export const reportService = {
   },
 
   /**
-   * Retrieves all historical reports generated for a specific incubator organization.
+   * Retrieves the unified history of every report generated, across all committees and KPIs.
    */
-  getByOrganization: (organizationId: number): Promise<ReportResponse[]> => {
-    return apiClient<ReportResponse[]>(`/api/reports/organization/${organizationId}`);
+  getAllReports: (): Promise<ReportResponse[]> => {
+    return apiClient<ReportResponse[]>('/api/reports');
   },
 
   /**

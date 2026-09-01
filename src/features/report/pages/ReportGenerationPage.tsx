@@ -30,17 +30,17 @@ import { useCallback, useEffect, useState } from 'react';
 import AdminPageLayout from '../../dashboard/shared/components/AdminPageLayout';
 import { kpiService } from '../../dashboard/shared/api/kpiService';
 import type { KpiDefinitionResponse } from '../../dashboard/shared/types/kpi.types';
-import { organizationService } from '../../organization/api/organizationService';
-import type { OrganizationResponse } from '../../organization/types/organization.types';
+import { committeeService } from '../../committee/api/committeeService';
+import type { CommitteeResponse } from '../../committee/types/committee.types';
 import { reportService } from '../api/reportService';
 import NarrativeReportParser from '../components/NarrativeReportParser';
 import type { ReportResponse } from '../types/report.types';
 
 
 export default function ReportGenerationPage() {
-  const [organizations, setOrganizations] = useState<OrganizationResponse[]>([]);
-  const [selectedOrgId, setSelectedOrgId] = useState<string>('');
-  
+  const [committees, setCommittees] = useState<CommitteeResponse[]>([]);
+  const [selectedCommitteeId, setSelectedCommitteeId] = useState<string>('');
+
   // Date states
   const [periodFrom, setPeriodFrom] = useState<string>('');
   const [periodTo, setPeriodTo] = useState<string>('');
@@ -48,13 +48,13 @@ export default function ReportGenerationPage() {
   // Active Report & loading states
   const [activeReport, setActiveReport] = useState<ReportResponse | null>(null);
   const [historyReports, setHistoryReports] = useState<ReportResponse[]>([]);
-  const [isLoadingOrgs, setIsLoadingOrgs] = useState(true);
+  const [isLoadingCommittees, setIsLoadingCommittees] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
   // Scope states
-  const [reportScope, setReportScope] = useState<'ORGANIZATIONAL' | 'KPI'>('ORGANIZATIONAL');
+  const [reportScope, setReportScope] = useState<'COMMITTEE' | 'KPI' | null>(null);
   const [kpis, setKpis] = useState<KpiDefinitionResponse[]>([]);
   const [selectedKpiId, setSelectedKpiId] = useState<string>('');
   const [isKpisLoading, setIsKpisLoading] = useState(false);
@@ -75,12 +75,9 @@ export default function ReportGenerationPage() {
       try {
         const kpiData = await kpiService.getAllKpiDefinitions();
         setKpis(kpiData);
-        if (kpiData.length > 0) {
-          const firstKpi = kpiData[0];
-          setSelectedKpiId(String(firstKpi.id));
-        } else {
-          setSelectedKpiId('');
-        }
+        setSelectedKpiId((prev) =>
+          prev && kpiData.some((k) => String(k.id) === prev) ? prev : String(kpiData[0]?.id ?? '')
+        );
       } catch (err) {
         showToast('Failed to load KPI list.');
       } finally {
@@ -90,36 +87,35 @@ export default function ReportGenerationPage() {
     void loadKpis();
   }, [reportScope]);
 
-  // Load organizations on landing
+  // Load committees on landing
   useEffect(() => {
-    async function loadOrgs() {
-      setIsLoadingOrgs(true);
+    async function loadCommittees() {
+      setIsLoadingCommittees(true);
       try {
-        const orgData = await organizationService.getAll();
-        const activeOrgs = orgData.filter(
-          (org) => !org.status || org.status.toLowerCase() === 'active'
+        const committeeData = await committeeService.getAll();
+        const activeCommittees = committeeData.filter(
+          (committee) => !committee.status || committee.status.toLowerCase() === 'active'
         );
-        setOrganizations(activeOrgs);
-        if (activeOrgs.length > 0) {
-          setSelectedOrgId(String(activeOrgs[0].id));
+        setCommittees(activeCommittees);
+        if (activeCommittees.length > 0) {
+          setSelectedCommitteeId(String(activeCommittees[0].id));
         } else {
-          setSelectedOrgId('');
+          setSelectedCommitteeId('');
         }
       } catch (err) {
-        showToast('Failed to load incubator list.');
+        showToast('Failed to load committee list.');
       } finally {
-        setIsLoadingOrgs(false);
+        setIsLoadingCommittees(false);
       }
     }
-    void loadOrgs();
+    void loadCommittees();
   }, []);
 
-  // Fetch report history for selected organization
-  const loadHistory = useCallback(async (orgIdStr: string) => {
-    if (!orgIdStr) return;
+  // Fetch the unified report history (every committee and KPI report ever generated)
+  const loadHistory = useCallback(async () => {
     setIsHistoryLoading(true);
     try {
-      const data = await reportService.getByOrganization(parseInt(orgIdStr, 10));
+      const data = await reportService.getAllReports();
       setHistoryReports(data);
     } catch {
       // Gracefully ignore history errors to keep page interactive
@@ -129,26 +125,39 @@ export default function ReportGenerationPage() {
   }, []);
 
   useEffect(() => {
-    if (selectedOrgId) {
-      void loadHistory(selectedOrgId);
-      // Reset active report when switching incubators to avoid visual mismatch
-      setActiveReport(null);
-    }
-  }, [selectedOrgId, loadHistory]);
+    void loadHistory();
+  }, [loadHistory]);
 
   const showToast = (message: string) => {
     setToastMessage(message);
     setToastOpen(true);
   };
 
-  const handleOrgChange = (event: SelectChangeEvent) => {
-    setSelectedOrgId(event.target.value);
+  const handleCommitteeChange = (event: SelectChangeEvent) => {
+    setSelectedCommitteeId(event.target.value);
+    // Manually switching committees invalidates whatever narrative is on screen
+    setActiveReport(null);
+  };
+
+  // Opens a history row: syncs the AI Generator Options panel (scope, committee/KPI) to match
+  // the report being viewed. Dates are cleared rather than copied from the report, so hitting
+  // 'Generate' isn't a one-click way to silently create a duplicate report for the same period.
+  const handleViewReport = (report: ReportResponse) => {
+    setActiveReport(report);
+    setReportScope(report.reportType);
+    if (report.reportType === 'COMMITTEE') {
+      setSelectedCommitteeId(String(report.committeeId));
+    } else if (report.kpiDefinitionId != null) {
+      setSelectedKpiId(String(report.kpiDefinitionId));
+    }
+    setPeriodFrom('');
+    setPeriodTo('');
   };
 
   // Generate new report
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!periodFrom || !periodTo || (reportScope === 'ORGANIZATIONAL' && !selectedOrgId) || (reportScope === 'KPI' && !selectedKpiId)) {
+    if (!reportScope || !periodFrom || !periodTo || (reportScope === 'COMMITTEE' && !selectedCommitteeId) || (reportScope === 'KPI' && !selectedKpiId)) {
       showToast('Please select all filter parameters.');
       return;
     }
@@ -159,9 +168,9 @@ export default function ReportGenerationPage() {
     try {
       let report: ReportResponse;
 
-      if (reportScope === 'ORGANIZATIONAL') {
-        report = await reportService.generateOrgReport({
-          organizationId: parseInt(selectedOrgId, 10),
+      if (reportScope === 'COMMITTEE') {
+        report = await reportService.generateCommitteeReport({
+          committeeId: parseInt(selectedCommitteeId, 10),
           periodFrom,
           periodTo,
         });
@@ -179,9 +188,7 @@ export default function ReportGenerationPage() {
 
       setActiveReport(report);
       showToast('AI Narrative Report generated successfully.');
-      if (selectedOrgId) {
-        void loadHistory(selectedOrgId); // Refresh history log
-      }
+      void loadHistory(); // Refresh history log
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Unable to generate performance report.');
     } finally {
@@ -218,7 +225,7 @@ export default function ReportGenerationPage() {
     return `${fromDate} to ${toDate}`;
   };
 
-  if (isLoadingOrgs) {
+  if (isLoadingCommittees) {
     return (
       <AdminPageLayout>
         <Stack sx={{ minHeight: '50vh', alignItems: 'center', justifyContent: 'center' }}>
@@ -296,9 +303,9 @@ export default function ReportGenerationPage() {
                 <RadioGroup
                   aria-labelledby="report-scope-label"
                   name="report-scope"
-                  value={reportScope}
+                  value={reportScope ?? ''}
                   onChange={(e) => {
-                    setReportScope(e.target.value as 'ORGANIZATIONAL' | 'KPI');
+                    setReportScope(e.target.value as 'COMMITTEE' | 'KPI');
                     setActiveReport(null);
                     setPeriodFrom('');
                     setPeriodTo('');
@@ -306,11 +313,11 @@ export default function ReportGenerationPage() {
                   sx={{ gap: 1 }}
                 >
                   <FormControlLabel
-                    value="ORGANIZATIONAL"
+                    value="COMMITTEE"
                     control={<Radio size="small" sx={{ color: '#426ef0', '&.Mui-checked': { color: '#426ef0' } }} />}
                     label={
-                      <Typography sx={{ fontSize: '0.92rem', fontWeight: reportScope === 'ORGANIZATIONAL' ? 700 : 500 }}>
-                        Organizational Report
+                      <Typography sx={{ fontSize: '0.92rem', fontWeight: reportScope === 'COMMITTEE' ? 700 : 500 }}>
+                        Committee Report
                       </Typography>
                     }
                   />
@@ -326,21 +333,21 @@ export default function ReportGenerationPage() {
                 </RadioGroup>
               </FormControl>
 
-              {/* Organization Selector (Only shown for Organizational scope) */}
-              {reportScope === 'ORGANIZATIONAL' && (
+              {/* Committee Selector (Only shown for Committee scope) */}
+              {reportScope === 'COMMITTEE' && (
                 <FormControl fullWidth size="small">
-                  <InputLabel id="org-selector-label" sx={{ fontWeight: 500 }}>Select Incubator</InputLabel>
+                  <InputLabel id="committee-selector-label" sx={{ fontWeight: 500 }}>Select Committee</InputLabel>
                   <Select
-                    labelId="org-selector-label"
-                    id="org-selector"
-                    value={selectedOrgId}
-                    label="Select Incubator"
-                    onChange={handleOrgChange}
+                    labelId="committee-selector-label"
+                    id="committee-selector"
+                    value={selectedCommitteeId}
+                    label="Select Committee"
+                    onChange={handleCommitteeChange}
                     sx={{ borderRadius: 2 }}
                   >
-                    {organizations.map((org) => (
-                      <MenuItem key={org.id} value={String(org.id)}>
-                        {org.name}
+                    {committees.map((committee) => (
+                      <MenuItem key={committee.id} value={String(committee.id)}>
+                        {committee.name}
                       </MenuItem>
                     ))}
                   </Select>
@@ -357,8 +364,9 @@ export default function ReportGenerationPage() {
                     value={selectedKpiId}
                     label="Select KPI"
                     onChange={(e) => {
-                      const kpiId = e.target.value;
-                      setSelectedKpiId(kpiId);
+                      setSelectedKpiId(e.target.value);
+                      // Manually switching KPIs invalidates whatever narrative is on screen
+                      setActiveReport(null);
                     }}
                     disabled={isKpisLoading || kpis.length === 0}
                     sx={{ borderRadius: 2 }}
@@ -419,7 +427,7 @@ export default function ReportGenerationPage() {
               {/* Trigger Button */}
               <Button
                 type="submit"
-                disabled={isGenerating || !selectedOrgId || !periodFrom || !periodTo || (reportScope === 'KPI' && !selectedKpiId)}
+                disabled={isGenerating || !reportScope || !periodFrom || !periodTo || (reportScope === 'COMMITTEE' && !selectedCommitteeId) || (reportScope === 'KPI' && !selectedKpiId)}
                 variant="contained"
                 disableElevation
                 sx={{
@@ -472,7 +480,12 @@ export default function ReportGenerationPage() {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
                   <Stack spacing={0.5}>
                     <Typography variant="h5" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '1.45rem', letterSpacing: '-0.3px' }}>
-                      {reportScope === 'KPI' ? 'KPI Performance Narrative' : 'Incubator Performance Narrative'}
+                      {activeReport.reportType === 'KPI'
+                        ? `KPI Performance Narrative${activeReport.kpiName ? `: ${activeReport.kpiName}` : ''}`
+                        : 'Committee Performance Narrative'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                      Committee: {activeReport.committeeName ?? 'Unknown (deleted)'}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
                       Reporting Period: {formatDateRange(activeReport.periodFrom, activeReport.periodTo)}
@@ -514,7 +527,9 @@ export default function ReportGenerationPage() {
                   No Report Loaded
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360 }}>
-                  Select an incubator, configure a date range on the left, and trigger 'Generate AI Narrative' to generate a report, or select a history record below.
+                  {reportScope
+                    ? "Configure a date range on the left and trigger 'Generate AI Narrative' to generate a report, or select a history record below."
+                    : 'Choose a Report Scope on the left — Committee Report or KPI Performance Report — to get started.'}
                 </Typography>
               </Stack>
             )}
@@ -522,117 +537,125 @@ export default function ReportGenerationPage() {
         </Box>
 
         {/* Historical Reports Section */}
-        {selectedOrgId && (
-          <Stack spacing={2} sx={{ mt: 2 }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: 'text.primary', letterSpacing: '-0.3px' }}>
-              Historical Reports Log
-            </Typography>
+        <Stack spacing={2} sx={{ mt: 2 }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, color: 'text.primary', letterSpacing: '-0.3px' }}>
+            Historical Reports Log
+          </Typography>
 
-            {isHistoryLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                <CircularProgress size={24} sx={{ color: '#426ef0' }} />
-              </Box>
-            ) : historyReports.length === 0 ? (
-              <Box
-                sx={{
-                  p: 4,
-                  bgcolor: 'background.paper',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 3.5,
-                  textAlign: 'center',
-                }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  No historical performance reports found for this incubator organization.
-                </Typography>
-              </Box>
-            ) : (
-              <TableContainer
-                sx={{
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 3.5,
-                  bgcolor: 'background.paper',
-                  boxShadow: 'none',
-                }}
-              >
-                <Table sx={{ minWidth: 650 }} aria-label="reports history table">
-                  <TableHead sx={{ bgcolor: 'secondary.main' }}>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 700, color: 'text.secondary' }}>Date Generated</TableCell>
-                      <TableCell sx={{ fontWeight: 700, color: 'text.secondary' }}>Reporting Period</TableCell>
-                      <TableCell sx={{ fontWeight: 700, color: 'text.secondary' }}>Status</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, color: 'text.secondary', pr: 4 }}>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {historyReports.map((report) => {
-                      const genDate = new Date(report.generatedAt).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      });
-                      
-                      return (
-                        <TableRow key={report.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                          <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{genDate}</TableCell>
-                          <TableCell sx={{ color: 'text.secondary', fontWeight: 500 }}>
-                            {formatDateRange(report.periodFrom, report.periodTo)}
-                          </TableCell>
-                          <TableCell>
-                            <Box
+          {isHistoryLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress size={24} sx={{ color: '#426ef0' }} />
+            </Box>
+          ) : historyReports.length === 0 ? (
+            <Box
+              sx={{
+                p: 4,
+                bgcolor: 'background.paper',
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 3.5,
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                No historical performance reports found.
+              </Typography>
+            </Box>
+          ) : (
+            <TableContainer
+              sx={{
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 3.5,
+                bgcolor: 'background.paper',
+                boxShadow: 'none',
+              }}
+            >
+              <Table sx={{ minWidth: 650 }} aria-label="reports history table">
+                <TableHead sx={{ bgcolor: 'secondary.main' }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary' }}>Committee</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary' }}>Type</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary' }}>Date Generated</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary' }}>Reporting Period</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary' }}>Status</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, color: 'text.secondary', pr: 4 }}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {historyReports.map((report) => {
+                    const genDate = new Date(report.generatedAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    });
+
+                    return (
+                      <TableRow key={report.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                        <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                          {report.committeeName ?? 'Unknown (deleted)'}
+                        </TableCell>
+                        <TableCell sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                          {report.reportType === 'KPI'
+                            ? `KPI${report.kpiName ? `: ${report.kpiName}` : ' (deleted)'}`
+                            : 'Committee-wide'}
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{genDate}</TableCell>
+                        <TableCell sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                          {formatDateRange(report.periodFrom, report.periodTo)}
+                        </TableCell>
+                        <TableCell>
+                          <Box
+                            sx={{
+                              display: 'inline-block',
+                              px: 1.5,
+                              py: 0.25,
+                              borderRadius: '50px',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              bgcolor: report.status === 'GENERATED' ? '#E6F4EA' : '#FCE8E6',
+                              color: report.status === 'GENERATED' ? '#137333' : '#C5221F',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                            }}
+                          >
+                            {report.status}
+                          </Box>
+                        </TableCell>
+                        <TableCell align="right" sx={{ pr: 3 }}>
+                          <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
+                            <Button
+                              size="small"
+                              onClick={() => handleViewReport(report)}
+                              variant="text"
+                              sx={{ fontWeight: 700, textTransform: 'none' }}
+                            >
+                              View Narrative
+                            </Button>
+
+                            <IconButton
+                              size="small"
+                              onClick={() => void handleExportPdf(report.id)}
+                              title="Download PDF"
                               sx={{
-                                display: 'inline-block',
-                                px: 1.5,
-                                py: 0.25,
-                                borderRadius: '50px',
-                                fontSize: '0.72rem',
-                                fontWeight: 700,
-                                bgcolor: report.status === 'GENERATED' ? '#E6F4EA' : '#FCE8E6',
-                                color: report.status === 'GENERATED' ? '#137333' : '#C5221F',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px',
+                                color: 'text.secondary',
+                                '&:hover': { color: 'primary.main', bgcolor: 'rgba(66, 110, 240, 0.04)' },
                               }}
                             >
-                              {report.status}
-                            </Box>
-                          </TableCell>
-                          <TableCell align="right" sx={{ pr: 3 }}>
-                            <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
-                              <Button
-                                size="small"
-                                onClick={() => setActiveReport(report)}
-                                variant="text"
-                                sx={{ fontWeight: 700, textTransform: 'none' }}
-                              >
-                                View Narrative
-                              </Button>
-                              
-                              <IconButton
-                                size="small"
-                                onClick={() => void handleExportPdf(report.id)}
-                                title="Download PDF"
-                                sx={{
-                                  color: 'text.secondary',
-                                  '&:hover': { color: 'primary.main', bgcolor: 'rgba(66, 110, 240, 0.04)' },
-                                }}
-                              >
-                                <DownloadIcon sx={{ fontSize: 20 }} />
-                              </IconButton>
-                            </Stack>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-          </Stack>
-        )}
+                              <DownloadIcon sx={{ fontSize: 20 }} />
+                            </IconButton>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Stack>
       </Stack>
 
       {/* Success/Error Toast */}
