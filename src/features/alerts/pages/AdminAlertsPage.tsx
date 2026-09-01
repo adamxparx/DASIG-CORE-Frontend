@@ -1,21 +1,31 @@
 import ErrorIcon from '@mui/icons-material/Error';
+import SearchIcon from '@mui/icons-material/Search';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
-import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
+import InputAdornment from '@mui/material/InputAdornment';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
+import Paper from '@mui/material/Paper';
 import Select from '@mui/material/Select';
 import type { SelectChangeEvent } from '@mui/material/Select';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '../../../lib/api/client';
 import AdminPageLayout from '../../dashboard/shared/components/AdminPageLayout';
+import TablePaginationBar, { TABLE_PAGE_SIZE } from '../../dashboard/shared/components/TablePaginationBar';
 import { alertsService } from '../api/alertsService';
-import AlertCard from '../components/AlertCard';
+import { formatValue, getAcknowledgmentBadgeInfo, getPerformanceBadgeInfo } from '../components/AlertCard';
 import AlertDetailModal from '../components/AlertDetailModal';
 import type { AlertDetailResponse } from '../types/alerts.types';
 
@@ -27,8 +37,10 @@ export default function AdminAlertsPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Filter states
-  const [kpiFilter, setKpiFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('UNACKNOWLEDGED');
+  const [committeeFilter, setCommitteeFilter] = useState('all');
+  const [page, setPage] = useState(1);
 
   // Toast notifications
   const [toastOpen, setToastOpen] = useState(false);
@@ -76,25 +88,48 @@ export default function AdminAlertsPage() {
     }
   };
 
-  const handleKpiFilterChange = (event: SelectChangeEvent) => {
-    setKpiFilter(event.target.value);
-  };
-
   const handleStatusFilterChange = (event: SelectChangeEvent) => {
     setStatusFilter(event.target.value);
+    setPage(1);
   };
 
-  // Get unique KPI names for the KPI filter dropdown
-  const uniqueKpiNames = Array.from(new Set(alerts.map((a) => a.kpiName))).sort();
+  const handleCommitteeFilterChange = (event: SelectChangeEvent) => {
+    setCommitteeFilter(event.target.value);
+    setPage(1);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setPage(1);
+  };
+
+  // Unique committee names for the committee filter dropdown
+  const uniqueCommitteeNames = Array.from(
+    new Set(alerts.map((a) => a.committeeName).filter((name): name is string => !!name))
+  ).sort();
 
   // Dynamic filtering logic
+  const normalizedQuery = searchQuery.trim().toLowerCase();
   const filteredAlerts = alerts.filter((alert) => {
-    const matchesKpi = kpiFilter === 'all' || alert.kpiName === kpiFilter;
+    const matchesSearch = normalizedQuery === '' || alert.kpiName.toLowerCase().includes(normalizedQuery);
     const matchesStatus = statusFilter === 'all' || alert.status === statusFilter;
-    return matchesKpi && matchesStatus;
+    const matchesCommittee = committeeFilter === 'all' || alert.committeeName === committeeFilter;
+    return matchesSearch && matchesStatus && matchesCommittee;
   });
 
+  const totalPages = Math.max(1, Math.ceil(filteredAlerts.length / TABLE_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedAlerts = filteredAlerts.slice((safePage - 1) * TABLE_PAGE_SIZE, safePage * TABLE_PAGE_SIZE);
+
   const activeAlertCount = alerts.filter((a) => a.status === 'UNACKNOWLEDGED').length;
+  const hasActiveFilters = normalizedQuery !== '' || statusFilter !== 'UNACKNOWLEDGED' || committeeFilter !== 'all';
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('UNACKNOWLEDGED');
+    setCommitteeFilter('all');
+    setPage(1);
+  };
 
   if (isLoading) {
     return (
@@ -118,73 +153,77 @@ export default function AdminAlertsPage() {
 
   return (
     <AdminPageLayout>
-      <Stack spacing={3.5}>
-        {/* Mockup-perfect Premium Alerts Header */}
+      <Stack spacing={3}>
+        {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-            <Box
-              sx={{
-                width: 48,
-                height: 48,
-                borderRadius: '50%',
-                bgcolor: 'text.primary',
-                color: 'background.paper',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                '& svg': { fontSize: 26 },
-              }}
-            >
-              <ErrorIcon />
-            </Box>
-            <Stack spacing={0.5}>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '1.75rem', letterSpacing: '-0.5px' }}>
+            <Stack spacing={0.25}>
+              <Typography variant="h4" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '1.6rem', letterSpacing: '-0.5px' }}>
                 Alerts
               </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
                 Monitor threshold breaches and performance issues
               </Typography>
             </Stack>
           </Stack>
 
-          <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.9rem' }}>
-            {activeAlertCount === 1 ? '1 active alert' : `${activeAlertCount} active alerts`}
-          </Typography>
+          {activeAlertCount > 0 && (
+            <Box
+              sx={{
+                px: 2,
+                py: 0.75,
+                borderRadius: '50px',
+                bgcolor: '#FCE8E6',
+                color: '#C5221F',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {activeAlertCount === 1 ? '1 active alert' : `${activeAlertCount} active alerts`}
+            </Box>
+          )}
         </Box>
 
-        <Divider />
-
-        {/* Filters Panel */}
+        {/* Search bar + filters, side by side */}
         {alerts.length > 0 && (
-          <Box
-            sx={{
-              display: 'flex',
-              gap: 2,
-              flexWrap: 'wrap',
-              p: 2.5,
-              bgcolor: 'background.paper',
-              borderRadius: 3,
-              border: '1px solid',
-              borderColor: 'divider',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-            }}
-          >
-            {/* KPI Dropdown Filter */}
-            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 240 } }}>
-              <InputLabel id="kpi-filter-label" sx={{ fontWeight: 500 }}>Filter by KPI</InputLabel>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField
+              size="small"
+              placeholder="Search by KPI…"
+              value={searchQuery}
+              onChange={(event) => handleSearchChange(event.target.value)}
+              fullWidth
+              sx={{
+                bgcolor: 'background.paper',
+                '& .MuiOutlinedInput-root': { borderRadius: 3 },
+              }}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+
+            {/* Committee Dropdown Filter */}
+            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 200 }, bgcolor: 'background.paper' }}>
+              <InputLabel id="committee-filter-label">Filter by Committee</InputLabel>
               <Select
-                labelId="kpi-filter-label"
-                id="kpi-filter"
-                value={kpiFilter}
-                label="Filter by KPI"
-                onChange={handleKpiFilterChange}
-                sx={{ borderRadius: 2 }}
+                labelId="committee-filter-label"
+                id="committee-filter"
+                value={committeeFilter}
+                label="Filter by Committee"
+                onChange={handleCommitteeFilterChange}
+                sx={{ borderRadius: 3 }}
               >
                 <MenuItem value="all">
-                  All KPIs
+                  All Committees
                 </MenuItem>
-                {uniqueKpiNames.map((name) => (
+                {uniqueCommitteeNames.map((name) => (
                   <MenuItem key={name} value={name}>
                     {name}
                   </MenuItem>
@@ -193,15 +232,15 @@ export default function AdminAlertsPage() {
             </FormControl>
 
             {/* Acknowledgment Status Dropdown Filter */}
-            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 200 } }}>
-              <InputLabel id="status-filter-label" sx={{ fontWeight: 500 }}>Filter by Status</InputLabel>
+            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 190 }, bgcolor: 'background.paper' }}>
+              <InputLabel id="status-filter-label">Filter by Status</InputLabel>
               <Select
                 labelId="status-filter-label"
                 id="status-filter"
                 value={statusFilter}
                 label="Filter by Status"
                 onChange={handleStatusFilterChange}
-                sx={{ borderRadius: 2 }}
+                sx={{ borderRadius: 3 }}
               >
                 <MenuItem value="all">
                   All Statuses
@@ -210,7 +249,28 @@ export default function AdminAlertsPage() {
                 <MenuItem value="ACKNOWLEDGED">Acknowledged</MenuItem>
               </Select>
             </FormControl>
-          </Box>
+
+            {hasActiveFilters && (
+              <Typography
+                component="button"
+                onClick={handleResetFilters}
+                sx={{
+                  alignSelf: 'center',
+                  ml: { sm: 'auto' },
+                  border: 'none',
+                  bgcolor: 'transparent',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  color: '#426ef0',
+                  whiteSpace: 'nowrap',
+                  '&:hover': { textDecoration: 'underline' },
+                }}
+              >
+                Reset filters
+              </Typography>
+            )}
+          </Stack>
         )}
 
         {/* Alerts List */}
@@ -272,19 +332,115 @@ export default function AdminAlertsPage() {
               No matching alerts found
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Try adjusting your KPI or Status filters to find the alert you are looking for.
+              Try adjusting your search, committee, or status filter to find the alert you are looking for.
             </Typography>
           </Box>
         ) : (
-          <Stack spacing={2.5}>
-            {filteredAlerts.map((alert) => (
-              <AlertCard
-                key={alert.id}
-                alert={alert}
-                onClick={() => handleCardClick(alert)}
-              />
-            ))}
-          </Stack>
+          <Box>
+            <TableContainer
+              component={Paper}
+              elevation={0}
+              sx={{ border: 1, borderColor: 'divider', borderRadius: 2 }}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
+                      KPI
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
+                      Organization
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
+                      Detected
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
+                    >
+                      Contribution
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
+                    >
+                      Achievement
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
+                      Severity
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
+                    >
+                      Status
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {pagedAlerts.map((alert) => {
+                    const perfBadge = getPerformanceBadgeInfo(alert);
+                    const ackBadge = getAcknowledgmentBadgeInfo(alert);
+                    const formattedDate = new Date(alert.detectedAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    });
+                    const isSelected = selectedAlert?.id === alert.id && isModalOpen;
+
+                    return (
+                      <TableRow
+                        key={alert.id}
+                        hover
+                        onClick={() => handleCardClick(alert)}
+                        sx={{
+                          cursor: 'pointer',
+                          bgcolor: isSelected ? 'action.hover' : 'transparent',
+                          outline: isSelected ? 2 : 'none',
+                          outlineColor: 'primary.main',
+                          outlineOffset: -2,
+                          '& td': {
+                            borderBottom: 1,
+                            borderColor: 'divider',
+                          },
+                        }}
+                      >
+                        <TableCell sx={{ color: 'primary.main', fontWeight: 600 }}>{alert.kpiName}</TableCell>
+                        <TableCell sx={{ color: 'text.secondary' }}>{alert.organizationName}</TableCell>
+                        <TableCell sx={{ color: 'text.secondary' }}>
+                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                            {formattedDate}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {formatValue(alert.periodContribution, alert.unit)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                            {(alert.achievementRate ?? 0).toFixed(1)}%
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography component="span" sx={{ fontWeight: 600, color: perfBadge.textColor }}>
+                            {perfBadge.label}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography component="span" sx={{ fontWeight: 600, color: ackBadge.textColor }}>
+                            {ackBadge.label}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <TablePaginationBar total={filteredAlerts.length} page={safePage} onPageChange={setPage} />
+          </Box>
         )}
       </Stack>
 

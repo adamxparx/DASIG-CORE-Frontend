@@ -35,6 +35,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { routes } from '../../../../routes';
 import logo from '../../../../assets/logo.png';
 import { tokenStorage } from '../../../auth/utils/tokenStorage';
+import { useUnacknowledgedAlertCount } from '../../../alerts/hooks/useUnacknowledgedAlertCount';
 import { useUnreadNotificationCount } from '../../../notification/hooks/useUnreadNotificationCount';
 import { useDashboardShell } from '../components/DashboardShellContext';
 import type { UserRole } from '../types/dashboard.types';
@@ -198,6 +199,8 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const showNotificationBadge = role === 'STAFF' || role === 'TBI_MANAGER';
   const { unreadCount } = useUnreadNotificationCount(showNotificationBadge);
+  const showAlertBadge = role === 'DASIG_ADMIN';
+  const { unacknowledgedCount } = useUnacknowledgedAlertCount(showAlertBadge);
 
   const accent = roleAccent[role];
 
@@ -366,6 +369,21 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
                   color="error"
                   invisible={unreadCount === 0}
                   max={99}
+                >
+                  {item.icon}
+                </Badge>
+              ) : item.key === 'alerts' && showAlertBadge ? (
+                <Badge
+                  badgeContent={unacknowledgedCount}
+                  color="error"
+                  invisible={unacknowledgedCount === 0}
+                  overlap="circular"
+                  max={99}
+                  sx={{
+                    '& .MuiBadge-badge': {
+                      boxShadow: '0 0 0 2px #fff',
+                    },
+                  }}
                 >
                   {item.icon}
                 </Badge>

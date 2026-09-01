@@ -61,8 +61,8 @@ export function getAcknowledgmentBadgeInfo(alert: AlertDetailResponse) {
   if (alert.status === 'ACKNOWLEDGED') {
     return {
       label: 'Acknowledged',
-      bgColor: '#E8F0FE', // soft blue
-      textColor: '#1A73E8', // dark blue
+      bgColor: '#E6F4EA', // soft green
+      textColor: '#188038', // dark green
     };
   }
 
@@ -73,13 +73,20 @@ export function getAcknowledgmentBadgeInfo(alert: AlertDetailResponse) {
   };
 }
 
+const METRICS: Array<{ label: string; get: (a: AlertDetailResponse) => string }> = [
+  { label: 'Contribution', get: (a) => formatValue(a.periodContribution, a.unit) },
+  { label: 'Cumulative', get: (a) => formatValue(a.cumulativeValue, a.unit) },
+  { label: 'Scaled Target', get: (a) => formatValue(a.scaledPeriodTarget, a.unit) },
+  { label: 'Achievement', get: (a) => `${(a.achievementRate ?? 0).toFixed(1)}%` },
+];
+
 export default function AlertCard({ alert, onClick }: AlertCardProps) {
   const perfBadge = getPerformanceBadgeInfo(alert);
-  const ackBadge = getAcknowledgmentBadgeInfo(alert);
-  
+  const isAcknowledged = alert.status === 'ACKNOWLEDGED';
+
   // Format date nicely e.g. "May 12, 2026"
   const formattedDate = new Date(alert.detectedAt).toLocaleDateString('en-US', {
-    month: 'long',
+    month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
@@ -89,170 +96,118 @@ export default function AlertCard({ alert, onClick }: AlertCardProps) {
       onClick={onClick}
       elevation={0}
       sx={{
-        p: 3,
         border: '1px solid',
         borderColor: 'divider',
+        borderLeft: '4px solid',
+        borderLeftColor: perfBadge.textColor,
         borderRadius: 3,
         cursor: 'pointer',
         bgcolor: 'background.paper',
-        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 3,
-        position: 'relative',
+        transition: 'all 0.2s ease',
         overflow: 'hidden',
+        opacity: isAcknowledged ? 0.72 : 1,
         '&:hover': {
-          transform: 'translateY(-2px)',
-          boxShadow: '0 8px 24px rgba(66, 110, 240, 0.08)',
+          boxShadow: '0 6px 20px rgba(66, 110, 240, 0.1)',
           borderColor: '#426ef0',
+          borderLeftColor: perfBadge.textColor,
           '& .alert-title': {
             color: '#426ef0',
           },
         },
       }}
     >
-      {/* Header section containing Icon, Info Stack, and Pill Badges */}
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-          {/* Icon Container with background matching Critical status */}
+      {/* Header row: icon, title, meta, and a single severity badge */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, p: 2.5, pb: 2 }}>
+        <Stack direction="row" spacing={1.75} sx={{ alignItems: 'center', minWidth: 0 }}>
           <Box
             sx={{
-              width: 44,
-              height: 44,
+              width: 38,
+              height: 38,
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               bgcolor: perfBadge.bgColor,
               flexShrink: 0,
-              '& svg': {
-                fontSize: 24,
-              },
+              '& svg': { fontSize: 20 },
             }}
           >
             {perfBadge.icon}
           </Box>
-          
-          {/* Title and details stack */}
-          <Stack spacing={0.5}>
+
+          <Stack spacing={0.25} sx={{ minWidth: 0 }}>
             <Typography
               className="alert-title"
-              variant="h6"
+              variant="subtitle1"
+              noWrap
               sx={{
                 fontWeight: 700,
                 color: 'text.primary',
-                fontSize: '1.05rem',
+                fontSize: '1rem',
                 lineHeight: 1.25,
                 transition: 'color 0.2s ease',
               }}
             >
               {alert.kpiName}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }} noWrap>
               {alert.organizationName} • {formattedDate}
+              {isAcknowledged && ' • Acknowledged'}
             </Typography>
           </Stack>
         </Stack>
 
-        {/* Dual Badges (Performance Status + Acknowledgment Status) */}
-        <Stack direction="row" spacing={1} sx={{ alignSelf: 'center' }}>
-          {/* Performance Badge */}
-          <Box
-            sx={{
-              px: 1.75,
-              py: 0.5,
-              borderRadius: '50px',
-              bgcolor: perfBadge.bgColor,
-              color: perfBadge.textColor,
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-            }}
-          >
-            {perfBadge.label}
-          </Box>
-
-          {/* Acknowledgment Badge */}
-          <Box
-            sx={{
-              px: 1.75,
-              py: 0.5,
-              borderRadius: '50px',
-              bgcolor: ackBadge.bgColor,
-              color: ackBadge.textColor,
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-            }}
-          >
-            {ackBadge.label}
-          </Box>
-        </Stack>
+        {/* Single severity badge; acknowledgment is conveyed via card opacity + meta text above */}
+        <Box
+          sx={{
+            px: 1.5,
+            py: 0.4,
+            borderRadius: '50px',
+            bgcolor: perfBadge.bgColor,
+            color: perfBadge.textColor,
+            fontSize: '0.68rem',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            flexShrink: 0,
+          }}
+        >
+          {perfBadge.label}
+        </Box>
       </Box>
 
-      {/* Metrics Row */}
+      {/* Metrics row: fixed grid so values line up regardless of card width */}
       <Box
         sx={{
-          display: 'flex',
-          gap: { xs: 3, sm: 5 },
-          mt: 0.5,
-          flexWrap: 'wrap',
-          pl: { xs: 0, sm: 7.5 }, // align metrics row with the text above
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))',
+          borderTop: '1px solid',
+          borderColor: 'divider',
+          bgcolor: 'rgba(0,0,0,0.015)',
         }}
       >
-        <Box sx={{ minWidth: 110 }}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: 'block', mb: 0.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}
+        {METRICS.map((metric, i) => (
+          <Box
+            key={metric.label}
+            sx={{
+              px: 2.5,
+              py: 1.5,
+              borderLeft: i === 0 ? 'none' : '1px solid',
+              borderColor: 'divider',
+            }}
           >
-            Contribution:
-          </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '1.05rem' }}>
-            {formatValue(alert.periodContribution, alert.unit)}
-          </Typography>
-        </Box>
-
-        <Box sx={{ minWidth: 110 }}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: 'block', mb: 0.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}
-          >
-            Cumulative:
-          </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '1.05rem' }}>
-            {formatValue(alert.cumulativeValue, alert.unit)}
-          </Typography>
-        </Box>
-
-        <Box sx={{ minWidth: 110 }}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: 'block', mb: 0.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}
-          >
-            Scaled Target:
-          </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '1.05rem' }}>
-            {formatValue(alert.scaledPeriodTarget, alert.unit)}
-          </Typography>
-        </Box>
-
-        <Box sx={{ minWidth: 110 }}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: 'block', mb: 0.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}
-          >
-            Achievement:
-          </Typography>
-          <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '1.05rem' }}>
-            {(alert.achievementRate ?? 0).toFixed(1)}%
-          </Typography>
-        </Box>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', mb: 0.25, fontWeight: 600, fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}
+            >
+              {metric.label}
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.95rem' }}>
+              {metric.get(alert)}
+            </Typography>
+          </Box>
+        ))}
       </Box>
     </Card>
   );
