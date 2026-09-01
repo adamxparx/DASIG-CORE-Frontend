@@ -557,7 +557,7 @@ const TbiManagerSubmissionHistoryPage = () => {
     }
   }, [clearDocumentPreview, downloadDocumentBlob]);
 
-  const handleModalExport = useCallback(async () => {
+  const handleDownloadAllDocuments = useCallback(async () => {
     if (!selectedSubmission || selectedSubmission.documents.length === 0) {
       return;
     }
@@ -565,9 +565,11 @@ const TbiManagerSubmissionHistoryPage = () => {
     setDocumentError(null);
     setIsDocumentLoading(true);
     try {
-      await downloadDocumentBlob(selectedSubmission.documents[0]);
+      for (const document of selectedSubmission.documents) {
+        await downloadDocumentBlob(document);
+      }
     } catch (err) {
-      setDocumentError(err instanceof Error ? err.message : 'Unable to export supporting document.');
+      setDocumentError(err instanceof Error ? err.message : 'Unable to download supporting documents.');
     } finally {
       setIsDocumentLoading(false);
     }
@@ -609,7 +611,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
     <>
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100%', bgcolor: '#F7F8FB' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', bgcolor: '#F7F8FB' }}>
 
         <Box sx={{ flex: 1, p: { xs: 2, md: 3.5, lg: 4 } }}>
 
@@ -1747,7 +1749,6 @@ const TbiManagerSubmissionHistoryPage = () => {
                             </Typography>
 
                           </Box>
-
                         </Stack>
 
                       </Paper>
@@ -1913,7 +1914,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                   startIcon={<DownloadOutlinedIcon sx={{ fontSize: 18 }} />}
 
-                  onClick={() => void handleModalExport()}
+                  onClick={() => void handleDownloadAllDocuments()}
 
                   disabled={selectedSubmission.documents.length === 0 || isDocumentLoading}
 
@@ -1921,7 +1922,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                 >
 
-                  Export
+                  Download
 
                 </Button>
 
