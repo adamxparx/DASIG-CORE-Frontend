@@ -175,7 +175,9 @@ const RoleBasedDashboardPage = ({
   const resolvedTitle =
     role === 'DASIG_ADMIN'
       ? title
-      : `${dashboardData?.organizationName ?? 'Organization'} KPI Dashboard`;
+      : role === 'TBI_MANAGER'
+        ? `${dashboardData?.committeeName ?? 'Committee'} KPI Dashboard`
+        : `${dashboardData?.organizationName ?? 'Organization'} KPI Dashboard`;
 
   if (isLoading) {
     return (

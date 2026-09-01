@@ -4,7 +4,7 @@ const TbiManagerDashboard = () => {
   return (
     <RoleBasedDashboardPage
       role="TBI_MANAGER"
-      title="Organization KPI Dashboard"
+      title="Committee KPI Dashboard"
       subtitle="Review assigned KPIs and submit progress updates."
     />
   );
