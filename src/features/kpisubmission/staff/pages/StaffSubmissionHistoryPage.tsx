@@ -1,7 +1,11 @@
+import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined';
+import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
+import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined';
+import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
 import RefreshOutlinedIcon from '@mui/icons-material/RefreshOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 import Alert from '@mui/material/Alert';
@@ -30,7 +34,7 @@ import type { AssignableKpi, KpiSubmissionResponse, SubmissionDocumentResponse, 
 import RejectionFeedbackPanel from '../../shared/components/RejectionFeedbackPanel';
 import SubmissionReviewBadge from '../../shared/components/SubmissionReviewBadge';
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 6;
 
 const inputFieldSx = {
   '& .MuiOutlinedInput-root': {
@@ -44,14 +48,14 @@ const inputFieldSx = {
 };
 
 const tableHeaderCellSx = {
-  color: '#9BA1AE',
-  fontSize: '0.68rem',
+  color: '#6B7280',
+  fontSize: '0.8125rem',
   fontWeight: 600,
-  letterSpacing: '0.08em',
-  borderBottom: '1px solid #EEF0F4',
-  py: 2,
+  borderBottom: '1px solid #E5E7EB',
+  py: 1.75,
   px: 2.5,
   whiteSpace: 'nowrap',
+  bgcolor: '#F9FAFB',
 };
 
 const tableBodyCellSx = {
@@ -80,6 +84,30 @@ const outlinedActionButtonSx = {
   },
 };
 
+const primaryActionButtonSx = {
+  textTransform: 'none',
+  borderRadius: 2,
+  bgcolor: '#6366F1',
+  color: '#fff',
+  fontWeight: 500,
+  fontSize: '0.875rem',
+  px: 2,
+  py: 0.85,
+  boxShadow: 'none',
+  '&:hover': {
+    bgcolor: '#5558E3',
+    boxShadow: 'none',
+  },
+};
+
+const sectionLabelSx = {
+  fontWeight: 700,
+  fontSize: '0.72rem',
+  letterSpacing: '0.06em',
+  color: '#6B7280',
+  lineHeight: 1.6,
+};
+
 const formatSubmissionId = (id: number) => `#SUB-${String(id).padStart(4, '0')}`;
 const formatDisplayDate = (rawDate: string) =>
   new Date(rawDate).toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' });
@@ -102,12 +130,12 @@ const isTextDocument = (document: SubmissionDocumentResponse) =>
 
 const mapStatus = (status: string) => {
   if (status === 'GREEN') {
-    return { label: 'On Track', bg: '#DDF4E8', color: '#14945F' };
+    return { label: 'On Track', bg: '#DDF4E8', color: '#14945F', achievementColor: '#14945F' };
   }
   if (status === 'YELLOW') {
-    return { label: 'At Risk', bg: '#FFF1D6', color: '#B06000' };
+    return { label: 'At Risk', bg: '#FFF1D6', color: '#B06000', achievementColor: '#D97706' };
   }
-  return { label: 'Delayed', bg: '#FFE2E2', color: '#C62828' };
+  return { label: 'Delayed', bg: '#FFE2E2', color: '#C62828', achievementColor: '#DC2626' };
 };
 
 const StaffSubmissionHistoryPage = () => {
@@ -115,6 +143,7 @@ const StaffSubmissionHistoryPage = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<'ALL' | string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<'ALL' | string>('ALL');
   const [selectedReviewStatus, setSelectedReviewStatus] = useState<'ALL' | SubmissionReviewStatus>('ALL');
+  const [selectedKpiName, setSelectedKpiName] = useState<'ALL' | string>('ALL');
   const [submissions, setSubmissions] = useState<KpiSubmissionResponse[]>([]);
   const [assignableKpis, setAssignableKpis] = useState<AssignableKpi[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -154,6 +183,8 @@ const StaffSubmissionHistoryPage = () => {
     return ['ALL', ...new Set(submissions.map((item) => item.reportingPeriod))];
   }, [submissions]);
 
+  const kpiOptions = useMemo(() => ['ALL', ...new Set(submissions.map((item) => item.kpiName))], [submissions]);
+
   const filteredSubmissions = useMemo(() => {
     const normalized = search.trim().toLowerCase();
 
@@ -170,6 +201,10 @@ const StaffSubmissionHistoryPage = () => {
         return false;
       }
 
+      if (selectedKpiName !== 'ALL' && submission.kpiName !== selectedKpiName) {
+        return false;
+      }
+
       if (!normalized) {
         return true;
       }
@@ -180,7 +215,7 @@ const StaffSubmissionHistoryPage = () => {
         submission.reportingPeriod.toLowerCase().includes(normalized)
       );
     });
-  }, [search, selectedPeriod, selectedStatus, selectedReviewStatus, submissions]);
+  }, [search, selectedPeriod, selectedStatus, selectedReviewStatus, selectedKpiName, submissions]);
 
   const totalPages = Math.max(1, Math.ceil(filteredSubmissions.length / PAGE_SIZE));
   const pagedSubmissions = filteredSubmissions.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -270,7 +305,7 @@ const StaffSubmissionHistoryPage = () => {
     }
   }, [clearDocumentPreview, downloadDocumentBlob]);
 
-  const handleModalExport = useCallback(async () => {
+  const handleDownloadAllDocuments = useCallback(async () => {
     if (!selectedSubmission || selectedSubmission.documents.length === 0) {
       return;
     }
@@ -278,9 +313,11 @@ const StaffSubmissionHistoryPage = () => {
     setDocumentError(null);
     setIsDocumentLoading(true);
     try {
-      await downloadDocumentBlob(selectedSubmission.documents[0]);
+      for (const document of selectedSubmission.documents) {
+        await downloadDocumentBlob(document);
+      }
     } catch (err) {
-      setDocumentError(err instanceof Error ? err.message : 'Unable to export supporting document.');
+      setDocumentError(err instanceof Error ? err.message : 'Unable to download supporting documents.');
     } finally {
       setIsDocumentLoading(false);
     }
@@ -294,30 +331,11 @@ const StaffSubmissionHistoryPage = () => {
 
   return (
     <>
-      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100%', bgcolor: '#F7F8FB' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', bgcolor: '#F7F8FB' }}>
         <Box sx={{ flex: 1, p: { xs: 2, md: 3.5, lg: 4 } }}>
           <Stack spacing={3} sx={{ maxWidth: 1280, mx: 'auto' }}>
             <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 2 }}>
               <Box>
-                <Box
-                  sx={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    px: 1.25,
-                    py: 0.4,
-                    mb: 1,
-                    borderRadius: 999,
-                    bgcolor: '#F3F4F8',
-                    border: '1px solid #E5E7EB',
-                  }}
-                >
-                  <Typography
-                    variant="caption"
-                    sx={{ color: '#6B7280', fontWeight: 500, fontSize: '0.7rem', lineHeight: 1.4 }}
-                  >
-                    Staff Context
-                  </Typography>
-                </Box>
                 <Typography
                   variant="h4"
                   sx={{ fontWeight: 700, color: '#111827', fontSize: { xs: '1.65rem', md: '1.85rem' }, lineHeight: 1.2 }}
@@ -332,19 +350,19 @@ const StaffSubmissionHistoryPage = () => {
               <Stack direction="row" spacing={1.25} sx={{ flexShrink: 0 }}>
                 <Button
                   variant="outlined"
-                  startIcon={<RefreshOutlinedIcon sx={{ fontSize: 18 }} />}
-                  onClick={() => void loadData()}
-                  sx={outlinedActionButtonSx}
-                >
-                  Refresh
-                </Button>
-                <Button
-                  variant="outlined"
                   startIcon={<DownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                   onClick={handleExportCsv}
                   sx={outlinedActionButtonSx}
                 >
                   Export CSV
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<RefreshOutlinedIcon sx={{ fontSize: 18 }} />}
+                  onClick={() => void loadData()}
+                  sx={primaryActionButtonSx}
+                >
+                  Refresh
                 </Button>
               </Stack>
             </Stack>
@@ -353,13 +371,13 @@ const StaffSubmissionHistoryPage = () => {
               elevation={0}
               sx={{ border: '1px solid #E2E5EC', borderRadius: 2.5, p: { xs: 1.5, md: 2 }, bgcolor: '#fff' }}
             >
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
+              <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1.5} sx={{ alignItems: { lg: 'center' } }}>
                 <TextField
-                  placeholder="Job Creation"
+                  placeholder="Search by ID, KPI, or Period..."
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   fullWidth
-                  sx={{ flex: 1.6, ...inputFieldSx }}
+                  sx={{ flex: 1.4, ...inputFieldSx }}
                   slotProps={{
                     input: {
                       startAdornment: (
@@ -370,11 +388,28 @@ const StaffSubmissionHistoryPage = () => {
                     },
                   }}
                 />
+                <Chip
+                  icon={<FilterListOutlinedIcon sx={{ fontSize: 16 }} />}
+                  label="Filters"
+                  variant="outlined"
+                  sx={{
+                    borderRadius: 2,
+                    borderColor: '#E2E5EC',
+                    bgcolor: '#fff',
+                    color: '#374151',
+                    fontWeight: 500,
+                    fontSize: '0.875rem',
+                    height: 40,
+                    flexShrink: 0,
+                    alignSelf: { xs: 'flex-start', lg: 'center' },
+                    '& .MuiChip-icon': { color: '#6B7280' },
+                  }}
+                />
                 <TextField
                   select
                   value={selectedPeriod}
                   onChange={(event) => setSelectedPeriod(event.target.value)}
-                  sx={{ minWidth: { xs: '100%', md: 180 }, ...inputFieldSx }}
+                  sx={{ minWidth: { xs: '100%', lg: 150 }, ...inputFieldSx }}
                 >
                   {periodOptions.map((period) => (
                     <MenuItem key={period} value={period}>
@@ -386,7 +421,7 @@ const StaffSubmissionHistoryPage = () => {
                   select
                   value={selectedStatus}
                   onChange={(event) => setSelectedStatus(event.target.value)}
-                  sx={{ minWidth: { xs: '100%', md: 160 }, ...inputFieldSx }}
+                  sx={{ minWidth: { xs: '100%', lg: 140 }, ...inputFieldSx }}
                 >
                   {['ALL', 'On Track', 'At Risk', 'Delayed'].map((status) => (
                     <MenuItem key={status} value={status}>
@@ -398,11 +433,23 @@ const StaffSubmissionHistoryPage = () => {
                   select
                   value={selectedReviewStatus}
                   onChange={(event) => setSelectedReviewStatus(event.target.value as 'ALL' | SubmissionReviewStatus)}
-                  sx={{ minWidth: { xs: '100%', md: 160 }, ...inputFieldSx }}
+                  sx={{ minWidth: { xs: '100%', lg: 150 }, ...inputFieldSx }}
                 >
                   {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((status) => (
                     <MenuItem key={status} value={status}>
                       {status === 'ALL' ? 'All Reviews' : status.charAt(0) + status.slice(1).toLowerCase()}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  select
+                  value={selectedKpiName}
+                  onChange={(event) => setSelectedKpiName(event.target.value)}
+                  sx={{ minWidth: { xs: '100%', lg: 160 }, ...inputFieldSx }}
+                >
+                  {kpiOptions.map((kpiName) => (
+                    <MenuItem key={kpiName} value={kpiName}>
+                      {kpiName === 'ALL' ? 'All KPIs' : kpiName}
                     </MenuItem>
                   ))}
                 </TextField>
@@ -426,7 +473,7 @@ const StaffSubmissionHistoryPage = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      {['SUB ID', 'KPI NAME', 'PERIOD', 'VALUE', 'TARGET', 'STATUS', 'REVIEW', 'DATE'].map((header) => (
+                      {['Submission ID', 'KPI Name', 'Period', 'Submitted / Target', 'Achiev. %', 'Status', 'Review', 'Date'].map((header) => (
                         <TableCell key={header} sx={tableHeaderCellSx}>
                           {header}
                         </TableCell>
@@ -459,20 +506,23 @@ const StaffSubmissionHistoryPage = () => {
                             '&:last-child td': { borderBottom: 0 },
                           }}
                         >
-                          <TableCell sx={{ ...tableBodyCellSx, color: '#6B7280', fontWeight: 600 }}>
+                          <TableCell sx={{ ...tableBodyCellSx, fontWeight: 600, color: '#111827' }}>
                             {formatSubmissionId(submission.id)}
                           </TableCell>
-                          <TableCell sx={{ ...tableBodyCellSx, fontWeight: 600, color: '#111827' }}>
-                            {submission.kpiName}
-                          </TableCell>
+                          <TableCell sx={{ ...tableBodyCellSx, color: '#374151' }}>{submission.kpiName}</TableCell>
                           <TableCell sx={tableBodyCellSx}>{submission.reportingPeriod}</TableCell>
-                          <TableCell sx={{ ...tableBodyCellSx, fontWeight: 700, color: '#111827' }}>
-                            {submission.submittedValue}
-                            {kpiMeta?.unit ? ` ${kpiMeta.unit}` : ''}
-                          </TableCell>
                           <TableCell sx={tableBodyCellSx}>
-                            {kpiMeta?.targetValue ?? '--'}
-                            {kpiMeta?.unit ? ` ${kpiMeta.unit}` : ''}
+                            <Typography sx={{ fontWeight: 700, lineHeight: 1.5, color: '#111827' }}>
+                              {submission.submittedValue}
+                              {kpiMeta?.unit ? ` ${kpiMeta.unit}` : ''}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: '#9BA1AE', lineHeight: 1.5, display: 'block' }}>
+                              Target: {kpiMeta?.targetValue ?? '--'}
+                              {kpiMeta?.unit ? ` ${kpiMeta.unit}` : ''}
+                            </Typography>
+                          </TableCell>
+                          <TableCell sx={{ ...tableBodyCellSx, fontWeight: 700, color: status.achievementColor }}>
+                            {(submission.achievementRate ?? 0).toFixed(0)}%
                           </TableCell>
                           <TableCell sx={tableBodyCellSx}>
                             <Chip
@@ -521,16 +571,20 @@ const StaffSubmissionHistoryPage = () => {
                     onClick={() => setCurrentPage((page) => page - 1)}
                     sx={{
                       textTransform: 'none',
-                      minWidth: 52,
+                      minWidth: 72,
                       px: 1.5,
                       py: 0.65,
                       borderRadius: 1.5,
+                      border: '1px solid #E2E5EC',
                       color: currentPage === 1 ? '#C4C9D4' : '#6B7280',
                       fontWeight: 500,
                       fontSize: '0.8125rem',
+                      bgcolor: '#fff',
+                      boxShadow: 'none',
+                      '&:hover': { bgcolor: '#F9FAFB', boxShadow: 'none' },
                     }}
                   >
-                    Prev
+                    Previous
                   </Button>
 
                   {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
@@ -548,7 +602,7 @@ const StaffSubmissionHistoryPage = () => {
                         fontWeight: 600,
                         fontSize: '0.8125rem',
                         color: currentPage === pageNumber ? '#fff' : '#6B7280',
-                        bgcolor: currentPage === pageNumber ? '#6366F1' : 'transparent',
+                        bgcolor: currentPage === pageNumber ? '#6366F1' : '#fff',
                         border: currentPage === pageNumber ? 'none' : '1px solid #E2E5EC',
                         boxShadow: 'none',
                         '&:hover': {
@@ -567,13 +621,17 @@ const StaffSubmissionHistoryPage = () => {
                     onClick={() => setCurrentPage((page) => page + 1)}
                     sx={{
                       textTransform: 'none',
-                      minWidth: 52,
+                      minWidth: 60,
                       px: 1.5,
                       py: 0.65,
                       borderRadius: 1.5,
+                      border: '1px solid #E2E5EC',
                       color: currentPage === totalPages ? '#C4C9D4' : '#6B7280',
                       fontWeight: 500,
                       fontSize: '0.8125rem',
+                      bgcolor: '#fff',
+                      boxShadow: 'none',
+                      '&:hover': { bgcolor: '#F9FAFB', boxShadow: 'none' },
                     }}
                   >
                     Next
@@ -605,14 +663,15 @@ const StaffSubmissionHistoryPage = () => {
         onClose={handleCloseDetails}
         sx={{
           '& .MuiDrawer-paper': {
-            width: { xs: '100%', sm: 540 },
+            width: { xs: '100%', sm: 560 },
             boxShadow: '-12px 0 40px rgba(15, 23, 42, 0.08)',
             borderLeft: '1px solid #E2E5EC',
           },
         }}
       >
         {!selectedSubmission ? null : (
-          <Box sx={{ p: { xs: 3, sm: 4 }, height: '100%', overflowY: 'auto' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 3, sm: 4 } }}>
             <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 2 }}>
               <Box>
                 <Typography
@@ -622,149 +681,101 @@ const StaffSubmissionHistoryPage = () => {
                   Submission Details
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#9BA1AE', lineHeight: 1.7, mt: 0.5 }}>
-                  ID: {formatSubmissionId(selectedSubmission.id)}
+                  ID: {formatSubmissionId(selectedSubmission.id)} • {mapStatus(selectedSubmission.performanceStatus).label}
                 </Typography>
+                <Box sx={{ mt: 1 }}>
+                  <SubmissionReviewBadge status={selectedSubmission.reviewStatus} />
+                </Box>
               </Box>
-              <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexShrink: 0 }}>
-                <IconButton
-                  onClick={handleCloseDetails}
-                  sx={{
-                    color: '#6B7280',
-                    border: '1px solid #E2E5EC',
-                    borderRadius: 2,
-                    width: 36,
-                    height: 36,
-                    '&:hover': { bgcolor: '#F9FAFB' },
-                  }}
-                >
-                  <CloseIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-              </Stack>
+              <IconButton
+                onClick={handleCloseDetails}
+                sx={{
+                  color: '#6B7280',
+                  border: '1px solid #E2E5EC',
+                  borderRadius: 2,
+                  width: 36,
+                  height: 36,
+                  flexShrink: 0,
+                  '&:hover': { bgcolor: '#F9FAFB' },
+                }}
+              >
+                <CloseIcon sx={{ fontSize: 18 }} />
+              </IconButton>
             </Stack>
 
-            <Stack spacing={3.5} sx={{ mt: 3.5 }}>
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 3 }}>
-                <Box>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: '#9BA1AE',
-                      fontWeight: 600,
-                      letterSpacing: '0.08em',
-                      fontSize: '0.68rem',
-                      display: 'block',
-                      mb: 1,
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    KPI NAME
-                  </Typography>
-                  <Typography sx={{ fontWeight: 600, lineHeight: 1.7, color: '#111827' }}>
+            <Divider sx={{ borderColor: '#EEF0F4', my: 2.5 }} />
+
+            <Stack spacing={3.5}>
+              <Box>
+                <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', mb: 1.75 }}>
+                  <FlagOutlinedIcon sx={{ fontSize: 16, color: '#6B7280' }} />
+                  <Typography sx={sectionLabelSx}>KPI METRICS</Typography>
+                </Stack>
+                <Paper
+                  variant="outlined"
+                  sx={{ p: 2.5, borderRadius: 2.5, borderColor: '#E2E5EC', bgcolor: '#fff' }}
+                >
+                  <Typography sx={{ fontWeight: 700, lineHeight: 1.6, color: '#111827', fontSize: '0.95rem' }}>
                     {selectedSubmission.kpiName}
                   </Typography>
-                </Box>
-                <Box>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: '#9BA1AE',
-                      fontWeight: 600,
-                      letterSpacing: '0.08em',
-                      fontSize: '0.68rem',
-                      display: 'block',
-                      mb: 1,
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    PERIOD
-                  </Typography>
-                  <Typography sx={{ fontWeight: 600, lineHeight: 1.7, color: '#111827' }}>
-                    {selectedSubmission.reportingPeriod}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: '#9BA1AE',
-                      fontWeight: 600,
-                      letterSpacing: '0.08em',
-                      fontSize: '0.68rem',
-                      display: 'block',
-                      mb: 1,
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    SUBMITTED VALUE
-                  </Typography>
-                  <Typography sx={{ fontWeight: 700, fontSize: '1.5rem', lineHeight: 1.5, color: '#111827' }}>
-                    {selectedSubmission.submittedValue}
-                    {selectedKpiMeta?.unit ? ` ${selectedKpiMeta.unit}` : ''}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: '#9BA1AE',
-                      fontWeight: 600,
-                      letterSpacing: '0.08em',
-                      fontSize: '0.68rem',
-                      display: 'block',
-                      mb: 1,
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    TARGET VALUE
-                  </Typography>
-                  <Typography sx={{ fontWeight: 600, lineHeight: 1.7, color: '#111827' }}>
-                    {selectedKpiMeta?.targetValue ?? '--'}
-                    {selectedKpiMeta?.unit ? ` ${selectedKpiMeta.unit}` : ''}
-                  </Typography>
-                </Box>
+                  <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', mt: 0.75, mb: 2.5 }}>
+                    <CalendarTodayOutlinedIcon sx={{ fontSize: 14, color: '#9BA1AE' }} />
+                    <Typography variant="body2" sx={{ color: '#6B7280', lineHeight: 1.6 }}>
+                      Period: {selectedSubmission.reportingPeriod}
+                    </Typography>
+                  </Stack>
+
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5, mb: 2.5 }}>
+                    <Box>
+                      <Typography variant="caption" sx={{ color: '#9BA1AE', lineHeight: 1.6, display: 'block', mb: 0.75 }}>
+                        Target Value
+                      </Typography>
+                      <Typography sx={{ fontWeight: 700, lineHeight: 1.6, color: '#111827', fontSize: '1.05rem' }}>
+                        {selectedKpiMeta?.targetValue ?? '--'}
+                        {selectedKpiMeta?.unit ? ` ${selectedKpiMeta.unit}` : ''}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" sx={{ color: '#9BA1AE', lineHeight: 1.6, display: 'block', mb: 0.75 }}>
+                        Submitted Value
+                      </Typography>
+                      <Typography sx={{ fontWeight: 700, lineHeight: 1.6, color: '#6366F1', fontSize: '1.05rem' }}>
+                        {selectedSubmission.submittedValue}
+                        {selectedKpiMeta?.unit ? ` ${selectedKpiMeta.unit}` : ''}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Divider sx={{ borderColor: '#EEF0F4', mb: 2 }} />
+
+                  <Box>
+                    <Typography variant="caption" sx={{ color: '#9BA1AE', lineHeight: 1.6, display: 'block', mb: 0.5 }}>
+                      Achievement Rate
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#6B7280', lineHeight: 1.6, mb: 1.25 }}>
+                      {(selectedSubmission.achievementRate ?? 0).toFixed(1)}% of target met
+                    </Typography>
+                    <LinearProgress
+                      variant="determinate"
+                      value={Math.min(100, Math.max(0, selectedSubmission.achievementRate ?? 0))}
+                      sx={{
+                        height: 8,
+                        borderRadius: 999,
+                        bgcolor: '#EEF0FF',
+                        '& .MuiLinearProgress-bar': {
+                          borderRadius: 999,
+                          bgcolor: '#6366F1',
+                        },
+                      }}
+                    />
+                  </Box>
+                </Paper>
               </Box>
 
               <Box>
-                <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1.25 }}>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: '#9BA1AE',
-                      fontWeight: 600,
-                      letterSpacing: '0.08em',
-                      fontSize: '0.68rem',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    ACHIEVEMENT
-                  </Typography>
-                  <Typography sx={{ fontWeight: 700, color: '#111827', lineHeight: 1.6 }}>
-                    {(selectedSubmission.achievementRate ?? 0).toFixed(1)}%
-                  </Typography>
-                </Stack>
-                <LinearProgress
-                  variant="determinate"
-                  value={Math.min(100, Math.max(0, selectedSubmission.achievementRate ?? 0))}
-                  sx={{
-                    height: 10,
-                    borderRadius: 999,
-                    bgcolor: '#E6F7F4',
-                    '& .MuiLinearProgress-bar': {
-                      borderRadius: 999,
-                      bgcolor: '#14B8A6',
-                    },
-                  }}
-                />
-              </Box>
-
-              <Divider sx={{ borderColor: '#EEF0F4' }} />
-
-              <Box>
-                <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
-                  <DescriptionOutlinedIcon sx={{ color: '#374151', fontSize: 20 }} />
-                  <Typography sx={{ fontWeight: 700, color: '#111827', lineHeight: 1.6 }}>
-                    Supporting Documents
-                  </Typography>
+                <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', mb: 1.75 }}>
+                  <AttachFileOutlinedIcon sx={{ fontSize: 16, color: '#6B7280' }} />
+                  <Typography sx={sectionLabelSx}>SUPPORTING EVIDENCE</Typography>
                 </Stack>
                 <Stack spacing={1.25}>
                   {selectedSubmission.documents.length === 0 && (
@@ -792,8 +803,8 @@ const StaffSubmissionHistoryPage = () => {
                       <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                         <Box
                           sx={{
-                            width: 42,
-                            height: 42,
+                            width: 40,
+                            height: 40,
                             borderRadius: 2,
                             bgcolor: '#EEF0FF',
                             display: 'flex',
@@ -802,7 +813,7 @@ const StaffSubmissionHistoryPage = () => {
                             flexShrink: 0,
                           }}
                         >
-                          <DescriptionOutlinedIcon sx={{ color: '#5B61D9', fontSize: 22 }} />
+                          <DescriptionOutlinedIcon sx={{ color: '#6366F1', fontSize: 20 }} />
                         </Box>
                         <Box sx={{ minWidth: 0, flex: 1 }}>
                           <Typography
@@ -812,7 +823,7 @@ const StaffSubmissionHistoryPage = () => {
                             {document.fileName}
                           </Typography>
                           <Typography variant="caption" sx={{ color: '#9BA1AE', lineHeight: 1.6, display: 'block', mt: 0.25 }}>
-                            {(document.fileSize / (1024 * 1024)).toFixed(1)} MB • {document.contentType || 'File'}
+                            {(document.fileSize / (1024 * 1024)).toFixed(1)} MB
                           </Typography>
                         </Box>
                       </Stack>
@@ -885,30 +896,13 @@ const StaffSubmissionHistoryPage = () => {
               </Box>
 
               <Box>
-                {selectedSubmission.reviewStatus === 'REJECTED' && (
-                  <Box sx={{ mb: 2.5 }}>
-                    <RejectionFeedbackPanel
-                      rejectionReason={selectedSubmission.rejectionReason}
-                      reviewedByName={selectedSubmission.reviewedByName}
-                      reviewedAt={selectedSubmission.reviewedAt}
-                    />
-                  </Box>
-                )}
-
-                <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
-                  <ChatBubbleOutlineOutlinedIcon sx={{ color: '#374151', fontSize: 20 }} />
-                  <Typography sx={{ fontWeight: 700, color: '#111827', lineHeight: 1.6 }}>
-                    My Submission Notes
-                  </Typography>
+                <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', mb: 1.75 }}>
+                  <ChatBubbleOutlineOutlinedIcon sx={{ fontSize: 16, color: '#6B7280' }} />
+                  <Typography sx={sectionLabelSx}>SUBMISSION NOTES</Typography>
                 </Stack>
                 <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2.5,
-                    borderRadius: 2.5,
-                    bgcolor: '#F4F3F8',
-                    border: '1px solid #E8E6F0',
-                  }}
+                  variant="outlined"
+                  sx={{ p: 2.5, borderRadius: 2.5, borderColor: '#E2E5EC', bgcolor: '#fff' }}
                 >
                   <Typography
                     variant="body2"
@@ -922,22 +916,38 @@ const StaffSubmissionHistoryPage = () => {
                     {selectedSubmission.notes ? `"${selectedSubmission.notes}"` : 'No notes provided.'}
                   </Typography>
                 </Paper>
+                {selectedSubmission.reviewStatus === 'REJECTED' && (
+                  <Box sx={{ mt: 2 }}>
+                    <RejectionFeedbackPanel
+                      rejectionReason={selectedSubmission.rejectionReason}
+                      reviewedByName={selectedSubmission.reviewedByName}
+                      reviewedAt={selectedSubmission.reviewedAt}
+                    />
+                  </Box>
+                )}
               </Box>
-
-              <Divider sx={{ borderColor: '#EEF0F4' }} />
-
+            </Stack>
+            </Box>
+            <Box
+              sx={{
+                px: { xs: 3, sm: 4 },
+                py: 2.5,
+                borderTop: '1px solid #EEF0F4',
+                bgcolor: '#fff',
+              }}
+            >
               <Stack direction="row" spacing={1.25} sx={{ justifyContent: 'flex-end' }}>
                 <Button
                   variant="outlined"
                   startIcon={<DownloadOutlinedIcon sx={{ fontSize: 18 }} />}
-                  onClick={() => void handleModalExport()}
+                  onClick={() => void handleDownloadAllDocuments()}
                   disabled={selectedSubmission.documents.length === 0 || isDocumentLoading}
                   sx={outlinedActionButtonSx}
                 >
-                  Export
+                  Download
                 </Button>
               </Stack>
-            </Stack>
+            </Box>
           </Box>
         )}
       </Drawer>

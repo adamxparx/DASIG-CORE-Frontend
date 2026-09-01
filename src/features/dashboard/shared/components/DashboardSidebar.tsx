@@ -86,8 +86,8 @@ const roleMenus: Record<UserRole, SidebarItem[]> = {
   TBI_MANAGER: [
     { key: 'dashboard', label: 'Committee Lead Dashboard', icon: <SpaceDashboardOutlinedIcon /> },
     { key: 'notifications', label: 'Notifications', icon: <NotificationsOutlinedIcon /> },
-    { key: 'history', label: 'Submission History', icon: <AssignmentTurnedInOutlinedIcon /> },
     { key: 'submit', label: 'Submit KPI', icon: <PostAddOutlinedIcon /> },
+    { key: 'history', label: 'Submission History', icon: <AssignmentTurnedInOutlinedIcon /> },
   ],
   STAFF: [
     { key: 'dashboard', label: 'Member Dashboard', icon: <SpaceDashboardOutlinedIcon /> },
