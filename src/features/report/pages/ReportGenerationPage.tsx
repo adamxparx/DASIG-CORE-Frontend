@@ -1,4 +1,5 @@
 import DownloadIcon from '@mui/icons-material/Download';
+import SearchIcon from '@mui/icons-material/Search';
 import SummarizeOutlinedIcon from '@mui/icons-material/SummarizeOutlined';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -10,6 +11,7 @@ import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormLabel from '@mui/material/FormLabel';
 import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Radio from '@mui/material/Radio';
@@ -62,6 +64,24 @@ export default function ReportGenerationPage() {
   // Toast notifications
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  // Historical Reports Log filters
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyTypeFilter, setHistoryTypeFilter] = useState<'ALL' | 'COMMITTEE' | 'KPI'>('ALL');
+
+  const filteredHistoryReports = historyReports.filter((report) => {
+    if (historyTypeFilter !== 'ALL' && report.reportType !== historyTypeFilter) {
+      return false;
+    }
+    const query = historySearch.trim().toLowerCase();
+    if (!query) {
+      return true;
+    }
+    return (
+      (report.committeeName?.toLowerCase().includes(query) ?? false) ||
+      (report.kpiName?.toLowerCase().includes(query) ?? false)
+    );
+  });
 
   // Fetch KPIs globally when scope is KPI
   useEffect(() => {
@@ -239,31 +259,13 @@ export default function ReportGenerationPage() {
     <AdminPageLayout>
       <Stack spacing={3.5}>
         {/* Header */}
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-          <Box
-            sx={{
-              width: 48,
-              height: 48,
-              borderRadius: '50%',
-              bgcolor: 'text.primary',
-              color: 'background.paper',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              '& svg': { fontSize: 26 },
-            }}
-          >
-            <SummarizeOutlinedIcon />
-          </Box>
-          <Stack spacing={0.5}>
-            <Typography variant="h4" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '1.75rem', letterSpacing: '-0.5px' }}>
-              Report Generation
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-              Generate and export AI-powered performance narrative reports for technology business incubators
-            </Typography>
-          </Stack>
+        <Stack spacing={0.5}>
+          <Typography variant="h4" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '1.75rem', letterSpacing: '-0.5px' }}>
+            Report Generation
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+            Generate and export AI-powered performance narrative reports for technology business incubators
+          </Typography>
         </Stack>
 
         <Divider />
@@ -542,6 +544,42 @@ export default function ReportGenerationPage() {
             Historical Reports Log
           </Typography>
 
+          {!isHistoryLoading && historyReports.length > 0 && (
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+              <TextField
+                size="small"
+                placeholder="Search by committee or KPI name"
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+                fullWidth
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 }, maxWidth: { sm: 360 } }}
+              />
+              <FormControl size="small" sx={{ minWidth: 180 }}>
+                <InputLabel id="history-type-filter-label">Type</InputLabel>
+                <Select
+                  labelId="history-type-filter-label"
+                  label="Type"
+                  value={historyTypeFilter}
+                  onChange={(e) => setHistoryTypeFilter(e.target.value as 'ALL' | 'COMMITTEE' | 'KPI')}
+                  sx={{ borderRadius: 2 }}
+                >
+                  <MenuItem value="ALL">All Types</MenuItem>
+                  <MenuItem value="COMMITTEE">Committee-wide</MenuItem>
+                  <MenuItem value="KPI">KPI</MenuItem>
+                </Select>
+              </FormControl>
+            </Stack>
+          )}
+
           {isHistoryLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress size={24} sx={{ color: '#426ef0' }} />
@@ -561,6 +599,21 @@ export default function ReportGenerationPage() {
                 No historical performance reports found.
               </Typography>
             </Box>
+          ) : filteredHistoryReports.length === 0 ? (
+            <Box
+              sx={{
+                p: 4,
+                bgcolor: 'background.paper',
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 3.5,
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                No reports match your search or filter.
+              </Typography>
+            </Box>
           ) : (
             <TableContainer
               sx={{
@@ -569,21 +622,23 @@ export default function ReportGenerationPage() {
                 borderRadius: 3.5,
                 bgcolor: 'background.paper',
                 boxShadow: 'none',
+                maxHeight: 440,
+                overflowY: 'auto',
               }}
             >
-              <Table sx={{ minWidth: 650 }} aria-label="reports history table">
-                <TableHead sx={{ bgcolor: 'secondary.main' }}>
+              <Table stickyHeader sx={{ minWidth: 650 }} aria-label="reports history table">
+                <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary' }}>Committee</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary' }}>Type</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary' }}>Date Generated</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary' }}>Reporting Period</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary' }}>Status</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, color: 'text.secondary', pr: 4 }}>Actions</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary', bgcolor: 'secondary.main' }}>Committee</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary', bgcolor: 'secondary.main' }}>Type</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary', bgcolor: 'secondary.main' }}>Date Generated</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary', bgcolor: 'secondary.main' }}>Reporting Period</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary', bgcolor: 'secondary.main' }}>Status</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, color: 'text.secondary', bgcolor: 'secondary.main', pr: 4 }}>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {historyReports.map((report) => {
+                  {filteredHistoryReports.map((report) => {
                     const genDate = new Date(report.generatedAt).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',

@@ -1,32 +1,59 @@
 import { type ReactNode } from 'react';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 
 interface NarrativeReportParserProps {
   text: string;
 }
 
+const INLINE_FORMAT_PATTERN = /\*\*(.+?)\*\*|\*(.+?)\*/g;
+
 /**
- * Robust inline formatter for bold text (**text**) and clean spacing.
- * Dynamically splits strings to render bold segments safely inside standard tags.
+ * Robust inline formatter for **bold** and *italic* markdown spans.
+ * Scans the string for both marker types and renders each segment with the matching style.
  */
 function formatInlineBold(text: string): ReactNode[] | string {
-  if (!text.includes('**')) {
+  if (!text.includes('*')) {
     return text;
   }
 
-  const parts = text.split(/\*\*([^*]+)\*\*/g);
-  return parts.map((part, index) => {
-    if (index % 2 === 1) {
-      return (
-        <Box component="span" key={index} sx={{ fontWeight: 700, color: 'text.primary' }}>
-          {part}
+  const nodes: ReactNode[] = [];
+  let lastIndex = 0;
+  let key = 0;
+
+  for (const match of text.matchAll(INLINE_FORMAT_PATTERN)) {
+    const matchIndex = match.index ?? 0;
+    if (matchIndex > lastIndex) {
+      nodes.push(text.slice(lastIndex, matchIndex));
+    }
+    if (match[1] !== undefined) {
+      nodes.push(
+        <Box component="span" key={key++} sx={{ fontWeight: 700, color: 'text.primary' }}>
+          {match[1]}
+        </Box>
+      );
+    } else {
+      nodes.push(
+        <Box component="span" key={key++} sx={{ fontStyle: 'italic' }}>
+          {match[2]}
         </Box>
       );
     }
-    return part;
-  });
+    lastIndex = matchIndex + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex));
+  }
+
+  return nodes;
 }
 
 export default function NarrativeReportParser({ text }: NarrativeReportParserProps) {
@@ -42,11 +69,16 @@ export default function NarrativeReportParser({ text }: NarrativeReportParserPro
   const lines = text.split(/\r?\n/);
   
   // Define parsed block types
-  type Block = 
+  type Block =
     | { type: 'heading'; level: number; text: string }
     | { type: 'bullet_list'; items: string[] }
     | { type: 'numbered_list'; items: { num: string; text: string }[] }
+    | { type: 'table'; headers: string[]; rows: string[][] }
     | { type: 'paragraph'; text: string };
+
+  const isTableRow = (line: string) => line.length > 1 && line.startsWith('|') && line.endsWith('|');
+  const isTableSeparatorRow = (line: string) => isTableRow(line) && /^[|:\-\s]+$/.test(line);
+  const splitTableRow = (line: string) => line.slice(1, -1).split('|').map((cell) => cell.trim());
 
   const blocks: Block[] = [];
   let currentParagraphLines: string[] = [];
@@ -68,6 +100,44 @@ export default function NarrativeReportParser({ text }: NarrativeReportParserPro
     if (!trimmed) {
       // Empty line signals end of current paragraph/block
       flushParagraph();
+      continue;
+    }
+
+    // 0. Markdown table check. The LLM doesn't always emit a clean |---|---| separator row, and
+    // sometimes wraps a single logical row across multiple physical lines mid-cell, so join lines
+    // into logical rows until each one actually ends with '|'.
+    if (trimmed.startsWith('|')) {
+      flushParagraph();
+      const rawRows: string[] = [];
+      let rowBuffer = '';
+      let continuationCount = 0;
+      let j = i;
+      while (j < lines.length) {
+        const candidate = lines[j].trim();
+        if (!rowBuffer) {
+          if (!candidate || !candidate.startsWith('|')) break; // left the table
+          rowBuffer = candidate;
+          continuationCount = 0;
+        } else {
+          if (!candidate) break; // unterminated row; stop rather than swallow the rest of the text
+          rowBuffer += ` ${candidate}`;
+          continuationCount++;
+        }
+        j++;
+        if (rowBuffer.endsWith('|') || continuationCount >= 6) {
+          rawRows.push(rowBuffer);
+          rowBuffer = '';
+        }
+      }
+      if (rowBuffer) {
+        rawRows.push(rowBuffer);
+      }
+
+      const headers = splitTableRow(rawRows[0]);
+      const bodyStart = rawRows.length > 1 && isTableSeparatorRow(rawRows[1]) ? 2 : 1;
+      const rows = rawRows.slice(bodyStart).map(splitTableRow);
+      blocks.push({ type: 'table', headers, rows });
+      i = j - 1; // loop's i++ will land right after the table
       continue;
     }
 
@@ -99,7 +169,20 @@ export default function NarrativeReportParser({ text }: NarrativeReportParserPro
       continue;
     }
 
-    // 3. Numbered list check: e.g. "1. item"
+    // 3. Numbered heading check: e.g. "1. Overall Performance Summary" — short, no ending
+    // punctuation, per the report's required top-level section structure.
+    const numberedHeadingMatch = trimmed.match(/^\d+\.\s+([^.!?]+)$/);
+    if (numberedHeadingMatch) {
+      flushParagraph();
+      blocks.push({
+        type: 'heading',
+        level: 2,
+        text: numberedHeadingMatch[1].trim(),
+      });
+      continue;
+    }
+
+    // 3b. Numbered list check: e.g. "1. Ensure timely submissions."
     const numberedMatch = trimmed.match(/^(\d+)\.\s*(.*)$/);
     if (numberedMatch) {
       flushParagraph();
@@ -151,7 +234,7 @@ export default function NarrativeReportParser({ text }: NarrativeReportParserPro
                   letterSpacing: '-0.3px',
                 }}
               >
-                {headingText}
+                {formatInlineBold(headingText)}
               </Typography>
             </Box>
           );
@@ -218,6 +301,38 @@ export default function NarrativeReportParser({ text }: NarrativeReportParserPro
                 </Box>
               ))}
             </Stack>
+          );
+        }
+
+        if (block.type === 'table') {
+          return (
+            <TableContainer
+              key={blockIdx}
+              sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, my: 1 }}
+            >
+              <Table size="small">
+                <TableHead sx={{ bgcolor: 'secondary.main' }}>
+                  <TableRow>
+                    {block.headers.map((header, headerIdx) => (
+                      <TableCell key={headerIdx} sx={{ fontWeight: 700, color: 'text.secondary' }}>
+                        {formatInlineBold(header)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {block.rows.map((row, rowIdx) => (
+                    <TableRow key={rowIdx} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                      {block.headers.map((_, cellIdx) => (
+                        <TableCell key={cellIdx} sx={{ color: 'text.secondary', verticalAlign: 'top' }}>
+                          {formatInlineBold(row[cellIdx] ?? '')}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           );
         }
 
