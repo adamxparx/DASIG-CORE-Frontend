@@ -2,7 +2,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import { useNavigate } from 'react-router-dom';
-import logo from '../../../assets/logo.png';
+import dasig_logo from '../../../assets/dasig_logo.svg';
 import collaborationConcept from '../../../assets/collaboration_concept.png';
 import { routes } from '../../../routes';
 
@@ -46,9 +46,9 @@ const LandingPage = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box
             component="img"
-            src={logo}
+            src={dasig_logo}
             alt="DASIG Logo"
-            sx={{ width: 40, height: 40, objectFit: 'contain', borderRadius: 1.5 }}
+            sx={{ width: 52, height: 52, objectFit: 'contain', borderRadius: 1.5 }}
           />
           <Typography variant="h6" sx={{ fontWeight: 800, color: '#0F172A', letterSpacing: '0.5px' }}>
             DASIG-CORE
@@ -147,11 +147,11 @@ const LandingPage = () => {
             >
               <Box
                 component="img"
-                src={logo}
+                src={dasig_logo}
                 alt="DASIG-CORE Logo"
                 sx={{
-                  width: 96, // Perfectly sized logo to fit in row
-                  height: 96,
+                  width: 120, // Enlarged slightly so "CORE" text in the logo stays readable
+                  height: 120,
                   borderRadius: '16px',
                   objectFit: 'contain',
                 }}
