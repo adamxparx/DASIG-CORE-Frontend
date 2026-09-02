@@ -9,6 +9,7 @@ import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import type { DashboardKpiItem } from '../types/dashboard.types';
+import KpiStatusBadge from './KpiStatusBadge';
 import TablePaginationBar, { TABLE_PAGE_SIZE } from './TablePaginationBar';
 
 interface KpisListProps {
@@ -49,20 +50,20 @@ const KpisList = ({ kpis, selectedId, onSelectKpi, title = 'All KPIs' }: KpisLis
               <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
                 KPI Title
               </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
-                Description
-              </TableCell>
               <TableCell
-                align="right"
                 sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
               >
                 Target
               </TableCell>
               <TableCell
-                align="right"
                 sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
               >
                 Progress
+              </TableCell>
+              <TableCell
+                sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
+              >
+                Status
               </TableCell>
               <TableCell
                 sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
@@ -74,7 +75,7 @@ const KpisList = ({ kpis, selectedId, onSelectKpi, title = 'All KPIs' }: KpisLis
           <TableBody>
             {kpis.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} sx={{ border: 0, py: 6 }}>
+                <TableCell colSpan={4} sx={{ border: 0, py: 6 }}>
                   <Typography align="center" color="text.secondary">
                     There are no existing KPIs yet.
                   </Typography>
@@ -108,20 +109,18 @@ const KpisList = ({ kpis, selectedId, onSelectKpi, title = 'All KPIs' }: KpisLis
                     >
                       {kpi.name}
                     </TableCell>
-                    <TableCell sx={{ color: 'text.secondary', fontSize: '0.875rem', maxWidth: 300 }}>
-                      <Box sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {kpi.description}
-                      </Box>
-                    </TableCell>
-                    <TableCell align="right">
+                    <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
                         {formatMetricValue(kpi.targetValue)} {kpi.unit}
                       </Typography>
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
                         {progressPercent.toFixed(1)}%
                       </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <KpiStatusBadge status={kpi.status} />
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" sx={{ color: 'text.secondary' }}>

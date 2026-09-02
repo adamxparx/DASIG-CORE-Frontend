@@ -122,6 +122,7 @@ const CommitteeManagementPage = () => {
           committees={committees}
           selectedId={selectedCommittee?.id ?? null}
           onSelect={handleSelect}
+          organizations={organizations}
         />
       </Stack>
 

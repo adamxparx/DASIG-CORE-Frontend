@@ -269,8 +269,8 @@ const KpiDetailPage = () => {
                       <TableCell>Period</TableCell>
                       <TableCell>Submission</TableCell>
                       <TableCell>Submitted by</TableCell>
-                      <TableCell align="right">Value</TableCell>
-                      <TableCell align="right">Achievement</TableCell>
+                      <TableCell>Value</TableCell>
+                      <TableCell>Achievement</TableCell>
                       <TableCell>Status</TableCell>
                     </TableRow>
                   </TableHead>
@@ -355,7 +355,7 @@ const KpiDetailPage = () => {
                                 </Typography>
                               </Stack>
                             </TableCell>
-                            <TableCell align="right">
+                            <TableCell>
                               <Typography variant="body2" sx={{ fontWeight: 700 }}>
                                 {formatMetricValue(submission.submittedValue)}
                               </Typography>
@@ -363,7 +363,7 @@ const KpiDetailPage = () => {
                                 {history.unit}
                               </Typography>
                             </TableCell>
-                            <TableCell align="right">
+                            <TableCell>
                               <Typography variant="body2" sx={{ fontWeight: 700 }}>
                                 {formatMetricValue(submission.achievementRate)}%
                               </Typography>

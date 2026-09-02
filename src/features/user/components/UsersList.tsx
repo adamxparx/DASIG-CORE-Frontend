@@ -55,7 +55,6 @@ const UsersList = ({ users, selectedId, onSelect }: UsersListProps) => {
                 Assigned Organization
               </TableCell>
               <TableCell
-                align="right"
                 sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
               >
                 Status
@@ -95,7 +94,7 @@ const UsersList = ({ users, selectedId, onSelect }: UsersListProps) => {
                     <TableCell>{user.name}</TableCell>
                     <TableCell>{formatRoleLabel(user.role)}</TableCell>
                     <TableCell>{user.organizationName ?? '—'}</TableCell>
-                    <TableCell align="right">
+                    <TableCell>
                       <Typography
                         component="span"
                         sx={{
