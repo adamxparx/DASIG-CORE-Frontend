@@ -49,7 +49,6 @@ const OrganizationsList = ({ organizations, selectedId, onSelect }: Organization
                 Committee
               </TableCell>
               <TableCell
-                align="right"
                 sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
               >
                 Status
@@ -88,7 +87,7 @@ const OrganizationsList = ({ organizations, selectedId, onSelect }: Organization
                   >
                     <TableCell>{org.name}</TableCell>
                     <TableCell>{org.committeeName ?? '—'}</TableCell>
-                    <TableCell align="right">
+                    <TableCell>
                       <Typography
                         component="span"
                         sx={{

@@ -354,25 +354,16 @@ export default function AdminAlertsPage() {
                     <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
                       Detected
                     </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
-                    >
+                    <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
                       Contribution
                     </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
-                    >
+                    <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
                       Achievement
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
                       Severity
                     </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
-                    >
+                    <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
                       Status
                     </TableCell>
                   </TableRow>
@@ -412,12 +403,12 @@ export default function AdminAlertsPage() {
                             {formattedDate}
                           </Typography>
                         </TableCell>
-                        <TableCell align="right">
+                        <TableCell>
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             {formatValue(alert.periodContribution, alert.unit)}
                           </Typography>
                         </TableCell>
-                        <TableCell align="right">
+                        <TableCell>
                           <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
                             {(alert.achievementRate ?? 0).toFixed(1)}%
                           </Typography>
@@ -427,7 +418,7 @@ export default function AdminAlertsPage() {
                             {perfBadge.label}
                           </Typography>
                         </TableCell>
-                        <TableCell align="right">
+                        <TableCell>
                           <Typography component="span" sx={{ fontWeight: 600, color: ackBadge.textColor }}>
                             {ackBadge.label}
                           </Typography>
