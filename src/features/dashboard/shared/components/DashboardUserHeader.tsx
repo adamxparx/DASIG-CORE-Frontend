@@ -68,6 +68,9 @@ const DashboardUserHeader = () => {
 
   const displayName = session.payload.name ?? session.payload.sub ?? 'User';
 
+  const roleKey = session.role.replace(/^ROLE_/, '') as 'DASIG_ADMIN' | 'STAFF' | 'TBI_MANAGER';
+  const userRoleLabel = roleKey === 'DASIG_ADMIN' ? 'DASIG Admin' : roleKey === 'STAFF' ? 'Member' : 'Committee Lead';
+
   return (
     <Box
       sx={{
@@ -124,19 +127,34 @@ const DashboardUserHeader = () => {
         </IconButton>
       )}
 
-      <Typography
-        variant="body1"
-        noWrap
-        sx={{
-          fontWeight: 600,
-          color: 'text.primary',
-          lineHeight: 1.4,
-          textAlign: 'right',
-          ml: 'auto',
-        }}
+      <Stack
+        spacing={0.25}
+        sx={{ ml: 'auto', textAlign: 'right' }}
       >
-        Welcome, {displayName}
-      </Typography>
+        <Typography
+          variant="body1"
+          noWrap
+          sx={{
+            fontWeight: 600,
+            color: 'text.primary',
+            lineHeight: 1.4,
+          }}
+        >
+          Welcome, {displayName}
+        </Typography>
+        <Typography
+          variant="caption"
+          noWrap
+          sx={{
+            fontWeight: 500,
+            color: 'text.secondary',
+            lineHeight: 1.3,
+            opacity: 0.9,
+          }}
+        >
+          {userRoleLabel}
+        </Typography>
+      </Stack>
     </Box>
   );
 };
