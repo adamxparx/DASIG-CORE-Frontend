@@ -9,6 +9,7 @@ import DashboardViewToggle from '../../admin/components/DashboardViewToggle';
 import CreateKpiButton from '../../admin/components/CreateKpiButton';
 import KpiFormDialog from '../../admin/components/KpiFormDialog';
 import DeleteKpiDialog from '../../admin/components/DeleteKpiDialog';
+import AdminKpiSummaryCards from '../../admin/components/AdminKpiSummaryCards';
 import { dashboardService } from '../api/dashboardService';
 import type { DashboardApiResponse, DashboardKpiItem, DashboardStatus, DashboardViewMode, UserRole } from '../types/dashboard.types';
 import DashboardHeader from './DashboardHeader';
@@ -199,6 +200,7 @@ const RoleBasedDashboardPage = ({
     <>
       <DashboardLayout
         header={<DashboardHeader title={resolvedTitle} subtitle={subtitle} />}
+        welcomeBanner={<AdminKpiSummaryCards kpis={filteredKpis} />}
         topActions={topActions}
         filterBar={
           <KpiFilterBar

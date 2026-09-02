@@ -53,12 +53,12 @@ const KpisList = ({ kpis, selectedId, onSelectKpi, title = 'All KPIs' }: KpisLis
               <TableCell
                 sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
               >
-                Target
+                Overall Target
               </TableCell>
               <TableCell
                 sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
               >
-                Progress
+                Overall Progress
               </TableCell>
               <TableCell
                 sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
@@ -75,7 +75,7 @@ const KpisList = ({ kpis, selectedId, onSelectKpi, title = 'All KPIs' }: KpisLis
           <TableBody>
             {kpis.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} sx={{ border: 0, py: 6 }}>
+                <TableCell colSpan={5} sx={{ border: 0, py: 6 }}>
                   <Typography align="center" color="text.secondary">
                     There are no existing KPIs yet.
                   </Typography>
@@ -84,8 +84,8 @@ const KpisList = ({ kpis, selectedId, onSelectKpi, title = 'All KPIs' }: KpisLis
             ) : (
               pagedKpis.map((kpi) => {
                 const isSelected = selectedId === kpi.id;
-                const periodTargetValue = kpi.periodTargetValue ?? kpi.targetValue;
-                const progressPercent = periodTargetValue > 0 ? (kpi.submittedValue / periodTargetValue) * 100 : 0;
+                const overallTargetValue = kpi.overallTargetValue ?? kpi.targetValue;
+                const progressPercent = overallTargetValue > 0 ? (kpi.submittedValue / overallTargetValue) * 100 : 0;
 
                 return (
                   <TableRow
@@ -111,7 +111,7 @@ const KpisList = ({ kpis, selectedId, onSelectKpi, title = 'All KPIs' }: KpisLis
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {formatMetricValue(kpi.targetValue)} {kpi.unit}
+                        {formatMetricValue(overallTargetValue)} {kpi.unit}
                       </Typography>
                     </TableCell>
                     <TableCell>

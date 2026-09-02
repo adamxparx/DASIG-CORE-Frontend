@@ -19,17 +19,19 @@ const AdminKpiSummaryCards: React.FC<AdminKpiSummaryCardsProps> = ({ kpis }) => 
   const stats = useMemo(() => {
     const total = kpis.length;
 
-    // Completed: submittedValue >= targetValue (target reached/exceeded)
+    // Completed: submittedValue >= overall target (target reached/exceeded)
     const completed = kpis.filter((kpi) => {
-      if (kpi.targetValue > 0) {
-        return kpi.submittedValue >= kpi.targetValue;
+      const overallTargetValue = kpi.overallTargetValue ?? kpi.targetValue;
+      if (overallTargetValue > 0) {
+        return kpi.submittedValue >= overallTargetValue;
       }
       return false;
     }).length;
 
     // Delayed: status is DELAYED or overdue deadline and not completed
     const delayed = kpis.filter((kpi) => {
-      const isCompleted = kpi.targetValue > 0 && kpi.submittedValue >= kpi.targetValue;
+      const overallTargetValue = kpi.overallTargetValue ?? kpi.targetValue;
+      const isCompleted = overallTargetValue > 0 && kpi.submittedValue >= overallTargetValue;
       if (isCompleted) return false;
 
       if (kpi.status === 'DELAYED') return true;

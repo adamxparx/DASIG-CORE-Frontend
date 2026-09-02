@@ -36,7 +36,7 @@ const formatMetricValue = (value: number) =>
 const KpiDashboardCard = ({ item, role, onEdit, onDelete, onViewHistory }: KpiDashboardCardProps) => {
   const overallTargetValue = item.overallTargetValue ?? item.targetValue;
   const periodTargetValue = item.periodTargetValue ?? item.targetValue;
-  const progressPercent = periodTargetValue > 0 ? (item.submittedValue / periodTargetValue) * 100 : 0;
+  const progressPercent = overallTargetValue > 0 ? (item.submittedValue / overallTargetValue) * 100 : 0;
 
   const handleCardClick = () => {
     onViewHistory?.(item);
