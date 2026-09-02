@@ -16,7 +16,7 @@ const KpiProgressBar = ({ progressPercent, status }: KpiProgressBarProps) => {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
         <Typography variant="h6" sx={{ fontSize: '1.05rem', fontWeight: 500, color: '#6D727A' }}>
-          Progress
+          Overall Progress
         </Typography>
         <Typography variant="h6" sx={{ fontSize: '1.05rem', fontWeight: 700, color: '#2E3238' }}>
           {Math.round(progressPercent)}%

@@ -107,7 +107,7 @@ const AdminKpiManagementPage = () => {
           />
         }
         welcomeBanner={
-          <AdminKpiSummaryCards kpis={dashboardData?.kpis ?? []} />
+          <AdminKpiSummaryCards kpis={filteredKpis} />
         }
         topActions={
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ justifyContent: 'space-between', mt: 1 }}>
