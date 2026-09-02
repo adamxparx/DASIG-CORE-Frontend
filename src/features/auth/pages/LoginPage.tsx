@@ -10,7 +10,7 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import { useLogin } from '../hooks/useLogin';
-import logo from '../../../assets/logo.png';
+import dasig_logo from '../../../assets/dasig_logo.svg';
 
 const inputSlotProps = {
   input: {
@@ -63,9 +63,9 @@ const LoginPage = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box
             component="img"
-            src={logo}
+            src={dasig_logo}
             alt="DASIG Logo"
-            sx={{ width: 40, height: 40, objectFit: 'contain', borderRadius: 1.5 }}
+            sx={{ width: 52, height: 52, objectFit: 'contain', borderRadius: 1.5 }}
           />
           <Typography variant="h6" sx={{ fontWeight: 800, color: '#0F172A', letterSpacing: '0.5px' }}>
             DASIG-CORE
@@ -136,11 +136,11 @@ const LoginPage = () => {
             >
               <Box
                 component="img"
-                src={logo}
+                src={dasig_logo}
                 alt="DASIG-CORE Logo"
                 sx={{
-                  width: 80, // Made the logo larger inside the bigger form
-                  height: 80,
+                  width: 104, // Enlarged slightly so "CORE" text in the logo stays readable
+                  height: 104,
                   borderRadius: '14px',
                   objectFit: 'contain',
                 }}

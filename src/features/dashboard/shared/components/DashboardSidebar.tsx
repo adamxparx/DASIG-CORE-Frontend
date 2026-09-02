@@ -33,7 +33,7 @@ import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { routes } from '../../../../routes';
-import logo from '../../../../assets/logo.png';
+import dasig_logo from '../../../../assets/dasig_logo.svg';
 import { tokenStorage } from '../../../auth/utils/tokenStorage';
 import { useUnacknowledgedAlertCount } from '../../../alerts/hooks/useUnacknowledgedAlertCount';
 import { useUnreadNotificationCount } from '../../../notification/hooks/useUnreadNotificationCount';
@@ -179,9 +179,9 @@ const RailLogo = ({ color }: { color: string }) => {
         ) : (
           <Box
             component="img"
-            src={logo}
+            src={dasig_logo}
             alt="DASIG Logo"
-            sx={{ width: 30, height: 30, objectFit: 'contain', borderRadius: 1 }}
+            sx={{ width: 38, height: 38, objectFit: 'contain', borderRadius: 1 }}
           />
         )}
       </IconButton>
@@ -320,11 +320,11 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
               >
                 <Box
                   component="img"
-                  src={logo}
+                  src={dasig_logo}
                   alt="DASIG Logo"
                   sx={{
-                    width: 34,
-                    height: 34,
+                    width: 38,
+                    height: 38,
                     objectFit: 'contain',
                     borderRadius: 1,
                   }}
