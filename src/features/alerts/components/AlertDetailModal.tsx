@@ -78,7 +78,11 @@ export default function AlertDetailModal({ alert, open, onClose, onAcknowledge }
                 )}
               </Box>
               <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '1.3rem', letterSpacing: '-0.3px' }}>
-                Threshold Breach Alert
+                {alert.alertType === 'OVERDUE'
+                  ? 'KPI Overdue Alert'
+                  : alert.alertType === 'AT_RISK'
+                    ? 'KPI At-Risk Alert'
+                    : 'KPI Performance Alert'}
               </Typography>
             </Stack>
             <IconButton
@@ -96,12 +100,13 @@ export default function AlertDetailModal({ alert, open, onClose, onAcknowledge }
           {/* Scrollable content */}
           <Box sx={{ flex: 1, overflow: 'auto', p: 2.5 }}>
             <Stack spacing={3.5}>
-              {/* Yellow Highlight KPI Card */}
+              {/* Highlight KPI Card */}
               <Box
                 sx={{
                   p: 3,
-                  bgcolor: '#FFFDF0', // very soft gold highlight
-                  border: '1px solid #FDE68A', // soft amber border
+                  bgcolor: alert.alertType === 'OVERDUE' ? '#FEF2F2' : '#FFFDF0',
+                  border: '1px solid',
+                  borderColor: alert.alertType === 'OVERDUE' ? '#FECACA' : '#FDE68A',
                   borderRadius: 3.5,
                   display: 'flex',
                   flexDirection: 'column',
@@ -112,10 +117,24 @@ export default function AlertDetailModal({ alert, open, onClose, onAcknowledge }
                   <Typography variant="h5" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '1.25rem', lineHeight: 1.3 }}>
                     {alert.kpiName}
                   </Typography>
-                  <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                    {alert.organizationName}
-                  </Typography>
+                  {alert.committeeName && (
+                    <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+                      {alert.committeeName}
+                    </Typography>
+                  )}
                 </Stack>
+
+                {/* Reason description */}
+                {alert.alertType === 'OVERDUE' && (
+                  <Typography variant="body2" sx={{ color: '#B91C1C', fontWeight: 600, bgcolor: '#FEE2E2', p: 1.5, borderRadius: 2 }}>
+                    The deadline for this KPI expired without meeting the overall target. Requires administrative attention or follow-up.
+                  </Typography>
+                )}
+                {alert.alertType === 'AT_RISK' && (
+                  <Typography variant="body2" sx={{ color: '#B45309', fontWeight: 600, bgcolor: '#FEF3C7', p: 1.5, borderRadius: 2 }}>
+                    This KPI is within 60 days of its deadline and overall progress is significantly below target pace.
+                  </Typography>
+                )}
 
                 {/* Dual Badges side-by-side */}
                 <Stack direction="row" spacing={1}>
@@ -156,7 +175,7 @@ export default function AlertDetailModal({ alert, open, onClose, onAcknowledge }
               {/* Details section */}
               <Stack spacing={1.25}>
                 <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Details
+                  Details & Progress
                 </Typography>
 
                 <Stack
@@ -169,30 +188,23 @@ export default function AlertDetailModal({ alert, open, onClose, onAcknowledge }
                     bgcolor: '#F9FAF8',
                   }}
                 >
-                  <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                      Period Contribution:
-                    </Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                      {formatValue(alert.periodContribution, alert.unit)}
-                    </Typography>
-                  </Stack>
+                  {alert.deadline && (
+                    <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        KPI Deadline:
+                      </Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 700, color: alert.alertType === 'OVERDUE' ? '#DC2626' : 'text.primary' }}>
+                        {new Date(alert.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </Typography>
+                    </Stack>
+                  )}
 
                   <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                      Scaled Period Target:
+                      Latest Contribution:
                     </Typography>
                     <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                      {formatValue(alert.scaledPeriodTarget, alert.unit)}
-                    </Typography>
-                  </Stack>
-
-                  <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                      Achievement Rate:
-                    </Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                      {(alert.achievementRate ?? 0).toFixed(1)}%
+                      {alert.submissionId ? formatValue(alert.periodContribution, alert.unit) : 'No submissions yet'}
                     </Typography>
                   </Stack>
 
@@ -207,19 +219,19 @@ export default function AlertDetailModal({ alert, open, onClose, onAcknowledge }
 
                   <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                      Global KPI Target:
+                      Target Goal:
                     </Typography>
                     <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                      {formatValue(alert.targetValue, alert.unit)}
+                      {formatValue(alert.targetValue ?? alert.scaledPeriodTarget, alert.unit)}
                     </Typography>
                   </Stack>
 
                   <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                      Configured Threshold:
+                      Achievement Rate:
                     </Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                      {formatValue(alert.threshold, alert.unit)}
+                    <Typography variant="body1" sx={{ fontWeight: 700, color: alert.alertType === 'OVERDUE' ? '#DC2626' : 'text.primary' }}>
+                      {(alert.achievementRate ?? 0).toFixed(1)}%
                     </Typography>
                   </Stack>
                 </Stack>
