@@ -39,6 +39,7 @@ export default function AdminAlertsPage() {
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('UNACKNOWLEDGED');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [committeeFilter, setCommitteeFilter] = useState('all');
   const [page, setPage] = useState(1);
 
@@ -93,6 +94,11 @@ export default function AdminAlertsPage() {
     setPage(1);
   };
 
+  const handleTypeFilterChange = (event: SelectChangeEvent) => {
+    setTypeFilter(event.target.value);
+    setPage(1);
+  };
+
   const handleCommitteeFilterChange = (event: SelectChangeEvent) => {
     setCommitteeFilter(event.target.value);
     setPage(1);
@@ -113,8 +119,9 @@ export default function AdminAlertsPage() {
   const filteredAlerts = alerts.filter((alert) => {
     const matchesSearch = normalizedQuery === '' || alert.kpiName.toLowerCase().includes(normalizedQuery);
     const matchesStatus = statusFilter === 'all' || alert.status === statusFilter;
+    const matchesType = typeFilter === 'all' || alert.alertType === typeFilter;
     const matchesCommittee = committeeFilter === 'all' || alert.committeeName === committeeFilter;
-    return matchesSearch && matchesStatus && matchesCommittee;
+    return matchesSearch && matchesStatus && matchesType && matchesCommittee;
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredAlerts.length / TABLE_PAGE_SIZE));
@@ -122,11 +129,13 @@ export default function AdminAlertsPage() {
   const pagedAlerts = filteredAlerts.slice((safePage - 1) * TABLE_PAGE_SIZE, safePage * TABLE_PAGE_SIZE);
 
   const activeAlertCount = alerts.filter((a) => a.status === 'UNACKNOWLEDGED').length;
-  const hasActiveFilters = normalizedQuery !== '' || statusFilter !== 'UNACKNOWLEDGED' || committeeFilter !== 'all';
+  const hasActiveFilters =
+    normalizedQuery !== '' || statusFilter !== 'UNACKNOWLEDGED' || typeFilter !== 'all' || committeeFilter !== 'all';
 
   const handleResetFilters = () => {
     setSearchQuery('');
     setStatusFilter('UNACKNOWLEDGED');
+    setTypeFilter('all');
     setCommitteeFilter('all');
     setPage(1);
   };
@@ -231,8 +240,25 @@ export default function AdminAlertsPage() {
               </Select>
             </FormControl>
 
+            {/* Alert Type Dropdown Filter */}
+            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 160 }, bgcolor: 'background.paper' }}>
+              <InputLabel id="type-filter-label">Filter by Type</InputLabel>
+              <Select
+                labelId="type-filter-label"
+                id="type-filter"
+                value={typeFilter}
+                label="Filter by Type"
+                onChange={handleTypeFilterChange}
+                sx={{ borderRadius: 3 }}
+              >
+                <MenuItem value="all">All Types</MenuItem>
+                <MenuItem value="OVERDUE">Overdue</MenuItem>
+                <MenuItem value="AT_RISK">At Risk</MenuItem>
+              </Select>
+            </FormControl>
+
             {/* Acknowledgment Status Dropdown Filter */}
-            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 190 }, bgcolor: 'background.paper' }}>
+            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 180 }, bgcolor: 'background.paper' }}>
               <InputLabel id="status-filter-label">Filter by Status</InputLabel>
               <Select
                 labelId="status-filter-label"
@@ -242,9 +268,7 @@ export default function AdminAlertsPage() {
                 onChange={handleStatusFilterChange}
                 sx={{ borderRadius: 3 }}
               >
-                <MenuItem value="all">
-                  All Statuses
-                </MenuItem>
+                <MenuItem value="all">All Statuses</MenuItem>
                 <MenuItem value="UNACKNOWLEDGED">Unacknowledged</MenuItem>
                 <MenuItem value="ACKNOWLEDGED">Acknowledged</MenuItem>
               </Select>
@@ -349,9 +373,6 @@ export default function AdminAlertsPage() {
                       KPI
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
-                      Organization
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
                       Detected
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
@@ -397,7 +418,6 @@ export default function AdminAlertsPage() {
                         }}
                       >
                         <TableCell sx={{ color: 'primary.main', fontWeight: 600 }}>{alert.kpiName}</TableCell>
-                        <TableCell sx={{ color: 'text.secondary' }}>{alert.organizationName}</TableCell>
                         <TableCell sx={{ color: 'text.secondary' }}>
                           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                             {formattedDate}
@@ -405,7 +425,7 @@ export default function AdminAlertsPage() {
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {formatValue(alert.periodContribution, alert.unit)}
+                            {alert.submissionId ? formatValue(alert.periodContribution, alert.unit) : 'No submissions'}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -414,14 +434,38 @@ export default function AdminAlertsPage() {
                           </Typography>
                         </TableCell>
                         <TableCell>
-                          <Typography component="span" sx={{ fontWeight: 600, color: perfBadge.textColor }}>
+                          <Box
+                            sx={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              px: 1.5,
+                              py: 0.35,
+                              borderRadius: '50px',
+                              bgcolor: perfBadge.bgColor,
+                              color: perfBadge.textColor,
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                            }}
+                          >
                             {perfBadge.label}
-                          </Typography>
+                          </Box>
                         </TableCell>
                         <TableCell>
-                          <Typography component="span" sx={{ fontWeight: 600, color: ackBadge.textColor }}>
+                          <Box
+                            sx={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              px: 1.5,
+                              py: 0.35,
+                              borderRadius: '50px',
+                              bgcolor: ackBadge.bgColor,
+                              color: ackBadge.textColor,
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                            }}
+                          >
                             {ackBadge.label}
-                          </Typography>
+                          </Box>
                         </TableCell>
                       </TableRow>
                     );

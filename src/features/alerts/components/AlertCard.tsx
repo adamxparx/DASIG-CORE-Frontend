@@ -33,19 +33,19 @@ export function formatValue(value: number | undefined | null, unit: string | und
 }
 
 /**
- * Returns performance status styling based on the performanceStatus field.
+ * Returns performance/severity styling strictly based on OVERDUE and AT_RISK alert types.
  */
 export function getPerformanceBadgeInfo(alert: AlertDetailResponse) {
-  if (alert.performanceStatus === 'RED') {
+  if (alert.alertType === 'OVERDUE' || alert.performanceStatus === 'RED') {
     return {
-      label: 'Critical',
+      label: 'Overdue',
       bgColor: '#FCE8E6', // soft red
       textColor: '#C5221F', // dark red
       icon: <CancelRoundedIcon sx={{ color: '#C5221F' }} />,
     };
   }
 
-  // Warning (YELLOW/GREEN or default)
+  // Default / AT_RISK
   return {
     label: 'At Risk',
     bgColor: '#FEF7E0', // soft yellow/amber
@@ -74,9 +74,9 @@ export function getAcknowledgmentBadgeInfo(alert: AlertDetailResponse) {
 }
 
 const METRICS: Array<{ label: string; get: (a: AlertDetailResponse) => string }> = [
-  { label: 'Contribution', get: (a) => formatValue(a.periodContribution, a.unit) },
+  { label: 'Contribution', get: (a) => (a.submissionId ? formatValue(a.periodContribution, a.unit) : 'None') },
   { label: 'Cumulative', get: (a) => formatValue(a.cumulativeValue, a.unit) },
-  { label: 'Scaled Target', get: (a) => formatValue(a.scaledPeriodTarget, a.unit) },
+  { label: 'Target Goal', get: (a) => formatValue(a.targetValue ?? a.scaledPeriodTarget, a.unit) },
   { label: 'Achievement', get: (a) => `${(a.achievementRate ?? 0).toFixed(1)}%` },
 ];
 
@@ -151,7 +151,7 @@ export default function AlertCard({ alert, onClick }: AlertCardProps) {
               {alert.kpiName}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }} noWrap>
-              {alert.organizationName} • {formattedDate}
+              Detected {formattedDate}
               {isAcknowledged && ' • Acknowledged'}
             </Typography>
           </Stack>
