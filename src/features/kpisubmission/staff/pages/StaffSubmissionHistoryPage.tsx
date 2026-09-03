@@ -135,7 +135,7 @@ const mapStatus = (status: string) => {
   if (status === 'YELLOW') {
     return { label: 'At Risk', bg: '#FFF1D6', color: '#B06000', achievementColor: '#D97706' };
   }
-  return { label: 'Delayed', bg: '#FFE2E2', color: '#C62828', achievementColor: '#DC2626' };
+  return { label: 'Behind Pace', bg: '#FFE2E2', color: '#C62828', achievementColor: '#DC2626' };
 };
 
 const StaffSubmissionHistoryPage = () => {

@@ -9,6 +9,7 @@ import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import type { DashboardKpiItem } from '../types/dashboard.types';
+import { computeKpiStatus } from '../utils/kpiStatusUtils';
 import KpiStatusBadge from './KpiStatusBadge';
 import TablePaginationBar, { TABLE_PAGE_SIZE } from './TablePaginationBar';
 
@@ -86,6 +87,7 @@ const KpisList = ({ kpis, selectedId, onSelectKpi, title = 'All KPIs' }: KpisLis
                 const isSelected = selectedId === kpi.id;
                 const overallTargetValue = kpi.overallTargetValue ?? kpi.targetValue;
                 const progressPercent = overallTargetValue > 0 ? (kpi.submittedValue / overallTargetValue) * 100 : 0;
+                const status = computeKpiStatus(kpi.submittedValue, overallTargetValue, kpi.deadline);
 
                 return (
                   <TableRow
@@ -120,7 +122,7 @@ const KpisList = ({ kpis, selectedId, onSelectKpi, title = 'All KPIs' }: KpisLis
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <KpiStatusBadge status={kpi.status} />
+                      <KpiStatusBadge status={status} />
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
