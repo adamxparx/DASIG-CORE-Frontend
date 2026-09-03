@@ -9,7 +9,7 @@ import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import React, { useMemo } from 'react';
 import type { DashboardKpiItem } from '../../shared/types/dashboard.types';
-import { getCalendarDaysUntilDeadline } from '../../../notification/utils/notificationDisplay';
+import { computeKpiStatus } from '../../shared/utils/kpiStatusUtils';
 
 interface AdminKpiSummaryCardsProps {
   kpis: DashboardKpiItem[];
@@ -19,29 +19,23 @@ const AdminKpiSummaryCards: React.FC<AdminKpiSummaryCardsProps> = ({ kpis }) => 
   const stats = useMemo(() => {
     const total = kpis.length;
 
-    // Completed: submittedValue >= overall target (target reached/exceeded)
     const completed = kpis.filter((kpi) => {
-      const overallTargetValue = kpi.overallTargetValue ?? kpi.targetValue;
-      if (overallTargetValue > 0) {
-        return kpi.submittedValue >= overallTargetValue;
-      }
-      return false;
+      const overallTarget = kpi.overallTargetValue ?? kpi.targetValue;
+      return computeKpiStatus(kpi.submittedValue, overallTarget, kpi.deadline) === 'COMPLETED';
     }).length;
 
-    // Delayed: status is DELAYED or overdue deadline and not completed
     const delayed = kpis.filter((kpi) => {
-      const overallTargetValue = kpi.overallTargetValue ?? kpi.targetValue;
-      const isCompleted = overallTargetValue > 0 && kpi.submittedValue >= overallTargetValue;
-      if (isCompleted) return false;
-
-      if (kpi.status === 'DELAYED') return true;
-
-      const daysUntil = getCalendarDaysUntilDeadline(kpi.deadline);
-      return daysUntil !== null && daysUntil < 0;
+      const overallTarget = kpi.overallTargetValue ?? kpi.targetValue;
+      return computeKpiStatus(kpi.submittedValue, overallTarget, kpi.deadline) === 'DELAYED';
     }).length;
 
-    // In progress: active KPIs that are neither completed nor delayed
-    const inProgress = Math.max(0, total - completed - delayed);
+    const atRisk = kpis.filter((kpi) => {
+      const overallTarget = kpi.overallTargetValue ?? kpi.targetValue;
+      return computeKpiStatus(kpi.submittedValue, overallTarget, kpi.deadline) === 'AT_RISK';
+    }).length;
+
+    // In progress: ON_TRACK (not completed, not delayed, not at risk)
+    const inProgress = Math.max(0, total - completed - delayed - atRisk);
 
     const completedPercentage = total > 0 ? Math.round((completed / total) * 100) : 0;
     const inProgressPercentage = total > 0 ? Math.round((inProgress / total) * 100) : 0;
@@ -52,6 +46,7 @@ const AdminKpiSummaryCards: React.FC<AdminKpiSummaryCardsProps> = ({ kpis }) => 
       completed,
       inProgress,
       delayed,
+      atRisk,
       completedPercentage,
       inProgressPercentage,
       delayedPercentage,

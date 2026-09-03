@@ -57,12 +57,14 @@ const getDefaultPeriodForKpi = (kpi: AssignableKpi) => {
     : selectableOptions[selectableOptions.length - 1] ?? '';
 };
 
-const getDefaultSubmissionDateForKpi = (kpi: AssignableKpi, today: string) =>
-  kpi.deadline >= today ? today : '';
+const getDefaultSubmissionDateForKpi = (_kpi: AssignableKpi, today: string) => today;
 
 const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const today = new Date().toISOString().slice(0, 10);
+  // Use local date (not UTC) to avoid timezone mismatch with the server (+08:00).
+  // toISOString() returns UTC which is "yesterday" during the first 8 hours of local time.
+  const _now = new Date();
+  const today = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`;
 
   const [assignableKpis, setAssignableKpis] = useState<AssignableKpi[]>([]);
   const [submissions, setSubmissions] = useState<KpiSubmissionResponse[]>([]);
@@ -110,10 +112,6 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
 
   const selectedKpi = assignableKpis.find((kpi) => kpi.id === selectedKpiId) ?? null;
   const submissionDateMin = today;
-  const submissionDateMax = selectedKpi?.deadline ?? undefined;
-  const hasValidSubmissionDateRange = Boolean(
-    selectedKpi && submissionDateMax && submissionDateMax >= submissionDateMin
-  );
   const periodOptions = useMemo(() => {
     if (!selectedKpi) {
       return [];
@@ -210,7 +208,7 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
       : 0;
 
   const helperMessage =
-    selectedKpi && cumulativeSubmittedValue < expectedThresholdValue
+    selectedKpi?.reportingFrequency !== 'ONE_TIME' && cumulativeSubmittedValue < expectedThresholdValue
       ? `Cumulative progress is below the expected threshold for ${period}.`
       : `Cumulative progress is on track for ${period || 'the selected period'}.`;
 
@@ -248,11 +246,6 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
       return;
     }
 
-    if (!hasValidSubmissionDateRange) {
-      showToast('This KPI is no longer accepting submissions because its deadline has passed.', 'error');
-      return;
-    }
-
     if (!submissionDate) {
       showToast('Please select a submission date.', 'error');
       return;
@@ -260,11 +253,6 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
 
     if (submissionDate < submissionDateMin) {
       showToast('Submission date cannot be before today.', 'error');
-      return;
-    }
-
-    if (submissionDateMax && submissionDate > submissionDateMax) {
-      showToast('Submission date cannot be after the KPI deadline.', 'error');
       return;
     }
 
@@ -350,7 +338,9 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                     disabled={!selectedKpi || periodOptions.length === 0}
                     helperText={
                       selectedKpi
-                        ? `${selectedKpi.reportingFrequency.replace('_', ' ').toLowerCase()} reporting`
+                        ? selectedKpi.reportingFrequency === 'ONE_TIME'
+                          ? 'Submit anytime before the deadline'
+                          : `${selectedKpi.reportingFrequency.replace('_', ' ').toLowerCase()} reporting`
                         : undefined
                     }
                   >
@@ -408,19 +398,16 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                     type="date"
                     value={submissionDate}
                     onChange={(event) => setSubmissionDate(event.target.value)}
-                    disabled={!selectedKpi || !hasValidSubmissionDateRange}
+                    disabled={!selectedKpi}
                     helperText={
-                      selectedKpi && !hasValidSubmissionDateRange
-                        ? 'The KPI deadline has already passed.'
-                        : selectedKpi
-                          ? 'Submission date must be from today through the KPI deadline.'
-                          : undefined
+                      selectedKpi
+                        ? 'Select submission date (can be submitted before or after the deadline).'
+                        : undefined
                     }
                     slotProps={{
                       inputLabel: { shrink: true },
                       htmlInput: {
                         min: selectedKpi ? submissionDateMin : undefined,
-                        max: submissionDateMax,
                       },
                     }}
                   />
@@ -539,7 +526,7 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                 <Button
                   variant="contained"
                   onClick={handleSubmit}
-                  disabled={isSubmitting || isLoadingKpis || !selectedKpi || !period || !hasValidSubmissionDateRange}
+                  disabled={isSubmitting || isLoadingKpis || !selectedKpi || !period}
                 >
                   {isSubmitting ? 'Submitting...' : 'Submit KPI'}
                 </Button>

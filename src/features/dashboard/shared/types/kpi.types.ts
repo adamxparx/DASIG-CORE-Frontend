@@ -20,9 +20,9 @@ export interface CreateKpiDefinitionRequest {
   targetValue: number;
   unit: string;
   deadline: string; // Format: YYYY-MM-DD
-  threshold: number; // Percentage, e.g. 80
+  threshold?: number; // Optional: defaults to 100 on backend
   committeeId: number;
-  reportingFrequency: ReportingFrequency;
+  reportingFrequency?: ReportingFrequency; // Optional: defaults to ONE_TIME on backend
 }
 
 export interface UpdateKpiDefinitionRequest {
@@ -31,8 +31,8 @@ export interface UpdateKpiDefinitionRequest {
   targetValue: number;
   unit: string;
   deadline: string; // Format: YYYY-MM-DD
-  threshold: number; // Percentage, e.g. 80
-  reportingFrequency: ReportingFrequency;
+  threshold?: number; // Optional: defaults to 100 on backend
+  reportingFrequency?: ReportingFrequency; // Optional: defaults to ONE_TIME on backend
 }
 
 export interface KpiDefinitionResponse {

@@ -9,8 +9,11 @@ interface KpiProgressBarProps {
 }
 
 const KpiProgressBar = ({ progressPercent, status }: KpiProgressBarProps) => {
-  const color: 'success' | 'warning' | 'error' =
-    status === 'ON_TRACK' ? 'success' : status === 'AT_RISK' ? 'warning' : 'error';
+  const color: 'success' | 'info' | 'warning' | 'error' =
+    status === 'COMPLETED' ? 'success'
+    : status === 'ON_TRACK' ? 'info'
+    : status === 'AT_RISK' ? 'warning'
+    : 'error';
 
   return (
     <Box>

@@ -2,7 +2,7 @@ export type UserRole = 'DASIG_ADMIN' | 'TBI_MANAGER' | 'STAFF';
 
 export type ReportingFrequency = 'ONE_TIME' | 'QUARTERLY' | 'ANNUAL' | 'MONTHLY';
 
-export type DashboardStatus = 'ON_TRACK' | 'AT_RISK' | 'DELAYED';
+export type DashboardStatus = 'COMPLETED' | 'ON_TRACK' | 'AT_RISK' | 'DELAYED';
 
 export type DashboardViewMode = 'grid' | 'list';
 

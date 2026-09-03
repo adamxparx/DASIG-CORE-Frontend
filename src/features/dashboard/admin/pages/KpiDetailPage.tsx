@@ -35,7 +35,9 @@ const formatDate = (date: string) =>
 const formatMetricValue = (value: number) =>
   value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const mapPerformanceStatus = (status: string): 'ON_TRACK' | 'AT_RISK' | 'DELAYED' => {
+import type { DashboardStatus } from '../../shared/types/dashboard.types';
+
+const mapPerformanceStatus = (status: string): DashboardStatus => {
   if (status === 'GREEN') return 'ON_TRACK';
   if (status === 'YELLOW') return 'AT_RISK';
   return 'DELAYED';
@@ -229,7 +231,7 @@ const KpiDetailPage = () => {
                 {formatDate(kpi.deadline)}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {kpi.status === 'ON_TRACK' ? 'On track' : kpi.status === 'AT_RISK' ? 'At risk' : 'Delayed'}
+                {kpi.status === 'COMPLETED' ? 'Completed' : kpi.status === 'ON_TRACK' ? 'In progress' : kpi.status === 'AT_RISK' ? 'At risk' : 'Overdue'}
               </Typography>
             </CardContent>
           </Card>

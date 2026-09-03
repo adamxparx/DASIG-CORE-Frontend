@@ -16,12 +16,9 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Divider from '@mui/material/Divider';
-import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -31,9 +28,8 @@ import { organizationService } from '../../../organization/api/organizationServi
 import type { OrganizationResponse } from '../../../organization/types/organization.types';
 import { kpiService } from '../../shared/api/kpiService';
 import type { DashboardKpiItem } from '../../shared/types/dashboard.types';
-import type { CreateKpiDefinitionRequest, ReportingFrequency, UpdateKpiDefinitionRequest } from '../../shared/types/kpi.types';
+import type { CreateKpiDefinitionRequest, UpdateKpiDefinitionRequest } from '../../shared/types/kpi.types';
 import { getDeadlineFieldHelperText } from '../../../notification/utils/notificationDisplay';
-import { REPORTING_FREQUENCY_OPTIONS } from '../../../kpisubmission/shared/utils/reportingPeriodUtils';
 
 export interface KpiSubmitSuccessContext {
   deadline: string;
@@ -65,9 +61,7 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
   const [targetValue, setTargetValue] = useState('');
   const [unit, setUnit] = useState('');
   const [deadline, setDeadline] = useState('');
-  const [threshold, setThreshold] = useState('80');
   const [committeeId, setCommitteeId] = useState<number | ''>('');
-  const [reportingFrequency, setReportingFrequency] = useState<ReportingFrequency>('QUARTERLY');
 
   // UI/API States
   const [committees, setCommittees] = useState<CommitteeResponse[]>([]);
@@ -108,9 +102,7 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
     setTargetValue('');
     setUnit('');
     setDeadline('');
-    setThreshold('80');
     setCommitteeId('');
-    setReportingFrequency('QUARTERLY');
   };
 
   const populateForEdit = (currentKpi: DashboardKpiItem, comms: CommitteeResponse[]) => {
@@ -119,13 +111,7 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
     setTargetValue(String(currentKpi.targetValue));
     setUnit(currentKpi.unit);
     setDeadline(formatDateForInput(currentKpi.deadline));
-
-    const itemWithThreshold = currentKpi as DashboardKpiItem & {
-      threshold?: number;
-      reportingFrequency?: ReportingFrequency;
-    };
-    setThreshold(String(itemWithThreshold.threshold ?? 80));
-    setReportingFrequency(itemWithThreshold.reportingFrequency ?? 'QUARTERLY');
+    // threshold and reportingFrequency are silent defaults; no need to hydrate from kpi
 
     if (comms.length > 0) {
       const matchedComm = comms.find(
@@ -235,14 +221,6 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
         newErrors.deadline = 'Deadline cannot be a past date';
       }
     }
-    if (!threshold.trim()) {
-      newErrors.threshold = 'Threshold is required';
-    } else {
-      const numVal = Number(threshold);
-      if (isNaN(numVal) || numVal < 0 || numVal > 100) {
-        newErrors.threshold = 'Threshold must be a percentage between 0 and 100';
-      }
-    }
     if (committeeId === '') {
       newErrors.committeeId = 'Please select a committee to assign this KPI.';
     }
@@ -266,9 +244,10 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
       targetValue: Number(targetValue),
       unit: unit.trim(),
       deadline,
-      threshold: Number(threshold),
+      // Silent defaults — not exposed in the UI
+      threshold: 100,
       committeeId: committeeId as number,
-      reportingFrequency,
+      reportingFrequency: 'ONE_TIME' as const,
     };
 
     try {
@@ -462,55 +441,6 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
                   },
                 }}
               />
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#3C4043', mb: 1 }}>
-                Threshold (%) <span style={{ color: '#D93025' }}>*</span>
-              </Typography>
-              <TextField
-                fullWidth
-                variant="outlined"
-                placeholder="80"
-                value={threshold}
-                onChange={(e) => {
-                  setThreshold(e.target.value);
-                  if (errors.threshold) setErrors((prev) => ({ ...prev, threshold: '' }));
-                }}
-                error={!!errors.threshold}
-                helperText={errors.threshold}
-                disabled={isSubmitting}
-                hiddenLabel
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                    bgcolor: '#FAFBFF',
-                  },
-                }}
-              />
-            </Grid>
-
-            {/* Reporting Frequency */}
-            <Grid size={{ xs: 12 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#3C4043', mb: 1 }}>
-                Reporting Frequency <span style={{ color: '#D93025' }}>*</span>
-              </Typography>
-              <FormControl fullWidth disabled={isSubmitting}>
-                <Select
-                  value={reportingFrequency}
-                  onChange={(e) => setReportingFrequency(e.target.value as ReportingFrequency)}
-                  sx={{
-                    borderRadius: 2,
-                    bgcolor: '#FAFBFF',
-                  }}
-                >
-                  {REPORTING_FREQUENCY_OPTIONS.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
             </Grid>
 
             {/* Dedicated Assignment Container */}

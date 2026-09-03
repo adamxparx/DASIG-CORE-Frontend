@@ -11,11 +11,8 @@ import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
-import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import Grid from '@mui/material/Grid';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
@@ -29,11 +26,9 @@ import type { OrganizationResponse } from '../../../organization/types/organizat
 import { kpiService } from '../../shared/api/kpiService';
 import type {
   CreateKpiDefinitionRequest,
-  ReportingFrequency,
   UpdateKpiDefinitionRequest,
 } from '../../shared/types/kpi.types';
 import { getDeadlineFieldHelperText } from '../../../notification/utils/notificationDisplay';
-import { REPORTING_FREQUENCY_OPTIONS } from '../../../kpisubmission/shared/utils/reportingPeriodUtils';
 import { routes } from '../../../../routes';
 
 /* ─────────────────────────────────────────────
@@ -94,9 +89,7 @@ const CreateKpiPage = () => {
   const [targetValue, setTargetValue] = useState('');
   const [unit, setUnit] = useState('');
   const [deadline, setDeadline] = useState('');
-  const [threshold, setThreshold] = useState('80');
   const [committeeId, setCommitteeId] = useState<number | ''>('');
-  const [reportingFrequency, setReportingFrequency] = useState<ReportingFrequency>('QUARTERLY');
 
   /* ── UI / API state ─────────────────────── */
   const [committees, setCommittees] = useState<CommitteeResponse[]>([]);
@@ -150,9 +143,7 @@ const CreateKpiPage = () => {
         setTargetValue(String(kpi.targetValue));
         setUnit(kpi.unit);
         setDeadline(formatDateForInput(kpi.deadline));
-        const kpiExt = kpi as typeof kpi & { threshold?: number; reportingFrequency?: ReportingFrequency };
-        setThreshold(String(kpiExt.threshold ?? 80));
-        setReportingFrequency(kpiExt.reportingFrequency ?? 'QUARTERLY');
+        // threshold and reportingFrequency are set as silent defaults in the payload
 
         // Match by committeeId if available, else try committeeName
         const matched = loadedCommittees.find(
@@ -233,13 +224,6 @@ const CreateKpiPage = () => {
       selected.setHours(0, 0, 0, 0);
       if (selected < today) newErrors.deadline = 'Deadline cannot be a past date';
     }
-    if (!threshold.trim()) {
-      newErrors.threshold = 'Threshold is required';
-    } else {
-      const num = Number(threshold);
-      if (isNaN(num) || num < 0 || num > 100)
-        newErrors.threshold = 'Threshold must be a percentage between 0 and 100';
-    }
     if (committeeId === '') newErrors.committeeId = 'Assigned Committee is required';
 
     setErrors(newErrors);
@@ -260,8 +244,9 @@ const CreateKpiPage = () => {
       targetValue: Number(targetValue),
       unit: unit.trim(),
       deadline,
-      threshold: Number(threshold),
-      reportingFrequency,
+      // Silent defaults — not exposed in the UI
+      threshold: 100,
+      reportingFrequency: 'ONE_TIME' as const,
     };
 
     try {
@@ -403,7 +388,7 @@ const CreateKpiPage = () => {
             />
           </Grid>
 
-          {/* Deadline & Threshold */}
+          {/* Deadline */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <FieldLabel>Deadline</FieldLabel>
             <TextField
@@ -422,43 +407,6 @@ const CreateKpiPage = () => {
               slotProps={{ htmlInput: { min: getTodayDateString() } }}
               sx={inputSx}
             />
-          </Grid>
-
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <FieldLabel>Threshold (%)</FieldLabel>
-            <TextField
-              fullWidth
-              variant="outlined"
-              placeholder="80"
-              value={threshold}
-              onChange={(e) => {
-                setThreshold(e.target.value);
-                if (errors.threshold) setErrors((prev) => ({ ...prev, threshold: '' }));
-              }}
-              error={!!errors.threshold}
-              helperText={errors.threshold}
-              disabled={isSubmitting}
-              hiddenLabel
-              sx={inputSx}
-            />
-          </Grid>
-
-          {/* Reporting Frequency */}
-          <Grid size={{ xs: 12 }}>
-            <FieldLabel>Reporting Frequency</FieldLabel>
-            <FormControl fullWidth disabled={isSubmitting}>
-              <Select
-                value={reportingFrequency}
-                onChange={(e) => setReportingFrequency(e.target.value as ReportingFrequency)}
-                sx={{ borderRadius: 2, bgcolor: '#FAFBFF', fontSize: '0.94rem' }}
-              >
-                {REPORTING_FREQUENCY_OPTIONS.map((opt) => (
-                  <MenuItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
           </Grid>
         </Grid>
 

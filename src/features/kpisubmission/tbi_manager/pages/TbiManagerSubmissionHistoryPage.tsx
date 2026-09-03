@@ -258,7 +258,7 @@ const mapStatus = (status: string) => {
 
   }
 
-  return { label: 'Delayed', bg: '#FFE2E2', color: '#C62828', achievementColor: '#DC2626' };
+  return { label: 'Behind Pace', bg: '#FFE2E2', color: '#C62828', achievementColor: '#DC2626' };
 
 };
 
