@@ -6,6 +6,7 @@ import { tokenStorage } from './tokenStorage';
 export interface AppSession {
   role: UserRole;
   dashboardPath: string;
+  mustChangePassword: boolean;
   payload: JwtPayload;
 }
 
@@ -26,6 +27,7 @@ export function getSession(): AppSession | null {
     return {
       role: payload.role as UserRole,
       dashboardPath,
+      mustChangePassword: payload.mustChangePassword === true,
       payload,
     };
   } catch {

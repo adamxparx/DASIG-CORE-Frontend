@@ -2,6 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { getAuthRedirectPath, getSession } from '../../../auth/utils/session';
 import type { UserRole as AuthUserRole } from '../../../auth/types/auth.types';
 import type { UserRole as DashboardUserRole } from '../types/dashboard.types';
+import { routes } from '../../../../routes';
 import DashboardShellLayout from './DashboardShellLayout';
 
 interface ProtectedDashboardLayoutProps {
@@ -14,6 +15,10 @@ const ProtectedDashboardLayout = ({ requiredRole, dashboardRole }: ProtectedDash
 
   if (!session) {
     return <Navigate to={getAuthRedirectPath()} replace />;
+  }
+
+  if (session.mustChangePassword) {
+    return <Navigate to={routes.changePassword} replace />;
   }
 
   if (session.role !== requiredRole) {

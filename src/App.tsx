@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import LoginPage from './features/auth/pages/LoginPage';
+import ChangePasswordPage from './features/auth/pages/ChangePasswordPage';
 import LandingPage from './features/landing/pages/LandingPage';
 import { getSession } from './features/auth/utils/session';
 import ProtectedDashboardLayout from './features/dashboard/shared/components/ProtectedDashboardLayout';
@@ -39,12 +40,22 @@ function AuthRoute() {
   return <LoginPage />;
 }
 
+function ChangePasswordRoute() {
+  const session = getSession();
+  if (!session) {
+    return <Navigate to={routes.auth} replace />;
+  }
+
+  return <ChangePasswordPage />;
+}
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingRoute />} />
         <Route path={routes.auth} element={<AuthRoute />} />
+        <Route path={routes.changePassword} element={<ChangePasswordRoute />} />
 
         <Route
           path="/dashboard/admin"
