@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -23,6 +23,8 @@ const inputSlotProps = {
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const successMessage = (location.state as { message?: string } | null)?.message;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login, error, isLoading } = useLogin();
@@ -161,6 +163,12 @@ const LoginPage = () => {
               User Login
             </Typography>
           </Box>
+
+          {successMessage && !error && (
+            <Alert severity="success" sx={{ mb: 3.5, borderRadius: 2 }}>
+              {successMessage}
+            </Alert>
+          )}
 
           {error && (
             <Alert severity="error" sx={{ mb: 3.5, borderRadius: 2 }}>

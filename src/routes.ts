@@ -1,5 +1,6 @@
 export const routes = {
   auth: '/auth',
+  changePassword: '/change-password',
   adminDashboard: '/dashboard/admin',
   adminKpis: '/dashboard/admin/kpis',
   adminKpiDetail: '/dashboard/admin/kpis/:id',

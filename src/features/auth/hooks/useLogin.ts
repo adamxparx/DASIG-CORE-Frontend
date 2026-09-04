@@ -5,6 +5,7 @@ import { authService } from '../api/authService';
 import type { LoginRequest } from '../types/auth.types';
 import { decodeJwtPayload, getDashboardPathForRole } from '../utils/jwt';
 import { tokenStorage } from '../utils/tokenStorage';
+import { routes } from '../../../routes';
 
 type LoginStatus = 'idle' | 'loading' | 'error';
 
@@ -25,7 +26,7 @@ export function useLogin() {
           throw new ApiError('Login response did not include a token.', 200);
         }
 
-        const { role } = decodeJwtPayload(response.token);
+        const { role, mustChangePassword } = decodeJwtPayload(response.token);
         const dashboardPath = getDashboardPathForRole(role);
 
         if (!dashboardPath) {
@@ -37,6 +38,12 @@ export function useLogin() {
         }
 
         tokenStorage.set(response.token);
+
+        if (mustChangePassword) {
+          navigate(routes.changePassword, { replace: true });
+          return;
+        }
+
         navigate(dashboardPath, { replace: true });
       } catch (err) {
         setStatus('error');
