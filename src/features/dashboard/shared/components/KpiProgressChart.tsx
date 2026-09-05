@@ -50,7 +50,7 @@ const VIEW_OPTIONS: ChartViewOption[] = [
 ];
 
 const chartSeriesConfig: Record<ChartSeriesKey, { label: string; color: string; dotColor?: string }> = {
-  INTERNAL: { label: 'Staff internal progress', color: '#2563EB', dotColor: '#2563EB' },
+  INTERNAL: { label: 'Member submission progress', color: '#2563EB', dotColor: '#2563EB' },
   FINAL: { label: 'Official final progress', color: '#059669', dotColor: '#059669' },
 };
 
@@ -878,13 +878,13 @@ const KpiProgressChart = ({ history, role }: { history: KpiPeriodHistoryResponse
               </Stack>
               <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.12)', mb: 0.75 }} />
 
-              {/* Official Final Progress */}
+              {/* Official final progress */}
               {hoveredPoint.finalValue !== null && (
                 <Box sx={{ mb: visibleSeries.includes('INTERNAL') && hoveredPoint.internalValue !== null ? 0.75 : 0 }}>
                   <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', mb: 0.25 }}>
                     <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: '#10B981', flexShrink: 0 }} />
                     <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 600, fontSize: '0.72rem' }}>
-                      Final Progress
+                      Official Final Progress
                     </Typography>
                   </Stack>
                   <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'baseline', pl: 1.5 }}>
@@ -898,13 +898,13 @@ const KpiProgressChart = ({ history, role }: { history: KpiPeriodHistoryResponse
                 </Box>
               )}
 
-              {/* Staff Internal Progress (if visible and present) */}
+              {/* Member submission progress (if visible and present) */}
               {visibleSeries.includes('INTERNAL') && hoveredPoint.internalValue !== null && (
                 <Box>
                   <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', mb: 0.25 }}>
                     <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: '#3B82F6', flexShrink: 0 }} />
                     <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 600, fontSize: '0.72rem' }}>
-                      Internal Progress
+                      Member Submission Progress
                     </Typography>
                   </Stack>
                   <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'baseline', pl: 1.5 }}>

@@ -1,4 +1,5 @@
 import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined';
+import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 import CloseIcon from '@mui/icons-material/Close';
@@ -111,6 +112,14 @@ const sectionLabelSx = {
 const formatSubmissionId = (id: number) => `#SUB-${String(id).padStart(4, '0')}`;
 const formatDisplayDate = (rawDate: string) =>
   new Date(rawDate).toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' });
+const formatDisplayDateTime = (rawDate: string) =>
+  new Date(rawDate).toLocaleString(undefined, {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 
 type DocumentPreview = {
   document: SubmissionDocumentResponse;
@@ -231,17 +240,17 @@ const StaffSubmissionHistoryPage = () => {
     : null;
 
   const handleExportCsv = () => {
-    const header = ['subId', 'kpiName', 'period', 'submittedValue', 'targetValue', 'status', 'date'];
+    const header = ['subId', 'kpiName', 'deadline', 'submittedValue', 'targetValue', 'status', 'submittedAt'];
     const rows = filteredSubmissions.map((submission) => {
       const kpiMeta = assignableById.get(submission.kpiDefinitionId);
       return [
         formatSubmissionId(submission.id),
         submission.kpiName,
-        submission.reportingPeriod,
+        kpiMeta?.deadline ? formatDisplayDate(kpiMeta.deadline) : '',
         String(submission.submittedValue),
         String(kpiMeta?.targetValue ?? ''),
         mapStatus(submission.performanceStatus).label,
-        formatDisplayDate(submission.submissionDate),
+        formatDisplayDateTime(submission.createdAt),
       ];
     });
 
@@ -473,7 +482,7 @@ const StaffSubmissionHistoryPage = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      {['Submission ID', 'KPI Name', 'Period', 'Submitted / Target', 'Achiev. %', 'Status', 'Review', 'Date'].map((header) => (
+                      {['Submission ID', 'KPI Name', 'Deadline', 'Submitted / Target', 'Achiev. %', 'Status', 'Review', 'Submitted At'].map((header) => (
                         <TableCell key={header} sx={tableHeaderCellSx}>
                           {header}
                         </TableCell>
@@ -510,7 +519,7 @@ const StaffSubmissionHistoryPage = () => {
                             {formatSubmissionId(submission.id)}
                           </TableCell>
                           <TableCell sx={{ ...tableBodyCellSx, color: '#374151' }}>{submission.kpiName}</TableCell>
-                          <TableCell sx={tableBodyCellSx}>{submission.reportingPeriod}</TableCell>
+                          <TableCell sx={tableBodyCellSx}>{kpiMeta?.deadline ? formatDisplayDate(kpiMeta.deadline) : '--'}</TableCell>
                           <TableCell sx={tableBodyCellSx}>
                             <Typography sx={{ fontWeight: 700, lineHeight: 1.5, color: '#111827' }}>
                               {submission.submittedValue}
@@ -543,7 +552,7 @@ const StaffSubmissionHistoryPage = () => {
                             <SubmissionReviewBadge status={submission.reviewStatus} />
                           </TableCell>
                           <TableCell sx={{ ...tableBodyCellSx, color: '#6B7280' }}>
-                            {formatDisplayDate(submission.submissionDate)}
+                            {formatDisplayDateTime(submission.createdAt)}
                           </TableCell>
                         </TableRow>
                       );
@@ -653,7 +662,7 @@ const StaffSubmissionHistoryPage = () => {
             lineHeight: 1.6,
           }}
         >
-          © 2026 TBI Management System. All rights reserved.
+          © 2026 Committee Lead Management System. All rights reserved.
         </Typography>
       </Box>
 
@@ -718,11 +727,19 @@ const StaffSubmissionHistoryPage = () => {
                   <Typography sx={{ fontWeight: 700, lineHeight: 1.6, color: '#111827', fontSize: '0.95rem' }}>
                     {selectedSubmission.kpiName}
                   </Typography>
-                  <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', mt: 0.75, mb: 2.5 }}>
-                    <CalendarTodayOutlinedIcon sx={{ fontSize: 14, color: '#9BA1AE' }} />
-                    <Typography variant="body2" sx={{ color: '#6B7280', lineHeight: 1.6 }}>
-                      Period: {selectedSubmission.reportingPeriod}
-                    </Typography>
+                  <Stack spacing={0.75} sx={{ mt: 0.75, mb: 2.5 }}>
+                    <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
+                      <CalendarTodayOutlinedIcon sx={{ fontSize: 14, color: '#9BA1AE' }} />
+                      <Typography variant="body2" sx={{ color: '#6B7280', lineHeight: 1.6 }}>
+                        Period: {selectedSubmission.reportingPeriod}
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
+                      <AccessTimeOutlinedIcon sx={{ fontSize: 14, color: '#9BA1AE' }} />
+                      <Typography variant="caption" sx={{ color: '#9BA1AE', lineHeight: 1.6 }}>
+                        Submitted at: {formatDisplayDateTime(selectedSubmission.createdAt)}
+                      </Typography>
+                    </Stack>
                   </Stack>
 
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5, mb: 2.5 }}>

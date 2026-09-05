@@ -1,5 +1,7 @@
 import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined';
 
+import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
+
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
 
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
@@ -226,6 +228,24 @@ const sectionLabelSx = {
 
 const formatSubmissionId = (id: number) => `SUB-${new Date().getFullYear()}-${String(id).padStart(4, '0')}`;
 
+const formatDisplayDate = (rawDate: string) =>
+  new Date(rawDate).toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' });
+
+const formatDisplayDateTime = (rawDate: string) =>
+  new Date(rawDate).toLocaleString(undefined, {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+
+const formatRoleLabel = (role?: string) => {
+  if (role === 'STAFF') return 'Member';
+  if (role === 'TBI_MANAGER') return 'Committee Lead';
+  return role?.replace('_', ' ') ?? 'Member';
+};
+
 type DocumentPreview = {
   document: SubmissionDocumentResponse;
   kind: 'image' | 'pdf' | 'text';
@@ -445,11 +465,11 @@ const TbiManagerSubmissionHistoryPage = () => {
 
       'submissionId',
 
-      'staffMember',
+      'member',
 
       'kpiName',
 
-      'period',
+      'deadline',
 
       'submitted',
 
@@ -458,6 +478,8 @@ const TbiManagerSubmissionHistoryPage = () => {
       'achievement',
 
       'status',
+
+      'submittedAt',
 
     ];
 
@@ -473,7 +495,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
         submission.kpiName,
 
-        submission.reportingPeriod,
+        kpiMeta?.deadline ? formatDisplayDate(kpiMeta.deadline) : '',
 
         String(submission.submittedValue),
 
@@ -482,6 +504,8 @@ const TbiManagerSubmissionHistoryPage = () => {
         `${(submission.achievementRate ?? 0).toFixed(1)}%`,
 
         mapStatus(submission.performanceStatus).label,
+
+        formatDisplayDateTime(submission.createdAt),
 
       ];
 
@@ -635,7 +659,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                 <Typography variant="body2" sx={{ color: '#6B7280', mt: 0.75, lineHeight: 1.6 }}>
 
-                  Review and manage KPI data submissions from your organization&apos;s staff.
+                  Review and manage KPI data submissions from your organization&apos;s members.
 
                 </Typography>
 
@@ -695,7 +719,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                 <TextField
 
-                  placeholder="Search by ID, Staff, or KPI..."
+                  placeholder="Search by ID, Member, or KPI..."
 
                   value={search}
 
@@ -907,11 +931,11 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                         'Submission ID',
 
-                        'Staff Member',
+                        'Member',
 
                         'KPI Name',
 
-                        'Period',
+                        'Deadline',
 
                         'Submitted / Target',
 
@@ -920,6 +944,8 @@ const TbiManagerSubmissionHistoryPage = () => {
                         'Status',
 
                         'Review',
+
+                        'Submitted At',
 
                       ].map((header) => (
 
@@ -941,7 +967,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                       <TableRow>
 
-                        <TableCell colSpan={8} sx={{ borderBottom: 0 }}>
+                        <TableCell colSpan={9} sx={{ borderBottom: 0 }}>
 
                           <Typography sx={{ textAlign: 'center', py: 4, color: '#9BA1AE', lineHeight: 1.6 }}>
 
@@ -1031,7 +1057,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                                 <Typography variant="caption" sx={{ color: '#9BA1AE', lineHeight: 1.5, display: 'block' }}>
 
-                                  {submission.submittedByRole?.replace('_', ' ') ?? 'Staff'}
+                                  {formatRoleLabel(submission.submittedByRole)}
 
                                 </Typography>
 
@@ -1043,7 +1069,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                           <TableCell sx={{ ...tableBodyCellSx, color: '#374151' }}>{submission.kpiName}</TableCell>
 
-                          <TableCell sx={tableBodyCellSx}>{submission.reportingPeriod}</TableCell>
+                          <TableCell sx={tableBodyCellSx}>{kpiMeta?.deadline ? formatDisplayDate(kpiMeta.deadline) : '--'}</TableCell>
 
                           <TableCell sx={tableBodyCellSx}>
 
@@ -1105,6 +1131,9 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                             <SubmissionReviewBadge status={submission.reviewStatus} />
 
+                          </TableCell>
+                          <TableCell sx={{ ...tableBodyCellSx, color: '#6B7280' }}>
+                            {formatDisplayDateTime(submission.createdAt)}
                           </TableCell>
 
                         </TableRow>
@@ -1323,7 +1352,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
         >
 
-          © 2026 TBI Management System. All rights reserved.
+          © 2026 Committee Lead Management System. All rights reserved.
 
         </Typography>
 
@@ -1491,7 +1520,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                         >
 
-                          {selectedSubmission.submittedByRole?.replace('_', ' ') ?? 'Staff'}
+                          {formatRoleLabel(selectedSubmission.submittedByRole)}
 
                         </Typography>
 
@@ -1538,15 +1567,29 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                     </Typography>
 
-                    <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', mt: 0.75, mb: 2.5 }}>
+                    <Stack spacing={0.75} sx={{ mt: 0.75, mb: 2.5 }}>
 
-                      <CalendarTodayOutlinedIcon sx={{ fontSize: 14, color: '#9BA1AE' }} />
+                      <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
 
-                      <Typography variant="body2" sx={{ color: '#6B7280', lineHeight: 1.6 }}>
+                        <CalendarTodayOutlinedIcon sx={{ fontSize: 14, color: '#9BA1AE' }} />
 
-                        Period: {selectedSubmission.reportingPeriod}
+                        <Typography variant="body2" sx={{ color: '#6B7280', lineHeight: 1.6 }}>
 
-                      </Typography>
+                          Period: {selectedSubmission.reportingPeriod}
+
+                        </Typography>
+
+                      </Stack>
+
+                      <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
+
+                        <AccessTimeOutlinedIcon sx={{ fontSize: 14, color: '#9BA1AE' }} />
+
+                        <Typography variant="caption" sx={{ color: '#9BA1AE', lineHeight: 1.6 }}>
+                          Submitted at: {formatDisplayDateTime(selectedSubmission.createdAt)}
+                        </Typography>
+
+                      </Stack>
 
                     </Stack>
 
