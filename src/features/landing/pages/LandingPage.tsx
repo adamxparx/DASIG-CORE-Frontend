@@ -198,7 +198,7 @@ const LandingPage = () => {
               maxWidth: 720, // Clean width for single-column paragraph readability
             }}
           >
-            A high-performance key performance indicator tracking and analytics hub tailored for Technology Business Incubators (TBIs). Empowers staff, managers, and administrators to seamlessly manage submissions, monitor real-time metrics, and generate precise reports.
+            A high-performance key performance indicator tracking and analytics hub tailored for Committee Leads. Empowers members, Committee Leads, and administrators to seamlessly manage submissions, monitor real-time metrics, and generate precise reports.
           </Typography>
 
           {/* Get Started Button (Bigger, Glassy Sheen) */}

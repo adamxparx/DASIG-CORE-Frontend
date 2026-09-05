@@ -25,6 +25,7 @@ import {
   isFuturePeriod,
   sumPreviousPeriodValues,
 } from '../utils/reportingPeriodUtils';
+import { getKpiSubmissionSuccessMessage } from '../utils/submissionMessages';
 import type {
   AssignableKpi,
   CreateKpiSubmissionRequest,
@@ -268,7 +269,7 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
     try {
       const response: KpiSubmissionResponse = await kpiSubmissionService.createSubmission(payload, files);
       setSubmissions((current) => [response, ...current]);
-      showToast(`KPI submitted successfully as pending for approval.`, 'success');
+      showToast(getKpiSubmissionSuccessMessage(role, response), 'success');
       setSubmittedValue('');
       setNotes('');
       setFiles([]);
@@ -501,12 +502,12 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                     <InfoOutlinedIcon sx={{ color: '#6870DC', mt: 0.2 }} fontSize="small" />
                     <Box>
                       <Typography sx={{ fontWeight: 600, fontSize: '0.92rem', color: '#374151' }}>
-                        {role === 'STAFF' ? 'Submissions require TBI review' : 'Final submissions are official'}
+                        {role === 'STAFF' ? 'Submissions require Committee Lead review' : 'Official final submissions'}
                       </Typography>
                       <Typography variant="caption" sx={{ color: '#6B7280' }}>
                         {role === 'STAFF'
-                          ? 'Your staff submission will start as Pending. A TBI Manager can approve it for official progress or return it with comments.'
-                          : 'TBI Manager submissions are saved as approved final contributions for Admin dashboards and reports.'}
+                          ? 'Your member submission will start as Pending. A Committee Lead can approve it for official progress or return it with comments.'
+                          : 'Committee Lead submissions are saved as approved official final contributions for Admin dashboards and reports.'}
                       </Typography>
                     </Box>
                   </Stack>

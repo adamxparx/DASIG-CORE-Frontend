@@ -35,15 +35,21 @@ const mapPerformanceStatus = (status: string): DashboardStatus => {
   return 'DELAYED';
 };
 
-const formatSubmissionType = (type: 'INTERNAL' | 'FINAL', role: UserRole) => {
+const formatSubmissionType = (type: 'INTERNAL' | 'FINAL') => {
   if (type === 'INTERNAL') {
-    return role === 'STAFF' ? 'Staff submission' : 'Staff (internal)';
+    return 'Member Submission';
   }
-  return 'TBI final';
+  return 'Official Final';
 };
 
 const formatDate = (rawDate: string) =>
   new Date(rawDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+
+const formatRoleLabel = (role: string) => {
+  if (role === 'STAFF') return 'Member';
+  if (role === 'TBI_MANAGER') return 'Committee Lead';
+  return role.replaceAll('_', ' ');
+};
 
 const formatMetricValue = (value: number) =>
   value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -134,10 +140,10 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDr
 
               <Typography variant="body2" sx={{ color: '#6B7280' }}>
                 {role === 'DASIG_ADMIN'
-                  ? 'Official TBI final submissions by reporting period.'
+                  ? 'Official final submissions by reporting period.'
                   : role === 'STAFF'
                     ? 'Official approved submissions by reporting period.'
-                    : 'Staff internal drafts and TBI final submissions by period.'}
+                    : 'Member submissions and official final submissions by period.'}
               </Typography>
 
               <KpiProgressChart history={history} role={role} />
@@ -281,7 +287,7 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDr
                               </TableCell>
                               <TableCell>
                                 <Chip
-                                  label={formatSubmissionType(submission.submissionType, role)}
+                                  label={formatSubmissionType(submission.submissionType)}
                                   size="small"
                                   sx={{
                                     bgcolor: submission.submissionType === 'FINAL' ? '#ECFDF5' : '#EFF6FF',
@@ -296,7 +302,7 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDr
                                     {submission.submittedByName}
                                   </Typography>
                                   <Typography variant="caption" sx={{ color: '#64748B' }}>
-                                    {submission.submittedByRole.replaceAll('_', ' ')}
+                                    {formatRoleLabel(submission.submittedByRole)}
                                   </Typography>
                                 </Stack>
                               </TableCell>

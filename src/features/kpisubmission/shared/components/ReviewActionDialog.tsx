@@ -43,13 +43,13 @@ const ReviewActionDialog = ({
   return (
     <Dialog open={open} onClose={isSubmitting ? undefined : onClose} fullWidth maxWidth="sm">
       <DialogTitle sx={{ fontWeight: 800 }}>
-        {isReject ? 'Return submission with comment' : 'Approve staff submission'}
+        {isReject ? 'Return submission with comment' : 'Approve member submission'}
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 0.5 }}>
           <Typography variant="body2" sx={{ color: '#6B7280', lineHeight: 1.7 }}>
             {isReject
-              ? 'Tell the staff what needs to be corrected before they resubmit.'
+              ? 'Tell the member what needs to be corrected before they resubmit.'
               : 'Approving this submission will create an official contribution for Admin dashboards and reports.'}
           </Typography>
 

@@ -44,8 +44,14 @@ const mapPerformanceStatus = (status: string): DashboardStatus => {
 };
 
 const formatSubmissionType = (type: 'INTERNAL' | 'FINAL') => {
-  if (type === 'INTERNAL') return 'Staff (internal)';
-  return 'TBI final';
+  if (type === 'INTERNAL') return 'Member Submission';
+  return 'Official Final';
+};
+
+const formatRoleLabel = (role: string) => {
+  if (role === 'STAFF') return 'Member';
+  if (role === 'TBI_MANAGER') return 'Committee Lead';
+  return role.replaceAll('_', ' ');
 };
 
 const KpiDetailPage = () => {
@@ -259,7 +265,7 @@ const KpiDetailPage = () => {
               </Stack>
 
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Official TBI final submissions by reporting period.
+                Official final submissions by reporting period.
               </Typography>
 
               <KpiProgressChart history={history} role="DASIG_ADMIN" />
@@ -353,7 +359,7 @@ const KpiDetailPage = () => {
                                   {submission.submittedByName}
                                 </Typography>
                                 <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                  {submission.submittedByRole.replaceAll('_', ' ')}
+                                  {formatRoleLabel(submission.submittedByRole)}
                                 </Typography>
                               </Stack>
                             </TableCell>

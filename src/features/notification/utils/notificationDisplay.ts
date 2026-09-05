@@ -49,10 +49,10 @@ export function getDeadlineAlertLeadDays(deadline: string): 7 | 2 | null {
 export function getDeadlineFieldHelperText(deadline: string): string | undefined {
   const leadDays = getDeadlineAlertLeadDays(deadline);
   if (leadDays === 7) {
-    return 'Staff/TBI will get a 7-day deadline alert when you save.';
+    return 'Member/Committee Lead will get a 7-day deadline alert when you save.';
   }
   if (leadDays === 2) {
-    return 'Staff/TBI will get a 2-day deadline alert when you save.';
+    return 'Member/Committee Lead will get a 2-day deadline alert when you save.';
   }
   return undefined;
 }
