@@ -1,4 +1,3 @@
-import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
 import Chip from '@mui/material/Chip';
 import type { DashboardStatus } from '../types/dashboard.types';
 
@@ -24,13 +23,6 @@ const KpiStatusBadge = ({ status }: KpiStatusBadgeProps) => {
   return (
     <Chip
       size="small"
-      icon={
-        status === 'COMPLETED' ? (
-          <CheckCircleOutlinedIcon
-            sx={{ fontSize: '0.95rem !important', color: `${statusStyleMap.COMPLETED.color} !important`, ml: '6px !important' }}
-          />
-        ) : undefined
-      }
       label={statusLabelMap[status]}
       sx={{
         bgcolor: statusStyleMap[status].bg,

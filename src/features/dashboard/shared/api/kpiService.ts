@@ -38,6 +38,18 @@ export const kpiService = {
     });
   },
 
+  archiveKpiDefinition(id: number): Promise<KpiDefinitionResponse> {
+    return apiClient<KpiDefinitionResponse>(`${KPI_ENDPOINT}/${id}/archive`, {
+      method: 'PATCH',
+    });
+  },
+
+  unarchiveKpiDefinition(id: number): Promise<KpiDefinitionResponse> {
+    return apiClient<KpiDefinitionResponse>(`${KPI_ENDPOINT}/${id}/unarchive`, {
+      method: 'PATCH',
+    });
+  },
+
   getAllKpiDefinitions(): Promise<KpiDefinitionResponse[]> {
     return apiClient<KpiDefinitionResponse[]>(KPI_ENDPOINT);
   },

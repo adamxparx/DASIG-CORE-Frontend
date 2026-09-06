@@ -1,15 +1,16 @@
+import type { ReactNode } from 'react';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 interface DashboardHeaderProps {
-  title: string;
+  title: ReactNode;
   subtitle: string;
 }
 
 const DashboardHeader = ({ title, subtitle }: DashboardHeaderProps) => {
   return (
     <Stack spacing={0.75}>
-      <Typography variant="h4" sx={{ fontWeight: 700 }}>
+      <Typography component="div" variant="h4" sx={{ fontWeight: 700 }}>
         {title}
       </Typography>
       <Typography variant="body1" color="text.secondary">
