@@ -1,7 +1,8 @@
+import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
 import CloseIcon from '@mui/icons-material/Close';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
+import NotificationsActiveOutlinedIcon from '@mui/icons-material/NotificationsActiveOutlined';
+import PlayCircleOutlinedIcon from '@mui/icons-material/PlayCircleOutlined';
+import UnarchiveOutlinedIcon from '@mui/icons-material/UnarchiveOutlined';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -17,7 +18,7 @@ import { useState } from 'react';
 import { ALERTS_CHANGED_EVENT } from '../../../alerts/api/alertsService';
 import { kpiService } from '../../shared/api/kpiService';
 
-interface DeleteKpiDialogProps {
+interface UnarchiveKpiDialogProps {
   open: boolean;
   onClose: () => void;
   onSubmitSuccess: () => void;
@@ -25,35 +26,35 @@ interface DeleteKpiDialogProps {
   kpiName: string;
 }
 
-const DeleteKpiDialog = ({ open, onClose, onSubmitSuccess, kpiId, kpiName }: DeleteKpiDialogProps) => {
-  const [isDeleting, setIsDeleting] = useState(false);
+const UnarchiveKpiDialog = ({ open, onClose, onSubmitSuccess, kpiId, kpiName }: UnarchiveKpiDialogProps) => {
+  const [isRestoring, setIsRestoring] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleDelete = async () => {
+  const handleRestore = async () => {
     if (kpiId === null) {
       return;
     }
 
-    setIsDeleting(true);
+    setIsRestoring(true);
     setErrorMessage(null);
 
     try {
-      await kpiService.deleteKpiDefinition(kpiId);
+      await kpiService.unarchiveKpiDefinition(kpiId);
       window.dispatchEvent(new Event(ALERTS_CHANGED_EVENT));
       onSubmitSuccess();
       onClose();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'An error occurred while deleting the KPI.';
+      const msg = err instanceof Error ? err.message : 'An error occurred while restoring the KPI.';
       setErrorMessage(msg);
     } finally {
-      setIsDeleting(false);
+      setIsRestoring(false);
     }
   };
 
   return (
     <Dialog
       open={open}
-      onClose={isDeleting ? undefined : onClose}
+      onClose={isRestoring ? undefined : onClose}
       fullWidth
       maxWidth="xs"
       slotProps={{
@@ -67,17 +68,17 @@ const DeleteKpiDialog = ({ open, onClose, onSubmitSuccess, kpiId, kpiName }: Del
           sx: {
             borderRadius: '20px',
             overflow: 'hidden',
-            border: '1px solid rgba(239, 68, 68, 0.15)',
-            boxShadow: '0 24px 48px -12px rgba(220, 38, 38, 0.14), 0 12px 24px -8px rgba(0, 0, 0, 0.08)',
+            border: '1px solid rgba(16, 185, 129, 0.15)',
+            boxShadow: '0 24px 48px -12px rgba(16, 185, 129, 0.14), 0 12px 24px -8px rgba(0, 0, 0, 0.08)',
             p: 0,
           },
         },
       }}
     >
-      {/* Top Header Banner with Soft Danger Tint */}
+      {/* Top Header Banner with Soft Emerald Tint */}
       <Box
         sx={{
-          background: 'linear-gradient(180deg, #FEF2F2 0%, #FFFFFF 100%)',
+          background: 'linear-gradient(180deg, #ECFDF5 0%, #FFFFFF 100%)',
           pt: 3,
           px: 3,
           pb: 1.5,
@@ -86,7 +87,7 @@ const DeleteKpiDialog = ({ open, onClose, onSubmitSuccess, kpiId, kpiName }: Del
       >
         <IconButton
           onClick={onClose}
-          disabled={isDeleting}
+          disabled={isRestoring}
           size="small"
           sx={{
             position: 'absolute',
@@ -100,7 +101,7 @@ const DeleteKpiDialog = ({ open, onClose, onSubmitSuccess, kpiId, kpiName }: Del
         </IconButton>
 
         <Stack direction="row" spacing={2} sx={{ alignItems: 'flex-start' }}>
-          {/* Glowing Red Icon Badge */}
+          {/* Glowing Emerald Icon Badge */}
           <Box
             sx={{
               display: 'flex',
@@ -109,22 +110,22 @@ const DeleteKpiDialog = ({ open, onClose, onSubmitSuccess, kpiId, kpiName }: Del
               width: 52,
               height: 52,
               borderRadius: '16px',
-              background: 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)',
+              background: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)',
               border: '2px solid #FFFFFF',
-              boxShadow: '0 8px 16px -4px rgba(239, 68, 68, 0.25)',
-              color: '#DC2626',
+              boxShadow: '0 8px 16px -4px rgba(16, 185, 129, 0.25)',
+              color: '#059669',
               flexShrink: 0,
             }}
           >
-            <DeleteForeverOutlinedIcon sx={{ fontSize: 28 }} />
+            <UnarchiveOutlinedIcon sx={{ fontSize: 28 }} />
           </Box>
 
           <Box sx={{ pr: 2 }}>
             <Typography variant="h6" sx={{ fontWeight: 700, color: '#111827', fontSize: '1.25rem', lineHeight: 1.25 }}>
-              Delete KPI Definition
+              Restore KPI Definition
             </Typography>
             <Typography variant="body2" sx={{ color: '#6B7280', mt: 0.5, fontSize: '0.875rem' }}>
-              This action permanently destroys this KPI and all associated data.
+              Reactivate this KPI for tracking, monitoring, and member submissions.
             </Typography>
           </Box>
         </Stack>
@@ -140,8 +141,8 @@ const DeleteKpiDialog = ({ open, onClose, onSubmitSuccess, kpiId, kpiName }: Del
         {/* Selected KPI Item Preview Box */}
         <Box
           sx={{
-            bgcolor: '#F9FAFB',
-            border: '1px solid #E5E7EB',
+            bgcolor: '#F8FAFC',
+            border: '1px solid #E2E8F0',
             borderRadius: '14px',
             p: 2,
             mb: 2,
@@ -153,8 +154,8 @@ const DeleteKpiDialog = ({ open, onClose, onSubmitSuccess, kpiId, kpiName }: Del
                 label={`KPI #${kpiId}`}
                 size="small"
                 sx={{
-                  bgcolor: '#E5E7EB',
-                  color: '#374151',
+                  bgcolor: '#E2E8F0',
+                  color: '#334155',
                   fontWeight: 600,
                   fontSize: '0.75rem',
                   height: 22,
@@ -162,105 +163,101 @@ const DeleteKpiDialog = ({ open, onClose, onSubmitSuccess, kpiId, kpiName }: Del
               />
             )}
             <Chip
-              label="Permanent Deletion"
+              label="Restore to Active"
               size="small"
               sx={{
-                bgcolor: '#FEE2E2',
-                color: '#991B1B',
+                bgcolor: '#DCFCE7',
+                color: '#166534',
                 fontWeight: 600,
                 fontSize: '0.75rem',
                 height: 22,
               }}
             />
           </Stack>
-          <Typography variant="body1" sx={{ fontWeight: 600, color: '#111827', fontSize: '0.975rem', lineHeight: 1.35 }}>
+          <Typography variant="body1" sx={{ fontWeight: 600, color: '#0F172A', fontSize: '0.975rem', lineHeight: 1.35 }}>
             {kpiName || 'Selected KPI'}
           </Typography>
         </Box>
 
-        {/* Consequences Breakdown Callout */}
-        <Box
-          sx={{
-            bgcolor: '#FFF1F2',
-            border: '1px solid #FFE4E6',
-            borderRadius: '14px',
-            p: 2,
-            mb: 2,
-          }}
-        >
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
-            <WarningAmberOutlinedIcon sx={{ fontSize: 18, color: '#DC2626' }} />
-            <Typography variant="body2" sx={{ fontWeight: 700, color: '#991B1B', fontSize: '0.85rem' }}>
-              What will be deleted:
-            </Typography>
-          </Stack>
-
-          <Stack spacing={0.75} sx={{ pl: 0.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-              <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: '#DC2626', mt: 0.85, flexShrink: 0 }} />
-              <Typography variant="body2" sx={{ color: '#7F1D1D', fontSize: '0.825rem', lineHeight: 1.4 }}>
-                All member and committee submissions and progress values
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-              <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: '#DC2626', mt: 0.85, flexShrink: 0 }} />
-              <Typography variant="body2" sx={{ color: '#7F1D1D', fontSize: '0.825rem', lineHeight: 1.4 }}>
-                All uploaded verification evidence and attached files
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-              <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: '#DC2626', mt: 0.85, flexShrink: 0 }} />
-              <Typography variant="body2" sx={{ color: '#7F1D1D', fontSize: '0.825rem', lineHeight: 1.4 }}>
-                Active deadline alert badges and unread notifications
-              </Typography>
-            </Box>
-          </Stack>
-        </Box>
-
-        {/* Audit / Archiving Alternative Note */}
+        {/* Reactivation Details */}
         <Box
           sx={{
             bgcolor: '#F0FDF4',
-            border: '1px solid #DCFCE7',
-            borderRadius: '12px',
-            p: 1.5,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.25,
+            border: '1px solid #BBF7D0',
+            borderRadius: '14px',
+            p: 2,
+            mb: 1.5,
           }}
         >
-          <InfoOutlinedIcon sx={{ fontSize: 18, color: '#16A34A', flexShrink: 0 }} />
-          <Typography variant="caption" sx={{ color: '#166534', fontWeight: 500, lineHeight: 1.4 }}>
-            <strong>Recommendation:</strong> Use <strong>Archive</strong> instead if you want to pause submissions while keeping historical reports.
+          <Typography variant="caption" sx={{ fontWeight: 700, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', mb: 1.25 }}>
+            What happens on restore
           </Typography>
+
+          <Stack spacing={1.25}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25 }}>
+              <CheckCircleOutlinedIcon sx={{ fontSize: 18, color: '#16A34A', mt: 0.2, flexShrink: 0 }} />
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1E293B', fontSize: '0.85rem', lineHeight: 1.3 }}>
+                  Returns to Active KPIs
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#475569', display: 'block', mt: 0.25, lineHeight: 1.35 }}>
+                  Immediately listed on active management hubs and reflected in consortium summaries.
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25 }}>
+              <PlayCircleOutlinedIcon sx={{ fontSize: 18, color: '#059669', mt: 0.2, flexShrink: 0 }} />
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1E293B', fontSize: '0.85rem', lineHeight: 1.3 }}>
+                  Submissions re-enabled
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#475569', display: 'block', mt: 0.25, lineHeight: 1.35 }}>
+                  Committee members and leads can submit period progress reports again.
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25 }}>
+              <NotificationsActiveOutlinedIcon sx={{ fontSize: 18, color: '#D97706', mt: 0.2, flexShrink: 0 }} />
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1E293B', fontSize: '0.85rem', lineHeight: 1.3 }}>
+                  Deadline tracking resumes
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#475569', display: 'block', mt: 0.25, lineHeight: 1.35 }}>
+                  Automated deadline reminders and warning notifications will be re-evaluated.
+                </Typography>
+              </Box>
+            </Box>
+          </Stack>
         </Box>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 3, pt: 1, gap: 1.5 }}>
         <Button
           onClick={onClose}
-          disabled={isDeleting}
+          disabled={isRestoring}
           variant="outlined"
           sx={{
-            borderColor: '#E5E7EB',
-            color: '#4B5563',
+            borderColor: '#E2E8F0',
+            color: '#475569',
             fontWeight: 600,
             textTransform: 'none',
             fontSize: '0.925rem',
             borderRadius: '12px',
             px: 2.5,
             py: 0.9,
-            '&:hover': { borderColor: '#D1D5DB', bgcolor: '#F9FAFB' },
+            '&:hover': { borderColor: '#CBD5E1', bgcolor: '#F8FAFC' },
           }}
         >
           Cancel
         </Button>
         <Button
-          onClick={handleDelete}
+          onClick={handleRestore}
           variant="contained"
-          disabled={isDeleting}
+          disabled={isRestoring}
           sx={{
-            bgcolor: '#DC2626',
+            bgcolor: '#16A34A',
             color: '#FFFFFF',
             fontWeight: 600,
             px: 3,
@@ -268,19 +265,19 @@ const DeleteKpiDialog = ({ open, onClose, onSubmitSuccess, kpiId, kpiName }: Del
             borderRadius: '12px',
             textTransform: 'none',
             fontSize: '0.925rem',
-            boxShadow: '0 4px 14px rgba(220, 38, 38, 0.35)',
+            boxShadow: '0 4px 14px rgba(22, 163, 74, 0.35)',
             transition: 'all 0.2s ease',
             '&:hover': {
-              bgcolor: '#B91C1C',
-              boxShadow: '0 6px 18px rgba(220, 38, 38, 0.45)',
+              bgcolor: '#15803D',
+              boxShadow: '0 6px 18px rgba(22, 163, 74, 0.45)',
             },
           }}
         >
-          {isDeleting ? <CircularProgress size={20} color="inherit" /> : 'Delete Permanently'}
+          {isRestoring ? <CircularProgress size={20} color="inherit" /> : 'Restore KPI'}
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
 
-export default DeleteKpiDialog;
+export default UnarchiveKpiDialog;

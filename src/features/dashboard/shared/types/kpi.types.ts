@@ -46,4 +46,6 @@ export interface KpiDefinitionResponse {
   committeeId: number;
   committeeName: string;
   reportingFrequency: ReportingFrequency;
+  status?: string;
+  archived?: boolean;
 }

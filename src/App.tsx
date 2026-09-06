@@ -62,6 +62,7 @@ function App() {
           element={<ProtectedDashboardLayout requiredRole="ROLE_DASIG_ADMIN" dashboardRole="DASIG_ADMIN" />}
         >
           <Route index element={<AdminDashboard />} />
+          <Route path="kpis" element={<AdminDashboard />} />
           <Route path="organizations" element={<OrganizationManagementPage />} />
           <Route path="users" element={<UserManagementPage />} />
           <Route path="committees" element={<CommitteeManagementPage />} />

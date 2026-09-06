@@ -18,7 +18,8 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import type { DashboardKpiItem } from '../../shared/types/dashboard.types';
 import { committeeService } from '../../../committee/api/committeeService';
 import type { CommitteeResponse } from '../../../committee/types/committee.types';
 import { organizationService } from '../../../organization/api/organizationService';
@@ -80,22 +81,29 @@ const inputSx = {
 
 const CreateKpiPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
 
+  const preloadedKpi = (location.state as { kpi?: DashboardKpiItem } | undefined)?.kpi;
+
   /* ── Form state ─────────────────────────── */
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [targetValue, setTargetValue] = useState('');
-  const [unit, setUnit] = useState('');
-  const [deadline, setDeadline] = useState('');
+  const [name, setName] = useState(preloadedKpi?.name ?? '');
+  const [description, setDescription] = useState(preloadedKpi?.description ?? '');
+  const [targetValue, setTargetValue] = useState(
+    preloadedKpi ? String(preloadedKpi.targetValue) : ''
+  );
+  const [unit, setUnit] = useState(preloadedKpi?.unit ?? '');
+  const [deadline, setDeadline] = useState(
+    preloadedKpi ? formatDateForInput(preloadedKpi.deadline) : ''
+  );
   const [committeeId, setCommitteeId] = useState<number | ''>('');
 
   /* ── UI / API state ─────────────────────── */
   const [committees, setCommittees] = useState<CommitteeResponse[]>([]);
   const [organizations, setOrganizations] = useState<OrganizationResponse[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
-  const [isLoadingKpi, setIsLoadingKpi] = useState(false);
+  const [isLoadingKpi, setIsLoadingKpi] = useState(!preloadedKpi && isEdit);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -111,65 +119,70 @@ const CreateKpiPage = () => {
     setToastOpen(true);
   };
 
-  /* ── Load committees and organizations ───── */
-  const loadCommitteesAndOrgs = useCallback(async () => {
-    setIsLoadingData(true);
-    try {
-      const [committeeData, orgData] = await Promise.all([
-        committeeService.getAll().catch(() => [] as CommitteeResponse[]),
-        organizationService.getAll().catch(() => [] as OrganizationResponse[]),
-      ]);
-      setCommittees(committeeData);
-      setOrganizations(orgData);
-      return { committees: committeeData, organizations: orgData };
-    } catch {
-      setCommittees([]);
-      setOrganizations([]);
-      return { committees: [], organizations: [] };
-    } finally {
-      setIsLoadingData(false);
-    }
-  }, []);
-
-  /* ── Load existing KPI for edit ─────────── */
-  const loadKpiForEdit = useCallback(
-    async (loadedCommittees: CommitteeResponse[]) => {
-      if (!id) return;
-      setIsLoadingKpi(true);
-      try {
-        const kpi = await kpiService.getKpiDefinitionById(Number(id));
-        setName(kpi.name);
-        setDescription(kpi.description);
-        setTargetValue(String(kpi.targetValue));
-        setUnit(kpi.unit);
-        setDeadline(formatDateForInput(kpi.deadline));
-        // threshold and reportingFrequency are set as silent defaults in the payload
-
-        // Match by committeeId if available, else try committeeName
-        const matched = loadedCommittees.find(
-          (c) =>
-            c.id === (kpi as typeof kpi & { committeeId?: number }).committeeId ||
-            c.name.toLowerCase() === kpi.committeeName?.toLowerCase()
-        );
-        setCommitteeId(matched ? matched.id : '');
-      } catch {
-        setErrorMessage('Failed to load KPI data for editing.');
-      } finally {
-        setIsLoadingKpi(false);
-      }
-    },
-    [id]
-  );
-
+  /* ── Unified concurrent data loader ─────── */
   useEffect(() => {
-    const init = async () => {
-      const data = await loadCommitteesAndOrgs();
-      if (isEdit) {
-        await loadKpiForEdit(data.committees);
+    let isMounted = true;
+
+    const loadAll = async () => {
+      if (!preloadedKpi && isEdit) {
+        setIsLoadingKpi(true);
+      }
+      setIsLoadingData(true);
+
+      try {
+        const [committeeData, orgData, kpiDef] = await Promise.all([
+          committeeService.getAll().catch(() => [] as CommitteeResponse[]),
+          organizationService.getAll().catch(() => [] as OrganizationResponse[]),
+          isEdit && id ? kpiService.getKpiDefinitionById(Number(id)).catch(() => null) : Promise.resolve(null),
+        ]);
+
+        if (!isMounted) return;
+
+        setCommittees(committeeData);
+        setOrganizations(orgData);
+
+        if (kpiDef) {
+          setName(kpiDef.name);
+          setDescription(kpiDef.description);
+          setTargetValue(String(kpiDef.targetValue));
+          setUnit(kpiDef.unit);
+          setDeadline(formatDateForInput(kpiDef.deadline));
+
+          const matched = committeeData.find(
+            (c) =>
+              c.id === (kpiDef as typeof kpiDef & { committeeId?: number }).committeeId ||
+              c.name.toLowerCase() === kpiDef.committeeName?.toLowerCase()
+          );
+          setCommitteeId(matched ? matched.id : '');
+        } else if (preloadedKpi) {
+          const matched = committeeData.find(
+            (c) =>
+              c.name.toLowerCase() === (preloadedKpi as unknown as { committeeName?: string }).committeeName?.toLowerCase()
+          );
+          if (matched) {
+            setCommitteeId(matched.id);
+          }
+        } else if (isEdit && !preloadedKpi) {
+          setErrorMessage('Failed to load KPI data for editing.');
+        }
+      } catch {
+        if (isMounted) {
+          setErrorMessage('Failed to load data.');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingData(false);
+          setIsLoadingKpi(false);
+        }
       }
     };
-    void init();
-  }, [loadCommitteesAndOrgs, loadKpiForEdit, isEdit]);
+
+    void loadAll();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id, isEdit, preloadedKpi]);
 
   /* ── Organizations mapping helper ─────────── */
   const getOrganizationsForCommittee = useCallback(

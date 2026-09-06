@@ -1,5 +1,7 @@
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined';
+import ArchiveOutlinedIcon from '@mui/icons-material/ArchiveOutlined';
+import UnarchiveOutlinedIcon from '@mui/icons-material/UnarchiveOutlined';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -26,8 +28,8 @@ import AdminPageLayout from '../../shared/components/AdminPageLayout';
 import DashboardHeader from '../../shared/components/DashboardHeader';
 import KpiProgressChart from '../../shared/components/KpiProgressChart';
 import DeleteKpiDialog from '../../admin/components/DeleteKpiDialog';
-import KpiFormDialog from '../../admin/components/KpiFormDialog';
-import type { KpiSubmitSuccessContext } from '../../admin/components/KpiFormDialog';
+import ArchiveKpiDialog from '../../admin/components/ArchiveKpiDialog';
+import UnarchiveKpiDialog from '../../admin/components/UnarchiveKpiDialog';
 
 const formatDate = (date: string) =>
   new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -62,7 +64,7 @@ const KpiDetailPage = () => {
 
   const roleMatch = location.pathname.match(/^\/dashboard\/(admin|staff|tbi_manager)/);
   const userRole = roleMatch ? roleMatch[1] : 'DASIG_ADMIN';
-  const isAdmin = userRole === 'DASIG_ADMIN';
+  const isAdmin = userRole === 'admin';
 
   const [kpi, setKpi] = useState<DashboardKpiItem | null>(null);
   const [history, setHistory] = useState<KpiPeriodHistoryResponse | null>(null);
@@ -70,32 +72,33 @@ const KpiDetailPage = () => {
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [unarchiveDialogOpen, setUnarchiveDialogOpen] = useState(false);
 
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastSeverity, setToastSeverity] = useState<'success' | 'error'>('success');
 
-  useEffect(() => {
-    const loadKpi = async () => {
-      setIsLoadingKpi(true);
-      setError(null);
-      try {
-        const data = await dashboardService.getDashboard();
-        const found = data.kpis.find((item) => item.id === kpiId);
-        if (found) {
-          setKpi(found);
-        } else {
-          setError('KPI not found.');
-        }
-      } catch (err) {
-        setError(err instanceof ApiError ? err.message : 'Unable to load KPI details.');
-      } finally {
-        setIsLoadingKpi(false);
+  const loadKpi = async () => {
+    setIsLoadingKpi(true);
+    setError(null);
+    try {
+      const data = await dashboardService.getDashboard();
+      const found = data.kpis.find((item) => item.id === kpiId);
+      if (found) {
+        setKpi(found);
+      } else {
+        setError('KPI not found.');
       }
-    };
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Unable to load KPI details.');
+    } finally {
+      setIsLoadingKpi(false);
+    }
+  };
 
+  useEffect(() => {
     if (kpiId) {
       void loadKpi();
     }
@@ -119,7 +122,7 @@ const KpiDetailPage = () => {
   }, [kpiId]);
 
   const handleEditClick = () => {
-    setFormDialogOpen(true);
+    navigate(`/dashboard/admin/kpis/${kpiId}/edit`, { state: { kpi } });
   };
 
   const handleDeleteClick = () => {
@@ -132,16 +135,22 @@ const KpiDetailPage = () => {
     setToastOpen(true);
   };
 
-  const handleCreateOrUpdateSuccess = (_context: KpiSubmitSuccessContext) => {
-    setFormDialogOpen(false);
-    showToast('KPI updated successfully.', 'success');
-    navigate('/dashboard/admin');
-  };
-
   const handleDeleteSuccess = () => {
     setDeleteDialogOpen(false);
     showToast('KPI deleted successfully.', 'success');
     navigate('/dashboard/admin');
+  };
+
+  const handleArchiveSuccess = () => {
+    setArchiveDialogOpen(false);
+    showToast('KPI archived successfully.', 'success');
+    void loadKpi();
+  };
+
+  const handleUnarchiveSuccess = () => {
+    setUnarchiveDialogOpen(false);
+    showToast('KPI restored to active status.', 'success');
+    void loadKpi();
   };
 
   if (isLoadingKpi) {
@@ -164,28 +173,92 @@ const KpiDetailPage = () => {
     );
   }
 
+  const isArchived = Boolean(kpi.archived || kpi.kpiStatus === 'ARCHIVED');
+
   return (
     <AdminPageLayout>
       <Stack spacing={3}>
-        <DashboardHeader title={kpi.name} subtitle={kpi.description} />
+        <DashboardHeader
+          title={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              <span>{kpi.name}</span>
+              {isArchived && (
+                <Chip
+                  label="Archived"
+                  size="small"
+                  sx={{
+                    bgcolor: '#E2E8F0',
+                    color: '#475569',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                  }}
+                />
+              )}
+            </Box>
+          }
+          subtitle={kpi.description}
+        />
 
         {isAdmin && (
           <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end' }}>
-            <Button
-              variant="outlined"
-              startIcon={<EditOutlinedIcon />}
-              onClick={handleEditClick}
-              sx={{
-                textTransform: 'none',
-                fontWeight: 600,
-                borderRadius: 2,
-                px: 2.5,
-                borderColor: 'divider',
-                color: 'text.primary',
-              }}
-            >
-              Edit
-            </Button>
+            {!isArchived && (
+              <Button
+                variant="outlined"
+                startIcon={<EditOutlinedIcon />}
+                onClick={handleEditClick}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  px: 2.5,
+                  borderColor: 'divider',
+                  color: 'text.primary',
+                }}
+              >
+                Edit
+              </Button>
+            )}
+
+            {!isArchived && (
+              <Button
+                variant="outlined"
+                startIcon={<ArchiveOutlinedIcon />}
+                onClick={() => setArchiveDialogOpen(true)}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  px: 2.5,
+                  borderColor: '#93C5FD',
+                  color: '#1A73E8',
+                  bgcolor: '#EFF6FF',
+                  '&:hover': { borderColor: '#1A73E8', bgcolor: '#DBEAFE' },
+                }}
+              >
+                Archive
+              </Button>
+            )}
+
+            {isArchived && (
+              <Button
+                variant="outlined"
+                startIcon={<UnarchiveOutlinedIcon />}
+                onClick={() => setUnarchiveDialogOpen(true)}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  px: 2.5,
+                  borderColor: '#86EFAC',
+                  color: '#16A34A',
+                  bgcolor: '#F0FDF4',
+                  '&:hover': { borderColor: '#16A34A', bgcolor: '#DCFCE7' },
+                }}
+              >
+                Restore KPI
+              </Button>
+            )}
+
             <Button
               variant="outlined"
               startIcon={<DeleteOutlineIcon />}
@@ -202,6 +275,24 @@ const KpiDetailPage = () => {
               Delete
             </Button>
           </Stack>
+        )}
+
+        {isArchived && (
+          <Alert
+            severity="info"
+            icon={<ArchiveOutlinedIcon />}
+            sx={{
+              borderRadius: 3,
+              bgcolor: '#F8FAFC',
+              border: '1px solid #E2E8F0',
+              color: '#475569',
+              fontWeight: 500,
+              fontSize: '0.9rem',
+              '& .MuiAlert-icon': { color: '#64748B' },
+            }}
+          >
+            This KPI is currently archived. Member submissions and deadline alerts are paused. Click <strong>Restore KPI</strong> above to reactivate active monitoring.
+          </Alert>
         )}
 
         <Divider />
@@ -407,11 +498,20 @@ const KpiDetailPage = () => {
 
       {isAdmin && (
         <>
-          <KpiFormDialog
-            open={formDialogOpen}
-            onClose={() => setFormDialogOpen(false)}
-            onSubmitSuccess={handleCreateOrUpdateSuccess}
-            kpi={kpi}
+          <ArchiveKpiDialog
+            open={archiveDialogOpen}
+            onClose={() => setArchiveDialogOpen(false)}
+            onSubmitSuccess={handleArchiveSuccess}
+            kpiId={kpi.id}
+            kpiName={kpi.name}
+          />
+
+          <UnarchiveKpiDialog
+            open={unarchiveDialogOpen}
+            onClose={() => setUnarchiveDialogOpen(false)}
+            onSubmitSuccess={handleUnarchiveSuccess}
+            kpiId={kpi.id}
+            kpiName={kpi.name}
           />
 
           <DeleteKpiDialog

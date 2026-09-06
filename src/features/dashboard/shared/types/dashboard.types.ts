@@ -23,6 +23,8 @@ export interface DashboardKpiItem {
   status: DashboardStatus;
   reportingFrequency?: ReportingFrequency;
   reportingPeriod?: string | null;
+  kpiStatus?: 'ACTIVE' | 'ARCHIVED';
+  archived?: boolean;
 }
 
 export interface DashboardApiResponse {
@@ -65,4 +67,6 @@ export interface KpiPeriodHistoryResponse {
   currentPeriod: string | null;
   organization: string;
   periods: KpiPeriodHistoryItem[];
+  kpiStatus?: 'ACTIVE' | 'ARCHIVED';
+  archived?: boolean;
 }

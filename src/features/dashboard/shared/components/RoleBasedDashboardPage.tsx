@@ -165,6 +165,18 @@ const RoleBasedDashboardPage = ({
     });
   }, [dashboardData, organization, search, status]);
 
+  const hasActiveFilters = Boolean(
+    search.trim() || (role === 'DASIG_ADMIN' && organization !== 'ALL') || status !== 'ALL'
+  );
+
+  const handleResetFilters = () => {
+    setSearch('');
+    if (role === 'DASIG_ADMIN') {
+      setOrganization('ALL');
+    }
+    setStatus('ALL');
+  };
+
   const topActions =
     role === 'DASIG_ADMIN' ? (
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ justifyContent: 'space-between' }}>
@@ -208,10 +220,13 @@ const RoleBasedDashboardPage = ({
             status={status}
             organization={organization}
             organizations={organizations}
+            showOrganization={role === 'DASIG_ADMIN'}
             organizationLocked={role !== 'DASIG_ADMIN'}
             onSearchChange={setSearch}
             onStatusChange={setStatus}
             onOrganizationChange={setOrganization}
+            onResetFilters={handleResetFilters}
+            hasActiveFilters={hasActiveFilters}
           />
         }
         content={
@@ -238,6 +253,8 @@ const RoleBasedDashboardPage = ({
               kpis={filteredKpis}
               selectedId={null}
               onSelectKpi={handleSelectKpi}
+              hasActiveFilters={hasActiveFilters}
+              onResetFilters={handleResetFilters}
             />
           )
         }
