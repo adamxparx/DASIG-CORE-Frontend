@@ -20,12 +20,14 @@ import Select from '@mui/material/Select';
 import type { SelectChangeEvent } from '@mui/material/Select';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
+import Tab from '@mui/material/Tab';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import Tabs from '@mui/material/Tabs';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useState } from 'react';
@@ -36,10 +38,12 @@ import { committeeService } from '../../committee/api/committeeService';
 import type { CommitteeResponse } from '../../committee/types/committee.types';
 import { reportService } from '../api/reportService';
 import NarrativeReportParser from '../components/NarrativeReportParser';
+import StructuredReportView from '../components/StructuredReportView';
 import type { ReportResponse } from '../types/report.types';
 
 
 export default function ReportGenerationPage() {
+  const [activeTab, setActiveTab] = useState<'generate' | 'history'>('generate');
   const [committees, setCommittees] = useState<CommitteeResponse[]>([]);
   const [selectedCommitteeId, setSelectedCommitteeId] = useState<string>('');
 
@@ -172,6 +176,8 @@ export default function ReportGenerationPage() {
     }
     setPeriodFrom('');
     setPeriodTo('');
+    // The narrative viewer lives on the Generate tab, so jump there to actually show it.
+    setActiveTab('generate');
   };
 
   // Generate new report
@@ -270,10 +276,28 @@ export default function ReportGenerationPage() {
 
         <Divider />
 
-        {/* Primary Content Grid */}
-        <Box
+        {/* Tabs */}
+        <Tabs
+          value={activeTab}
+          onChange={(_e, value: 'generate' | 'history') => setActiveTab(value)}
           sx={{
-            display: 'grid',
+            minHeight: 0,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            '& .MuiTab-root': { textTransform: 'none', fontWeight: 700, minHeight: 0, py: 1.5 },
+            '& .MuiTabs-indicator': { bgcolor: '#426ef0' },
+          }}
+        >
+          <Tab value="generate" label="Generate Report" />
+          <Tab value="history" label="Reports History" />
+        </Tabs>
+
+        {/* Generate Report Tab */}
+        <Box
+          role="tabpanel"
+          hidden={activeTab !== 'generate'}
+          sx={{
+            display: activeTab === 'generate' ? 'grid' : 'none',
             gridTemplateColumns: { xs: '1fr', lg: '350px 1fr' },
             gap: 4,
             alignItems: 'start',
@@ -518,7 +542,11 @@ export default function ReportGenerationPage() {
                 <Divider />
 
                 <Box sx={{ maxHeight: '600px', overflowY: 'auto', pr: 1 }}>
-                  <NarrativeReportParser key={activeReport.id} text={activeReport.narrativeText} />
+                  {activeReport.sections && activeReport.sections.length > 0 ? (
+                    <StructuredReportView key={activeReport.id} sections={activeReport.sections} />
+                  ) : (
+                    <NarrativeReportParser key={activeReport.id} text={activeReport.narrativeText} />
+                  )}
                 </Box>
               </Stack>
             ) : (
@@ -530,7 +558,7 @@ export default function ReportGenerationPage() {
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360 }}>
                   {reportScope
-                    ? "Configure a date range on the left and trigger 'Generate AI Narrative' to generate a report, or select a history record below."
+                    ? "Configure a date range on the left and trigger 'Generate AI Narrative' to generate a report, or open one from the Historical Reports Log tab."
                     : 'Choose a Report Scope on the left — Committee Report or KPI Performance Report — to get started.'}
                 </Typography>
               </Stack>
@@ -538,11 +566,10 @@ export default function ReportGenerationPage() {
           </Card>
         </Box>
 
-        {/* Historical Reports Section */}
-        <Stack spacing={2} sx={{ mt: 2 }}>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: 'text.primary', letterSpacing: '-0.3px' }}>
-            Historical Reports Log
-          </Typography>
+        {/* Historical Reports Log Tab */}
+        <Box role="tabpanel" hidden={activeTab !== 'history'}>
+        {activeTab === 'history' && (
+        <Stack spacing={2}>
 
           {!isHistoryLoading && historyReports.length > 0 && (
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
@@ -711,6 +738,8 @@ export default function ReportGenerationPage() {
             </TableContainer>
           )}
         </Stack>
+        )}
+        </Box>
       </Stack>
 
       {/* Success/Error Toast */}

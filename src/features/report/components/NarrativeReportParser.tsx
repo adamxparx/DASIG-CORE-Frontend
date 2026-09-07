@@ -11,6 +11,8 @@ import Typography from '@mui/material/Typography';
 
 interface NarrativeReportParserProps {
   text: string;
+  /** Rendered at the end of the last line of text (e.g. per-section source reference badges). */
+  trailingInline?: ReactNode;
 }
 
 const INLINE_FORMAT_PATTERN = /\*\*(.+?)\*\*|\*(.+?)\*/g;
@@ -56,7 +58,7 @@ function formatInlineBold(text: string): ReactNode[] | string {
   return nodes;
 }
 
-export default function NarrativeReportParser({ text }: NarrativeReportParserProps) {
+export default function NarrativeReportParser({ text, trailingInline }: NarrativeReportParserProps) {
   if (!text) {
     return (
       <Typography variant="body1" color="text.secondary" sx={{ fontStyle: 'italic' }}>
@@ -337,10 +339,12 @@ export default function NarrativeReportParser({ text }: NarrativeReportParserPro
         }
 
         // Paragraph Block
+        const isLastBlock = blockIdx === blocks.length - 1;
         return (
           <Typography
             key={blockIdx}
             variant="body1"
+            component={isLastBlock && trailingInline ? 'div' : 'p'}
             sx={{
               lineHeight: 1.7,
               color: 'text.secondary',
@@ -348,9 +352,15 @@ export default function NarrativeReportParser({ text }: NarrativeReportParserPro
             }}
           >
             {formatInlineBold(block.text)}
+            {isLastBlock && trailingInline}
           </Typography>
         );
       })}
+      {/* If the text ends in a table/list rather than a paragraph, there's no line to append
+          the trailing content to — fall back to placing it right after, still label-free and compact. */}
+      {trailingInline && blocks.length > 0 && blocks[blocks.length - 1].type !== 'paragraph' && (
+        <Box sx={{ mt: -1.5 }}>{trailingInline}</Box>
+      )}
     </Stack>
   );
 }
