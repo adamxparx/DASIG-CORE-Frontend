@@ -1,330 +1,458 @@
+import { type FormEvent, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import Container from '@mui/material/Container';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useNavigate } from 'react-router-dom';
+import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import AssignmentTurnedInOutlinedIcon from '@mui/icons-material/AssignmentTurnedInOutlined';
+import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import dasig_logo from '../../../assets/dasig_logo.svg';
-import collaborationConcept from '../../../assets/collaboration_concept.png';
-import { routes } from '../../../routes';
+import { useLogin } from '../../auth/hooks/useLogin';
 
 const LandingPage = () => {
-  const navigate = useNavigate();
+  const location = useLocation();
+  const successMessage = (location.state as { message?: string } | null)?.message;
 
-  const handleGoToLogin = () => {
-    navigate(routes.auth);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+
+  const { login, error, isLoading } = useLogin();
+
+  const getEmailError = (value: string): string => {
+    if (!value.trim()) {
+      return 'Email address is required.';
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value.trim())) {
+      return 'Please enter a valid email address.';
+    }
+    return '';
   };
+
+  const getPasswordError = (value: string): string => {
+    if (!value) {
+      return 'Password is required.';
+    }
+    return '';
+  };
+
+  const emailError = emailTouched ? getEmailError(email) : '';
+  const passwordError = passwordTouched ? getPasswordError(password) : '';
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setEmailTouched(true);
+    setPasswordTouched(true);
+
+    const emailErr = getEmailError(email);
+    const passwordErr = getPasswordError(password);
+
+    if (emailErr || passwordErr) {
+      return;
+    }
+
+    void login({ username: email.trim(), password });
+  };
+
+  const featureHighlights = [
+    {
+      icon: <AssignmentTurnedInOutlinedIcon sx={{ color: 'primary.main', fontSize: 20 }} />,
+      title: 'Standardized KPI Tracking',
+      description: 'Streamlined submission workflows for administrators, committee leads, and members.',
+    },
+    {
+      icon: <InsightsOutlinedIcon sx={{ color: 'primary.main', fontSize: 20 }} />,
+      title: 'Real-Time Progress Metrics',
+      description: 'Live operational indicators and milestone monitoring across consortium units.',
+    },
+    {
+      icon: <DescriptionOutlinedIcon sx={{ color: 'primary.main', fontSize: 20 }} />,
+      title: 'Auditable Executive Reports',
+      description: 'Consolidated reporting and data export tailored for consortium governance.',
+    },
+  ];
 
   return (
     <Box
       sx={{
         minHeight: '100vh',
+        height: { md: '100vh' },
+        maxHeight: { md: '100vh' },
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: '#FFFFFF', // Modern high-contrast pure white background
-        color: '#0F172A', // Slate dark headings
+        bgcolor: '#F8FAFC',
+        backgroundImage: 'radial-gradient(ellipse 70% 40% at 50% -10%, rgba(66, 110, 240, 0.07), transparent 70%)',
+        color: '#0F172A',
         overflowX: 'hidden',
-        position: 'relative',
+        overflowY: { xs: 'auto', md: 'hidden' },
       }}
     >
-      {/* Navbar / Header */}
+      {/* Top Header */}
       <Box
         component="header"
         sx={{
-          py: 2.5,
-          px: { xs: 4, sm: 8, md: 10 },
+          py: 1.5,
+          px: { xs: 2.5, sm: 4, md: 6 },
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          borderBottom: 1,
-          borderColor: 'rgba(0, 0, 0, 0.06)',
-          bgcolor: 'rgba(255, 255, 255, 0.8)',
-          backdropFilter: 'blur(10px)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
+          bgcolor: 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(8px)',
+          borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
+          flexShrink: 0,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
           <Box
             component="img"
             src={dasig_logo}
             alt="DASIG Logo"
-            sx={{ width: 52, height: 52, objectFit: 'contain', borderRadius: 1.5 }}
+            sx={{ width: 40, height: 40, objectFit: 'contain' }}
           />
-          <Typography variant="h6" sx={{ fontWeight: 800, color: '#0F172A', letterSpacing: '0.5px' }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#0F172A', letterSpacing: '-0.2px' }}>
             DASIG-CORE
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          onClick={handleGoToLogin}
-          sx={{
-            textTransform: 'none',
-            fontWeight: 700,
-            borderRadius: 2,
-            px: 3.5,
-            py: 0.85,
-            borderColor: 'rgba(15, 23, 42, 0.15)',
-            color: '#475569', // Muted slate text
-            '&:hover': {
-              borderColor: '#0284C7', // Sky blue hover
-              color: '#0284C7',
-              bgcolor: 'rgba(2, 132, 199, 0.04)',
-            },
-          }}
-        >
-          Sign In
-        </Button>
       </Box>
 
-      {/* Main Split Section - Far Left Layout */}
+      {/* Main Content Area: Split Hero */}
       <Box
+        component="main"
         sx={{
           flexGrow: 1,
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', md: '1.2fr 0.8fr' }, // Stretches split screen across entire width
-          minHeight: 'calc(100vh - 80px)',
+          display: 'flex',
           alignItems: 'center',
-          position: 'relative',
-          width: '100%',
-          px: { xs: 4, sm: 8, md: 10, lg: 12 }, // comfortable bezel spacing, shifted to the far left
+          minHeight: { md: 0 },
+          py: { xs: 3.5, sm: 4.5, md: 0 },
         }}
       >
-        {/* Backing decorative glow bubble (larger, left-aligned) */}
-        <Box
-          sx={{
-            position: 'absolute',
-            width: '750px',
-            height: '750px',
-            borderRadius: '50%',
-            bgcolor: 'rgba(66, 110, 240, 0.03)', // Subtle royal blue back glow
-            filter: 'blur(120px)',
-            zIndex: 0,
-            pointerEvents: 'none',
-            top: '40%',
-            left: '10%',
-            transform: 'translate(-50%, -50%)',
-          }}
-        />
-
-        {/* Left Column: Branding and Text aligned to the far left */}
-        <Box
-          sx={{
-            py: { xs: 8, md: 12 },
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'flex-start', // All alignment on the left side
-            textAlign: 'left', // Left text alignment
-            zIndex: 2,
-            width: '100%',
-          }}
-        >
-          {/* Logo & Software Title Row */}
+        <Container maxWidth="lg" sx={{ my: { md: 'auto' }, px: { xs: 2.5, sm: 3, md: 4 } }}>
           <Box
             sx={{
-              display: 'flex',
-              flexDirection: { xs: 'column', sm: 'row' },
-              alignItems: { xs: 'flex-start', sm: 'center' },
-              gap: 3.5,
-              mb: 2.5,
-              width: '100%',
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: '1.15fr 0.85fr' },
+              gap: { xs: 0, md: 0 },
+              alignItems: 'stretch',
             }}
           >
-            {/* Logo Frame */}
+            {/* Left Column: Brand & Context */}
             <Box
               sx={{
-                display: 'inline-flex',
-                p: 1.75,
-                borderRadius: '24px',
-                bgcolor: 'rgba(66, 110, 240, 0.03)',
-                border: '1px solid rgba(66, 110, 240, 0.12)',
-                boxShadow: '0 8px 30px rgba(0, 0, 0, 0.04)',
-                transition: 'transform 0.4s ease',
-                '&:hover': {
-                  transform: 'scale(1.05)',
-                },
+                pr: { md: 5, lg: 7 },
+                py: { md: 2 },
+                order: { xs: 2, md: 1 },
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+              }}
+            >
+              <Typography
+                component="h1"
+                sx={{
+                  fontWeight: 800,
+                  fontSize: { xs: '1.75rem', sm: '2.1rem', md: '2.35rem' },
+                  letterSpacing: '-0.6px',
+                  lineHeight: 1.18,
+                  color: '#0F172A',
+                  mb: 1.75,
+                }}
+              >
+                Consortium Oversight and Reporting Environment
+              </Typography>
+
+              <Typography
+                variant="body1"
+                sx={{
+                  color: '#475569',
+                  fontSize: { xs: '0.925rem', md: '1rem' },
+                  lineHeight: 1.6,
+                  mb: 2.75,
+                  maxWidth: 540,
+                }}
+              >
+                DASIG-CORE centralizes KPI submission, verification, and governance. Empowering DASIG administrators,
+                committee leads, and members with timely metrics and auditable reporting.
+              </Typography>
+
+              {/* Feature Highlights Cards */}
+              <Stack spacing={1.5} sx={{ mb: { xs: 2, md: 0 } }}>
+                {featureHighlights.map((feat) => (
+                  <Box
+                    key={feat.title}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 1.75,
+                      p: 1.5,
+                      bgcolor: '#FFFFFF',
+                      borderRadius: 2.5,
+                      border: '1px solid rgba(226, 232, 240, 0.95)',
+                      boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+                      transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                      '&:hover': {
+                        borderColor: 'rgba(66, 110, 240, 0.25)',
+                        boxShadow: '0 4px 12px rgba(15, 23, 42, 0.06)',
+                      },
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        p: 1,
+                        borderRadius: 2,
+                        bgcolor: 'rgba(66, 110, 240, 0.08)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {feat.icon}
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1E293B', fontSize: '0.875rem', mb: 0.25 }}>
+                        {feat.title}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#64748B', lineHeight: 1.4, fontSize: '0.8rem' }}>
+                        {feat.description}
+                      </Typography>
+                    </Box>
+                  </Box>
+                ))}
+              </Stack>
+            </Box>
+
+            {/* Right Column: Unboxed Login Form with Separator */}
+            <Box
+              sx={{
+                pl: { md: 5, lg: 7 },
+                py: { md: 2 },
+                pb: { xs: 4, md: 2 },
+                mb: { xs: 3, md: 0 },
+                borderLeft: { md: '1px solid rgba(226, 232, 240, 0.85)' },
+                borderBottom: { xs: '1px solid rgba(226, 232, 240, 0.85)', md: 'none' },
+                order: { xs: 1, md: 2 },
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
               }}
             >
               <Box
-                component="img"
-                src={dasig_logo}
-                alt="DASIG-CORE Logo"
+                component="form"
+                noValidate
+                onSubmit={handleSubmit}
                 sx={{
-                  width: 120, // Enlarged slightly so "CORE" text in the logo stays readable
-                  height: 120,
-                  borderRadius: '16px',
-                  objectFit: 'contain',
+                  width: '100%',
+                  maxWidth: { xs: '100%', sm: 420 },
+                  mx: 'auto',
                 }}
-              />
+              >
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h5" component="h2" sx={{ fontWeight: 800, color: '#0F172A', letterSpacing: '-0.3px', fontSize: { xs: '1.4rem', md: '1.6rem' } }}>
+                  Sign In
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#64748B', mt: 0.75, fontSize: '0.875rem' }}>
+                  Enter your consortium credentials to access your dashboard.
+                </Typography>
+              </Box>
+
+              {successMessage && !error && (
+                <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
+                  {successMessage}
+                </Alert>
+              )}
+
+              {error && (
+                <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+                  {error}
+                </Alert>
+              )}
+
+              <Stack spacing={2.5}>
+                <TextField
+                  fullWidth
+                  id="email-input"
+                  name="email"
+                  label="Email Address"
+                  type="email"
+                  placeholder="you@institution.org"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => setEmailTouched(true)}
+                  autoComplete="email"
+                  required
+                  error={Boolean(emailError)}
+                  helperText={emailError}
+                  disabled={isLoading}
+                  slotProps={{
+                    htmlInput: {
+                      'aria-required': 'true',
+                      'aria-invalid': Boolean(emailError),
+                      'aria-describedby': emailError ? 'email-helper-text' : undefined,
+                    },
+                    formHelperText: {
+                      id: 'email-helper-text',
+                      sx: { mx: 0, mt: 0.75, fontSize: '0.8rem', fontWeight: 500 },
+                    },
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <EmailOutlinedIcon
+                            sx={{
+                              color: emailError ? 'error.main' : '#94A3B8',
+                              fontSize: 20,
+                              transition: 'color 0.2s ease',
+                            }}
+                          />
+                        </InputAdornment>
+                      ),
+                      sx: {
+                        borderRadius: 2,
+                        bgcolor: '#FFFFFF',
+                      },
+                    },
+                  }}
+                />
+
+                <TextField
+                  fullWidth
+                  id="password-input"
+                  name="password"
+                  label="Password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onBlur={() => setPasswordTouched(true)}
+                  autoComplete="current-password"
+                  required
+                  error={Boolean(passwordError)}
+                  helperText={passwordError}
+                  disabled={isLoading}
+                  slotProps={{
+                    htmlInput: {
+                      'aria-required': 'true',
+                      'aria-invalid': Boolean(passwordError),
+                      'aria-describedby': passwordError ? 'password-helper-text' : undefined,
+                    },
+                    formHelperText: {
+                      id: 'password-helper-text',
+                      sx: { mx: 0, mt: 0.75, fontSize: '0.8rem', fontWeight: 500 },
+                    },
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LockOutlinedIcon
+                            sx={{
+                              color: passwordError ? 'error.main' : '#94A3B8',
+                              fontSize: 20,
+                              transition: 'color 0.2s ease',
+                            }}
+                          />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                            onClick={() => setShowPassword((prev) => !prev)}
+                            edge="end"
+                            size="small"
+                            sx={{ color: '#94A3B8' }}
+                          >
+                            {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                      sx: {
+                        borderRadius: 2,
+                        bgcolor: '#FFFFFF',
+                      },
+                    },
+                  }}
+                />
+
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  disabled={isLoading}
+                  aria-busy={isLoading}
+                  sx={{
+                    mt: 0.5,
+                    py: 1.35,
+                    borderRadius: 2,
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    fontSize: '0.95rem',
+                    bgcolor: 'primary.main',
+                    color: '#FFFFFF',
+                    boxShadow: '0 4px 14px rgba(66, 110, 240, 0.3)',
+                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      bgcolor: '#325ad8',
+                      boxShadow: '0 6px 20px rgba(66, 110, 240, 0.4)',
+                      transform: 'translateY(-1px)',
+                    },
+                    '&:active': {
+                      transform: 'translateY(0px)',
+                      boxShadow: '0 2px 8px rgba(66, 110, 240, 0.3)',
+                    },
+                    '&:focus-visible': {
+                      outline: '2px solid #426ef0',
+                      outlineOffset: '2px',
+                    },
+                    '&.Mui-disabled': {
+                      bgcolor: 'rgba(66, 110, 240, 0.65)',
+                      color: '#FFFFFF',
+                    },
+                  }}
+                >
+                  {isLoading ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
+                      <CircularProgress size={20} color="inherit" />
+                      <span>Signing in…</span>
+                    </Box>
+                  ) : (
+                    'Sign In'
+                  )}
+                </Button>
+              </Stack>
             </Box>
-
-            <Typography
-              variant="h1"
-              component="h1"
-              sx={{
-                fontWeight: 900,
-                color: '#0F172A',
-                lineHeight: 1.0,
-                letterSpacing: '-2.5px',
-                fontSize: { xs: '3.75rem', sm: '5.25rem', md: '6.5rem' }, // Gigantic Title
-              }}
-            >
-              DASIG-CORE
-            </Typography>
           </Box>
-
-          <Typography
-            variant="subtitle1"
-            sx={{
-              fontWeight: 800,
-              color: '#0284C7', // Radiant sky blue subtitle
-              textTransform: 'uppercase',
-              letterSpacing: '5px',
-              mb: 4.5,
-              pl: { xs: 0, sm: 0.5 },
-              fontSize: { xs: '1.15rem', md: '1.35rem' }, // Enlarged Subtitle
-            }}
-          >
-            Consortium KPI Platform
-          </Typography>
-
-          <Typography
-            variant="body1"
-            sx={{
-              color: '#475569', // Beautiful slate body text
-              mb: 7,
-              lineHeight: 1.9,
-              fontSize: { xs: '1.25rem', md: '1.45rem' }, // Enlarged Description text
-              maxWidth: 720, // Clean width for single-column paragraph readability
-            }}
-          >
-            A high-performance key performance indicator tracking and analytics hub tailored for Committee Leads. Empowers members, Committee Leads, and administrators to seamlessly manage submissions, monitor real-time metrics, and generate precise reports.
-          </Typography>
-
-          {/* Get Started Button (Bigger, Glassy Sheen) */}
-          <Button
-            variant="contained"
-            onClick={handleGoToLogin}
-            sx={{
-              px: 9,
-              py: 2.75, // Significantly larger padding
-              fontWeight: 900,
-              borderRadius: '18px', // Premium rounded edges
-              textTransform: 'none',
-              fontSize: '1.4rem', // Bigger button text
-              position: 'relative',
-              overflow: 'hidden',
-              bgcolor: '#0284C7', // Sky blue
-              color: '#FFFFFF',
-              boxShadow: '0 8px 32px 0 rgba(2, 132, 199, 0.35)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              '&:hover': {
-                bgcolor: '#0369A1',
-                boxShadow: '0 12px 45px 0 rgba(2, 132, 199, 0.5)',
-                transform: 'translateY(-2px)',
-              },
-              // Glass sheen sweep effect
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: '-100%',
-                width: '60%',
-                height: '100%',
-                background: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0) 100%)',
-                transform: 'skewX(-25deg)',
-                animation: 'shine 4.5s infinite ease-in-out',
-              },
-              '@keyframes shine': {
-                '0%': {
-                  left: '-100%',
-                },
-                '15%': {
-                  left: '150%',
-                },
-                '100%': {
-                  left: '150%',
-                },
-              },
-            }}
-          >
-            Get Started
-          </Button>
         </Box>
-
-        {/* Right Column: Floating PNG Illustration */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            position: 'relative',
-            width: '100%',
-            height: '100%',
-            p: { xs: 1, sm: 2, md: 3 }, // Minimal padding to allow illustration to expand fully
-          }}
-        >
-          {/* Circular glow bubble behind illustration */}
-          <Box
-            sx={{
-              position: 'absolute',
-              width: '500px',
-              height: '500px',
-              borderRadius: '50%',
-              bgcolor: 'rgba(66, 110, 240, 0.06)', // Subtle Royal Blue aura
-              filter: 'blur(80px)',
-              zIndex: 0,
-              pointerEvents: 'none',
-            }}
-          />
-
-          {/* Floating Illustration with rounded corners */}
-          <Box
-            component="img"
-            src={collaborationConcept}
-            alt="DASIG-CORE Circular Collaboration Concept"
-            sx={{
-              width: '100%',
-              height: 'auto',
-              maxWidth: { xs: '450px', sm: '550px', md: '620px', lg: '680px' },
-              maxHeight: { xs: '450px', sm: '550px', md: '620px', lg: '680px' },
-              objectFit: 'contain',
-              zIndex: 1,
-              borderRadius: '40px', // Round the image corners beautifully!
-              border: '1px solid rgba(66, 110, 240, 0.08)', // Subtle neon boundary outlining the rounded corners
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.08)', // Premium depth shadow
-              filter: 'drop-shadow(0px 16px 35px rgba(0, 0, 0, 0.06))',
-              animation: 'float 6s ease-in-out infinite', // Smooth floating animation
-              '@keyframes float': {
-                '0%': {
-                  transform: 'translateY(0px)',
-                },
-                '50%': {
-                  transform: 'translateY(-15px)',
-                },
-                '100%': {
-                  transform: 'translateY(0px)',
-                },
-              },
-            }}
-          />
-        </Box>
+        </Container>
       </Box>
 
-      {/* Footer */}
+      {/* Clean Minimalist Footer */}
       <Box
         component="footer"
         sx={{
-          py: 4,
+          py: { xs: 2, md: 1.5 },
+          px: 3,
           textAlign: 'center',
-          borderTop: '1px solid rgba(0, 0, 0, 0.06)',
-          bgcolor: 'rgba(249, 250, 251, 0.8)',
-          position: 'relative',
-          zIndex: 2,
+          borderTop: '1px solid rgba(226, 232, 240, 0.8)',
+          bgcolor: '#FFFFFF',
+          flexShrink: 0,
+          mt: { xs: 4, md: 0 },
         }}
       >
-        <Typography variant="body2" color="#475569">
-          &copy; {new Date().getFullYear()} DASIG-CORE. All rights reserved.
+        <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 500 }}>
+          &copy; {new Date().getFullYear()} DASIG-CORE
         </Typography>
       </Box>
     </Box>
