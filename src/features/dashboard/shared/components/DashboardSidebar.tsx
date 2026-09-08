@@ -69,67 +69,120 @@ interface TutorialStep {
   points: string[];
 }
 
-const adminTutorialSteps: TutorialStep[] = [
-  {
-    label: 'Welcome',
-    title: 'Welcome to DASIG-CORE',
-    points: [
-      "This short tutorial walks you through the main things you can do as an admin.",
-      "Use Next and Back to move through the steps, or Skip to close it at any time.",
-      "You can reopen this tutorial anytime from Quick Guide in the sidebar.",
-    ],
-  },
-  {
-    label: 'Track KPIs',
-    title: 'Track KPIs from the Dashboard',
-    points: [
-      "The Admin Dashboard lists every KPI defined for the consortium.",
-      "Switch between the Active KPIs and Archived KPIs tabs to see either group.",
-      "Use the search box and the organization/status filters to narrow the list down.",
-    ],
-  },
-  {
-    label: 'Create a KPI',
-    title: 'Create a New KPI',
-    points: [
-      "From the Active KPIs tab, click Create KPI.",
-      "Fill in the name, description, target value, deadline, and owning organization.",
-      "Save the form to add it to the active list, where progress will be tracked automatically.",
-    ],
-  },
-  {
-    label: 'Manage Users',
-    title: 'Manage Users, Organizations & Committees',
-    points: [
-      "Open User Administration in the sidebar to expand its submenu.",
-      "Use Users to add or edit accounts, Organizations to manage consortium units, and Committees to manage committee records.",
-    ],
-  },
-  {
-    label: 'Alerts',
-    title: 'Review Alerts',
-    points: [
-      "Open Alerts to see items flagged for your attention across the consortium.",
-      "Acknowledge an alert once it's handled — the badge count on the sidebar updates automatically.",
-    ],
-  },
-  {
-    label: 'Reports',
-    title: 'Generate Reports',
-    points: [
-      "Open Report Generation to export consortium-wide KPI performance reports.",
-      "These reports are useful for sharing progress with stakeholders outside the platform.",
-    ],
-  },
-  {
-    label: 'Done',
-    title: "You're all set",
-    points: [
-      "That covers the core admin workflow: tracking KPIs, managing users, handling alerts, and generating reports.",
-      "Reopen this tutorial anytime from Quick Guide in the sidebar.",
-    ],
-  },
-];
+const tutorialStepsByRole: Partial<Record<UserRole, TutorialStep[]>> = {
+  DASIG_ADMIN: [
+    {
+      label: 'Welcome',
+      title: 'Welcome to DASIG-CORE',
+      points: [
+        "This short tutorial walks you through the main things you can do as an admin.",
+        "Use Next and Back to move through the steps, or Skip to close it at any time.",
+        "You can reopen this tutorial anytime from Quick Guide in the sidebar.",
+      ],
+    },
+    {
+      label: 'Track KPIs',
+      title: 'Track KPIs from the Dashboard',
+      points: [
+        "The Admin Dashboard lists every KPI defined for the consortium.",
+        "Switch between the Active KPIs and Archived KPIs tabs to see either group.",
+        "Use the search box and the organization/status filters to narrow the list down.",
+      ],
+    },
+    {
+      label: 'Create a KPI',
+      title: 'Create a New KPI',
+      points: [
+        "From the Active KPIs tab, click Create KPI.",
+        "Fill in the name, description, target value, deadline, and owning organization.",
+        "Save the form to add it to the active list, where progress will be tracked automatically.",
+      ],
+    },
+    {
+      label: 'Manage Users',
+      title: 'Manage Users, Organizations & Committees',
+      points: [
+        "Open User Administration in the sidebar to expand its submenu.",
+        "Use Users to add or edit accounts, Organizations to manage consortium units, and Committees to manage committee records.",
+      ],
+    },
+    {
+      label: 'Alerts',
+      title: 'Review Alerts',
+      points: [
+        "Open Alerts to see items flagged for your attention across the consortium.",
+        "Acknowledge an alert once it's handled — the badge count on the sidebar updates automatically.",
+      ],
+    },
+    {
+      label: 'Reports',
+      title: 'Generate Reports',
+      points: [
+        "Open Report Generation to export consortium-wide KPI performance reports.",
+        "These reports are useful for sharing progress with stakeholders outside the platform.",
+      ],
+    },
+    {
+      label: 'Done',
+      title: "You're all set",
+      points: [
+        "That covers the core admin workflow: tracking KPIs, managing users, handling alerts, and generating reports.",
+        "Reopen this tutorial anytime from Quick Guide in the sidebar.",
+      ],
+    },
+  ],
+  TBI_MANAGER: [
+    {
+      label: 'Welcome',
+      title: 'Welcome to DASIG-CORE',
+      points: [
+        "This short tutorial walks you through the main things you can do as a Committee Lead.",
+        "Use Next and Back to move through the steps, or Skip to close it at any time.",
+        "You can reopen this tutorial anytime from Quick Guide in the sidebar.",
+      ],
+    },
+    {
+      label: 'Track KPIs',
+      title: 'Track Your Committee’s KPIs',
+      points: [
+        "The Committee KPI Dashboard lists the KPIs assigned to your committee.",
+        "Review each KPI's progress toward its target and deadline at a glance.",
+      ],
+    },
+    {
+      label: 'Submit KPI',
+      title: 'Submit an Official KPI Entry',
+      points: [
+        "Open Submit KPI, choose the assigned KPI and reporting period, then enter the value achieved.",
+        "If a member has already submitted an internal value for that period, it's pre-filled for you to confirm or adjust.",
+        "Your submission is saved as an approved official final contribution for Admin dashboards and reports.",
+      ],
+    },
+    {
+      label: 'Review Members',
+      title: 'Review Member Submissions',
+      points: [
+        "Open Submission History to see your committee's full submission log.",
+        "Pending member (Staff) submissions can be approved to count as official progress, or returned with feedback for correction.",
+      ],
+    },
+    {
+      label: 'Notifications',
+      title: 'Stay on Top of Deadlines',
+      points: [
+        "Open Notifications for deadline reminders and updates on your committee's assigned KPIs.",
+      ],
+    },
+    {
+      label: 'Done',
+      title: "You're all set",
+      points: [
+        "That covers the core Committee Lead workflow: tracking assigned KPIs, submitting official entries, and reviewing member submissions.",
+        "Reopen this tutorial anytime from Quick Guide in the sidebar.",
+      ],
+    },
+  ],
+};
 
 const adminPaths: Record<string, string> = {
   dashboard: routes.adminDashboard,
@@ -162,6 +215,7 @@ const roleMenus: Record<UserRole, SidebarItem[]> = {
     { key: 'notifications', label: 'Notifications', icon: <NotificationsOutlinedIcon /> },
     { key: 'submit', label: 'Submit KPI', icon: <PostAddOutlinedIcon /> },
     { key: 'history', label: 'Submission History', icon: <AssignmentTurnedInOutlinedIcon /> },
+    { key: 'guide', label: 'Quick Guide', icon: <HelpOutlineOutlinedIcon /> },
   ],
   STAFF: [
     { key: 'dashboard', label: 'Member Dashboard', icon: <SpaceDashboardOutlinedIcon /> },
@@ -279,6 +333,8 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
   const { unacknowledgedCount } = useUnacknowledgedAlertCount(showAlertBadge);
 
   const accent = roleAccent[role];
+  const tutorialSteps = tutorialStepsByRole[role] ?? [];
+  const currentTutorialStep = tutorialSteps[tutorialStep] ?? tutorialSteps[0];
 
   const pathByKey =
     role === 'DASIG_ADMIN' ? adminPaths : role === 'STAFF' ? staffPaths : tbiPaths;
@@ -671,7 +727,7 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
         </DialogTitle>
         <DialogContent sx={{ pb: 2 }}>
           <Stepper activeStep={tutorialStep} alternativeLabel sx={{ mb: 3 }}>
-            {adminTutorialSteps.map((step) => (
+            {tutorialSteps.map((step) => (
               <Step key={step.label}>
                 <StepLabel
                   sx={{
@@ -688,10 +744,10 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
           </Stepper>
 
           <Typography sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#1A1C1E', mb: 1 }}>
-            {adminTutorialSteps[tutorialStep].title}
+            {currentTutorialStep?.title}
           </Typography>
           <List sx={{ py: 0, listStyleType: 'disc', pl: 3 }}>
-            {adminTutorialSteps[tutorialStep].points.map((point) => (
+            {currentTutorialStep?.points.map((point) => (
               <Box component="li" key={point} sx={{ display: 'list-item', mb: 0.75 }}>
                 <Typography sx={{ fontSize: '0.9rem', color: 'text.secondary' }}>{point}</Typography>
               </Box>
@@ -726,7 +782,7 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
             </Button>
             <Button
               onClick={() => {
-                if (tutorialStep === adminTutorialSteps.length - 1) {
+                if (tutorialStep === tutorialSteps.length - 1) {
                   setGuideDialogOpen(false);
                   return;
                 }
@@ -746,7 +802,7 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
                 '&:hover': { bgcolor: accent.dark, boxShadow: 'none' },
               }}
             >
-              {tutorialStep === adminTutorialSteps.length - 1 ? 'Finish' : 'Next'}
+              {tutorialStep === tutorialSteps.length - 1 ? 'Finish' : 'Next'}
             </Button>
           </Stack>
         </DialogActions>
