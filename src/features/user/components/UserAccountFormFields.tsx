@@ -1,14 +1,21 @@
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import Grid from '@mui/material/Grid';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
+import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import { useState } from 'react';
 import type { OrganizationResponse } from '../../organization/types/organization.types';
 import type { AccountRole, CreateUserFormValues } from '../types/user.types';
 import { ROLE_OPTIONS } from '../utils/userDisplay';
 import { requiresOrganization } from '../utils/userForm';
+import CommitteePickerDialog from './CommitteePickerDialog';
+import type { CommitteeResponse } from '../../committee/types/committee.types';
 
 export const userFieldSx = {
   '& .MuiOutlinedInput-root': {
@@ -23,8 +30,10 @@ interface UserAccountFormFieldsProps {
   isSubmitting: boolean;
   readOnly?: boolean;
   organizationOptions: OrganizationResponse[];
+  committeeOptions: CommitteeResponse[];
   onFieldChange: <K extends keyof CreateUserFormValues>(field: K, value: CreateUserFormValues[K]) => void;
   onRoleChange: (role: AccountRole | '') => void;
+  onCommitteeIdsChange: (ids: number[]) => void;
 }
 
 const UserAccountFormFields = ({
@@ -33,11 +42,28 @@ const UserAccountFormFields = ({
   isSubmitting,
   readOnly = false,
   organizationOptions,
+  committeeOptions,
   onFieldChange,
   onRoleChange,
+  onCommitteeIdsChange,
 }: UserAccountFormFieldsProps) => {
   const fieldsDisabled = isSubmitting || readOnly;
   const showOrganizationField = form.role !== 'DASIG_ADMIN';
+  const showCommitteeField = form.role === 'TBI_MANAGER';
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const organization = organizationOptions.find((o) => o.id === form.organizationId);
+  const availableCommittees = showCommitteeField && organization && Array.isArray(committeeOptions)
+    ? committeeOptions.filter((c) => (c.organizationIds ?? []).includes(organization.id))
+    : [];
+
+  const selectedCommittees = (form.committeeIds ?? [])
+    .map((id) => committeeOptions.find((c) => c.id === id))
+    .filter((c): c is CommitteeResponse => c != null);
+
+  const handleCommitteeConfirm = (ids: number[]) => {
+    onCommitteeIdsChange(ids);
+  };
 
   return (
     <Grid container spacing={2.5}>
@@ -129,6 +155,50 @@ const UserAccountFormFields = ({
           </FormHelperText>
         </FormControl>
       </Grid>
+
+      {showCommitteeField && (
+        <Grid size={{ xs: 12, md: 6 }}>
+          <FieldLabel label="Committees" />
+          <Button
+            variant="outlined"
+            startIcon={<AddOutlinedIcon />}
+            onClick={() => setPickerOpen(true)}
+            disabled={fieldsDisabled || availableCommittees.length === 0}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              borderRadius: 2,
+              borderColor: 'divider',
+              color: 'text.primary',
+              '&:hover': { borderColor: 'primary.main', color: 'primary.main' },
+            }}
+          >
+            Add Committee
+          </Button>
+
+          {selectedCommittees.length > 0 && (
+            <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75, mt: 1 }}>
+              {selectedCommittees.map((committee) => (
+                <Chip
+                  key={committee.id}
+                  label={committee.name}
+                  size="small"
+                  onDelete={fieldsDisabled ? undefined : () => onCommitteeIdsChange(form.committeeIds.filter((id) => id !== committee.id))}
+                  sx={{ borderRadius: 1.5, fontWeight: 500 }}
+                />
+              ))}
+            </Stack>
+          )}
+
+          <CommitteePickerDialog
+            open={pickerOpen}
+            committees={availableCommittees}
+            selectedIds={form.committeeIds}
+            onClose={() => setPickerOpen(false)}
+            onConfirm={handleCommitteeConfirm}
+          />
+        </Grid>
+      )}
     </Grid>
   );
 };

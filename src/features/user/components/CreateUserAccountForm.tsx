@@ -8,6 +8,9 @@ import Typography from '@mui/material/Typography';
 import { type FormEvent, useState } from 'react';
 import { ApiError } from '../../../lib/api/client';
 import type { OrganizationResponse } from '../../organization/types/organization.types';
+import type { CommitteeResponse } from '../../committee/types/committee.types';
+import { committeeService } from '../../committee/api/committeeService';
+import type { UpdateCommitteeRequest } from '../../committee/types/committee.types';
 import { userService } from '../api/userService';
 import type { AccountRole, CreateUserFormValues, UserResponse } from '../types/user.types';
 import {
@@ -20,10 +23,11 @@ import UserAccountFormFields from './UserAccountFormFields';
 
 interface CreateUserAccountFormProps {
   organizations: OrganizationResponse[];
+  committees: CommitteeResponse[];
   onCreated: () => void;
 }
 
-const CreateUserAccountForm = ({ organizations, onCreated }: CreateUserAccountFormProps) => {
+const CreateUserAccountForm = ({ organizations, committees, onCreated }: CreateUserAccountFormProps) => {
   const [form, setForm] = useState<CreateUserFormValues>(emptyUserForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -49,7 +53,34 @@ const CreateUserAccountForm = ({ organizations, onCreated }: CreateUserAccountFo
       ...prev,
       role,
       organizationId: role === 'DASIG_ADMIN' ? '' : prev.organizationId,
+      committeeIds: role === 'TBI_MANAGER' ? (prev.committeeIds ?? []) : [],
     }));
+  };
+
+  const handleCommitteeIdsChange = (ids: number[]) => {
+    setForm((prev) => ({ ...prev, committeeIds: ids }));
+  };
+
+  const syncCommitteesAfterCreate = async (userId: number, committeeIds: number[]) => {
+    for (const committeeId of committeeIds) {
+      const committee = committees.find((c) => c.id === committeeId);
+      if (committee) {
+        const currentLeads = committee.committeeLeadIds ?? [];
+        if (!currentLeads.includes(userId)) {
+          const payload: UpdateCommitteeRequest = {
+            name: committee.name,
+            description: committee.description ?? undefined,
+            organizationIds: committee.organizationIds,
+            committeeLeadIds: [...currentLeads, userId],
+          };
+          try {
+            await committeeService.update(committeeId, payload);
+          } catch {
+            // Ignore sync errors - the user was still created successfully
+          }
+        }
+      }
+    }
   };
 
   const handleSubmit = async (event: FormEvent) => {
@@ -66,6 +97,9 @@ const CreateUserAccountForm = ({ organizations, onCreated }: CreateUserAccountFo
 
     try {
       const created = await userService.create(formValuesToUserPayload(form));
+      if (created.role === 'TBI_MANAGER' && form.committeeIds.length > 0) {
+        await syncCommitteesAfterCreate(created.id, form.committeeIds);
+      }
       resetForm();
       onCreated();
       setCreatedUser(created);
@@ -94,8 +128,10 @@ const CreateUserAccountForm = ({ organizations, onCreated }: CreateUserAccountFo
           errors={errors}
           isSubmitting={isSubmitting}
           organizationOptions={activeOrganizations}
+          committeeOptions={committees}
           onFieldChange={setField}
           onRoleChange={handleRoleChange}
+          onCommitteeIdsChange={handleCommitteeIdsChange}
         />
 
         <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end', mt: 3 }}>

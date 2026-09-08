@@ -4,8 +4,9 @@ import type { DashboardApiResponse, KpiPeriodHistoryResponse } from '../types/da
 const DASHBOARD_ENDPOINT = '/api/dashboard';
 
 export const dashboardService = {
-  getDashboard(): Promise<DashboardApiResponse> {
-    return apiClient<DashboardApiResponse>(DASHBOARD_ENDPOINT);
+  getDashboard(committeeId?: number): Promise<DashboardApiResponse> {
+    const query = committeeId != null ? `?committeeId=${committeeId}` : '';
+    return apiClient<DashboardApiResponse>(`${DASHBOARD_ENDPOINT}${query}`);
   },
 
   getKpiPeriodHistory(kpiDefinitionId: number): Promise<KpiPeriodHistoryResponse> {

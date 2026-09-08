@@ -1,4 +1,6 @@
+import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
+import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import type { OrganizationFormValues } from '../types/organization.types';
@@ -89,20 +91,23 @@ const OrganizationFormFields = ({
         </Grid>
 
         <Grid size={{ xs: 12, md: 6 }}>
-          <FieldLabel label="Committee" />
-          <TextField
-            fullWidth
-            placeholder="None"
-            value={form.committeeName}
-            disabled
-            hiddenLabel
-            sx={{
-              ...organizationFieldSx,
-              '& .MuiInputBase-input.Mui-disabled': {
-                WebkitTextFillColor: 'text.disabled',
-              },
-            }}
-          />
+          <FieldLabel label="Committees" />
+          {form.committeeNames.length > 0 ? (
+            <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75 }}>
+              {form.committeeNames.map((name) => (
+                <Chip
+                  key={name}
+                  label={name}
+                  size="small"
+                  sx={{ borderRadius: 1.5, fontWeight: 500 }}
+                />
+              ))}
+            </Stack>
+          ) : (
+            <Typography variant="body2" color="text.disabled">
+              None
+            </Typography>
+          )}
         </Grid>
 
         <Grid size={{ xs: 12 }}>

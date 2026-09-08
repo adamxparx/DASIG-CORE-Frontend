@@ -6,22 +6,26 @@ export interface CommitteeResponse {
   description: string | null;
   status: CommitteeStatus | string;
   organizationIds: number[];
+  committeeLeadIds: number[];
 }
 
 export interface CreateCommitteeRequest {
   name: string;
   description?: string;
   organizationIds: number[];
+  committeeLeadIds?: number[];
 }
 
 export interface UpdateCommitteeRequest {
   name: string;
   description?: string;
   organizationIds: number[];
+  committeeLeadIds?: number[];
 }
 
 export interface CommitteeFormValues {
   name: string;
   description: string;
   organizationIds: number[];
+  committeeLeadIds: number[];
 }

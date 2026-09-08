@@ -1,10 +1,11 @@
-import type { AccountRole, CreateUserFormValues, UserResponse } from '../types/user.types';
+import type { AccountRole, CreateUserFormValues, CreateUserRequest, UserResponse } from '../types/user.types';
 
 export const emptyUserForm: CreateUserFormValues = {
   name: '',
   email: '',
   role: '',
   organizationId: '',
+  committeeIds: [],
 };
 
 export const requiresOrganization = (role: CreateUserFormValues['role']) =>
@@ -16,6 +17,7 @@ export function userToFormValues(user: UserResponse): CreateUserFormValues {
     email: user.email,
     role: user.role as AccountRole,
     organizationId: user.organizationId ?? '',
+    committeeIds: user.committeeIds ?? [],
   };
 }
 
@@ -40,8 +42,8 @@ export function validateUserForm(form: CreateUserFormValues): Record<string, str
   return errors;
 }
 
-export function formValuesToUserPayload(form: CreateUserFormValues) {
-  return {
+export function formValuesToUserPayload(form: CreateUserFormValues): CreateUserRequest {
+  const payload: CreateUserRequest = {
     name: form.name.trim(),
     email: form.email.trim(),
     role: form.role as AccountRole,
@@ -49,4 +51,10 @@ export function formValuesToUserPayload(form: CreateUserFormValues) {
       ? { organizationId: form.organizationId as number }
       : {}),
   };
+
+  if (form.role === 'TBI_MANAGER' && form.committeeIds.length > 0) {
+    payload.committeeIds = form.committeeIds;
+  }
+
+  return payload;
 }

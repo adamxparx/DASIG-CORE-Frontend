@@ -86,7 +86,7 @@ const OrganizationsList = ({ organizations, selectedId, onSelect }: Organization
                     }}
                   >
                     <TableCell>{org.name}</TableCell>
-                    <TableCell>{org.committeeName ?? '—'}</TableCell>
+                    <TableCell>{org.committeeNames.length > 0 ? org.committeeNames.join(', ') : '—'}</TableCell>
                     <TableCell>
                       <Typography
                         component="span"

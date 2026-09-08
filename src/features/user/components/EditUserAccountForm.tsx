@@ -8,6 +8,9 @@ import Typography from '@mui/material/Typography';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { ApiError } from '../../../lib/api/client';
 import type { OrganizationResponse } from '../../organization/types/organization.types';
+import type { CommitteeResponse } from '../../committee/types/committee.types';
+import { committeeService } from '../../committee/api/committeeService';
+import type { UpdateCommitteeRequest } from '../../committee/types/committee.types';
 import { userService } from '../api/userService';
 import type { AccountRole, CreateUserFormValues } from '../types/user.types';
 import {
@@ -23,6 +26,7 @@ import type { UserListItem } from './UsersList';
 interface EditUserAccountFormProps {
   user: UserListItem;
   organizations: OrganizationResponse[];
+  committees: CommitteeResponse[];
   onUpdated: () => void;
   onDeactivated: () => void;
   onCancel: () => void;
@@ -45,7 +49,7 @@ function getOrganizationOptions(
   return [currentOrg, ...active];
 }
 
-const EditUserAccountForm = ({ user, organizations, onUpdated, onDeactivated, onCancel }: EditUserAccountFormProps) => {
+const EditUserAccountForm = ({ user, organizations, committees, onUpdated, onDeactivated, onCancel }: EditUserAccountFormProps) => {
   const [form, setForm] = useState<CreateUserFormValues>(() => userToFormValues(user));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -74,7 +78,57 @@ const EditUserAccountForm = ({ user, organizations, onUpdated, onDeactivated, on
       ...prev,
       role,
       organizationId: role === 'DASIG_ADMIN' ? '' : prev.organizationId,
+      committeeIds: role === 'TBI_MANAGER' ? (prev.committeeIds ?? []) : [],
     }));
+  };
+
+  const handleCommitteeIdsChange = (ids: number[]) => {
+    setForm((prev) => ({ ...prev, committeeIds: ids }));
+  };
+
+  const syncCommitteesAfterUpdate = async (userId: number, newCommitteeIds: number[], previousCommitteeIds: number[]) => {
+    const added = newCommitteeIds.filter((id) => !previousCommitteeIds.includes(id));
+    const removed = previousCommitteeIds.filter((id) => !newCommitteeIds.includes(id));
+
+    for (const committeeId of added) {
+      const committee = committees.find((c) => c.id === committeeId);
+      if (committee) {
+        const currentLeads = committee.committeeLeadIds ?? [];
+        if (!currentLeads.includes(userId)) {
+          const payload: UpdateCommitteeRequest = {
+            name: committee.name,
+            description: committee.description ?? undefined,
+            organizationIds: committee.organizationIds,
+            committeeLeadIds: [...currentLeads, userId],
+          };
+          try {
+            await committeeService.update(committeeId, payload);
+          } catch {
+            // Ignore sync errors
+          }
+        }
+      }
+    }
+
+    for (const committeeId of removed) {
+      const committee = committees.find((c) => c.id === committeeId);
+      if (committee) {
+        const currentLeads = committee.committeeLeadIds ?? [];
+        if (currentLeads.includes(userId)) {
+          const payload: UpdateCommitteeRequest = {
+            name: committee.name,
+            description: committee.description ?? undefined,
+            organizationIds: committee.organizationIds,
+            committeeLeadIds: currentLeads.filter((id) => id !== userId),
+          };
+          try {
+            await committeeService.update(committeeId, payload);
+          } catch {
+            // Ignore sync errors
+          }
+        }
+      }
+    }
   };
 
   const handleSubmit = async (event: FormEvent) => {
@@ -94,7 +148,11 @@ const EditUserAccountForm = ({ user, organizations, onUpdated, onDeactivated, on
     setSubmitError(null);
 
     try {
+      const previousCommitteeIds = user.committeeIds ?? [];
       await userService.update(user.id, formValuesToUserPayload(form));
+      if (form.role === 'TBI_MANAGER') {
+        await syncCommitteesAfterUpdate(user.id, form.committeeIds, previousCommitteeIds);
+      }
       onUpdated();
     } catch (err) {
       setSubmitError(err instanceof ApiError ? err.message : 'Unable to update user account. Please try again.');
@@ -123,8 +181,10 @@ const EditUserAccountForm = ({ user, organizations, onUpdated, onDeactivated, on
           isSubmitting={isSubmitting}
           readOnly={isInactive}
           organizationOptions={organizationOptions}
+          committeeOptions={committees}
           onFieldChange={setField}
           onRoleChange={handleRoleChange}
+          onCommitteeIdsChange={handleCommitteeIdsChange}
         />
 
         <Stack

@@ -8,6 +8,9 @@ import Typography from '@mui/material/Typography';
 import { type FormEvent, useState } from 'react';
 import { ApiError } from '../../../lib/api/client';
 import type { OrganizationResponse } from '../../organization/types/organization.types';
+import type { UserResponse } from '../../user/types/user.types';
+import { userService } from '../../user/api/userService';
+import type { UpdateUserRequest } from '../../user/types/user.types';
 import { committeeService } from '../api/committeeService';
 import type { CommitteeFormValues } from '../types/committee.types';
 import {
@@ -19,10 +22,11 @@ import CommitteeFormFields from './CommitteeFormFields';
 
 interface CreateCommitteeFormProps {
   organizations: OrganizationResponse[];
+  users: UserResponse[];
   onCreated: () => void;
 }
 
-const CreateCommitteeForm = ({ organizations, onCreated }: CreateCommitteeFormProps) => {
+const CreateCommitteeForm = ({ organizations, users, onCreated }: CreateCommitteeFormProps) => {
   const [form, setForm] = useState<CommitteeFormValues>(emptyCommitteeForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -38,6 +42,29 @@ const CreateCommitteeForm = ({ organizations, onCreated }: CreateCommitteeFormPr
     setSubmitError(null);
   };
 
+  const syncUsersAfterCreate = async (committeeId: number, leadIds: number[]) => {
+    for (const userId of leadIds) {
+      const user = users.find((u) => u.id === userId);
+      if (user && user.role === 'TBI_MANAGER') {
+        const currentCommitteeIds = user.committeeIds ?? [];
+        if (!currentCommitteeIds.includes(committeeId)) {
+          const payload: UpdateUserRequest = {
+            name: user.name,
+            email: user.email,
+            role: user.role as 'DASIG_ADMIN' | 'TBI_MANAGER' | 'STAFF',
+            organizationId: user.organizationId ?? undefined,
+            committeeIds: [...currentCommitteeIds, committeeId],
+          };
+          try {
+            await userService.update(userId, payload);
+          } catch {
+            // Ignore sync errors
+          }
+        }
+      }
+    }
+  };
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
 
@@ -51,7 +78,10 @@ const CreateCommitteeForm = ({ organizations, onCreated }: CreateCommitteeFormPr
     setSubmitError(null);
 
     try {
-      await committeeService.create(formValuesToPayload(form));
+      const created = await committeeService.create(formValuesToPayload(form));
+      if (form.committeeLeadIds.length > 0) {
+        await syncUsersAfterCreate(created.id, form.committeeLeadIds);
+      }
       resetForm();
       onCreated();
     } catch (err) {
@@ -79,6 +109,7 @@ const CreateCommitteeForm = ({ organizations, onCreated }: CreateCommitteeFormPr
           errors={errors}
           isSubmitting={isSubmitting}
           organizations={organizations}
+          users={users}
           onFieldChange={setField}
         />
 

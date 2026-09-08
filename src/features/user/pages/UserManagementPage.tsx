@@ -9,29 +9,35 @@ import AdminPageLayout from '../../dashboard/shared/components/AdminPageLayout';
 import DashboardHeader from '../../dashboard/shared/components/DashboardHeader';
 import { organizationService } from '../../organization/api/organizationService';
 import type { OrganizationResponse } from '../../organization/types/organization.types';
+import { committeeService } from '../../committee/api/committeeService';
+import type { CommitteeResponse } from '../../committee/types/committee.types';
 import { userService } from '../api/userService';
 import CreateUserAccountForm from '../components/CreateUserAccountForm';
 import EditUserAccountForm from '../components/EditUserAccountForm';
 import UsersList, { type UserListItem } from '../components/UsersList';
 import type { UserResponse } from '../types/user.types';
 
-function toUserListItem(user: UserResponse, organizations: OrganizationResponse[]): UserListItem {
+function toUserListItem(user: UserResponse, organizations: OrganizationResponse[], committees: CommitteeResponse[]): UserListItem {
   const organization = organizations.find((org) => org.id === user.organizationId);
+  const userCommittees = committees.filter((c) => (user.committeeIds ?? []).includes(c.id));
   return {
     ...user,
     organizationName: organization?.name ?? null,
+    committeeNames: userCommittees.map((c) => c.name),
   };
 }
 
 function mapUsersToListItems(
   users: UserResponse[],
   organizations: OrganizationResponse[],
+  committees: CommitteeResponse[],
 ): UserListItem[] {
-  return users.map((user) => toUserListItem(user, organizations));
+  return users.map((user) => toUserListItem(user, organizations, committees));
 }
 
 const UserManagementPage = () => {
   const [organizations, setOrganizations] = useState<OrganizationResponse[]>([]);
+  const [committees, setCommittees] = useState<CommitteeResponse[]>([]);
   const [users, setUsers] = useState<UserListItem[]>([]);
   const [selectedUser, setSelectedUser] = useState<UserListItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,12 +51,14 @@ const UserManagementPage = () => {
       setIsLoading(true);
     }
     try {
-      const [orgData, userData] = await Promise.all([
+      const [orgData, committeeData, userData] = await Promise.all([
         organizationService.getAll(),
+        committeeService.getAll(),
         userService.getAll(),
       ]);
       setOrganizations(orgData);
-      setUsers(mapUsersToListItems(userData, orgData));
+      setCommittees(committeeData);
+      setUsers(mapUsersToListItems(userData, orgData, committeeData));
       setError(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to load user management data.');
@@ -79,7 +87,7 @@ const UserManagementPage = () => {
     setIsLoadingUser(true);
     try {
       const freshUser = await userService.getById(user.id);
-      setSelectedUser(toUserListItem(freshUser, organizations));
+      setSelectedUser(toUserListItem(freshUser, organizations, committees));
     } catch {
       setSelectedUser(user);
     } finally {
@@ -136,12 +144,13 @@ const UserManagementPage = () => {
             key={selectedUser.id}
             user={selectedUser}
             organizations={organizations}
+            committees={committees}
             onUpdated={handleUpdated}
             onDeactivated={handleDeactivated}
             onCancel={handleEditCancel}
           />
         ) : (
-          <CreateUserAccountForm organizations={organizations} onCreated={handleCreated} />
+          <CreateUserAccountForm organizations={organizations} committees={committees} onCreated={handleCreated} />
         )}
 
         <Divider />

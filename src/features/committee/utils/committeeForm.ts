@@ -4,6 +4,7 @@ export const emptyCommitteeForm: CommitteeFormValues = {
   name: '',
   description: '',
   organizationIds: [],
+  committeeLeadIds: [],
 };
 
 export function committeeToFormValues(committee: CommitteeResponse): CommitteeFormValues {
@@ -11,6 +12,7 @@ export function committeeToFormValues(committee: CommitteeResponse): CommitteeFo
     name: committee.name,
     description: committee.description ?? '',
     organizationIds: committee.organizationIds ?? [],
+    committeeLeadIds: committee.committeeLeadIds ?? [],
   };
 }
 
@@ -27,6 +29,7 @@ export function formValuesToPayload(form: CommitteeFormValues) {
     name: form.name.trim(),
     ...(form.description.trim() ? { description: form.description.trim() } : {}),
     organizationIds: form.organizationIds,
+    committeeLeadIds: form.committeeLeadIds,
   };
 }
 
