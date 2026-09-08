@@ -69,7 +69,7 @@ interface TutorialStep {
   points: string[];
 }
 
-const tutorialStepsByRole: Partial<Record<UserRole, TutorialStep[]>> = {
+const tutorialStepsByRole: Record<UserRole, TutorialStep[]> = {
   DASIG_ADMIN: [
     {
       label: 'Welcome',
@@ -182,6 +182,57 @@ const tutorialStepsByRole: Partial<Record<UserRole, TutorialStep[]>> = {
       ],
     },
   ],
+  STAFF: [
+    {
+      label: 'Welcome',
+      title: 'Welcome to DASIG-CORE',
+      points: [
+        "This short tutorial walks you through the main things you can do as a Member.",
+        "Use Next and Back to move through the steps, or Skip to close it at any time.",
+        "You can reopen this tutorial anytime from Quick Guide in the sidebar.",
+      ],
+    },
+    {
+      label: 'Track KPIs',
+      title: 'Track Your Assigned KPIs',
+      points: [
+        "The Organization KPI Dashboard lists the KPIs assigned to you.",
+        "Review each KPI's progress toward its target and deadline to help stay on top of submissions.",
+      ],
+    },
+    {
+      label: 'Submit KPI',
+      title: 'Submit a KPI Entry',
+      points: [
+        "Open Submit KPI, choose the assigned KPI and reporting period, then enter the value you achieved.",
+        "You can attach supporting documents and add notes before submitting.",
+        "Your submission starts as Pending — a Committee Lead will review it before it counts as official progress.",
+      ],
+    },
+    {
+      label: 'Submission History',
+      title: 'Track Your Submission Status',
+      points: [
+        "Open Submission History to see the status of everything you've submitted.",
+        "If a submission is returned, open it to read the Committee Lead's feedback and resubmit with corrections.",
+      ],
+    },
+    {
+      label: 'Notifications',
+      title: 'Stay on Top of Deadlines',
+      points: [
+        "Open Notifications for deadline reminders and updates on your assigned KPIs.",
+      ],
+    },
+    {
+      label: 'Done',
+      title: "You're all set",
+      points: [
+        "That covers the core Member workflow: tracking assigned KPIs, submitting entries, and following up on review feedback.",
+        "Reopen this tutorial anytime from Quick Guide in the sidebar.",
+      ],
+    },
+  ],
 };
 
 const adminPaths: Record<string, string> = {
@@ -222,6 +273,7 @@ const roleMenus: Record<UserRole, SidebarItem[]> = {
     { key: 'notifications', label: 'Notifications', icon: <NotificationsOutlinedIcon /> },
     { key: 'submit', label: 'Submit KPI', icon: <PostAddOutlinedIcon /> },
     { key: 'history', label: 'Submission History', icon: <AssignmentTurnedInOutlinedIcon /> },
+    { key: 'guide', label: 'Quick Guide', icon: <HelpOutlineOutlinedIcon /> },
   ],
 };
 
