@@ -38,18 +38,27 @@ const CommitteesList = ({ committees, selectedId, onSelect, organizations = [], 
   const safePage = Math.min(page, totalPages);
   const pagedCommittees = committees.slice((safePage - 1) * TABLE_PAGE_SIZE, safePage * TABLE_PAGE_SIZE);
 
+  const truncate = (text: string, maxLen: number) => {
+    if (text.length <= maxLen) return text;
+    return text.slice(0, maxLen) + '...';
+  };
+
   const getOrganizationNames = (committee: CommitteeResponse) => {
     if (!committee.organizationIds || committee.organizationIds.length === 0) {
       return '—';
     }
-    return committee.organizationIds.map((id) => organizationMap.get(id) ?? `#${id}`).join(', ');
+    const names = committee.organizationIds.map((id) => organizationMap.get(id) ?? `#${id}`);
+    const joined = names.join(', ');
+    return truncate(joined, 50);
   };
 
   const getCommitteeLeadNames = (committee: CommitteeResponse) => {
     if (!committee.committeeLeadIds || committee.committeeLeadIds.length === 0) {
       return '—';
     }
-    return committee.committeeLeadIds.map((id) => userMap.get(id) ?? `#${id}`).join(', ');
+    const names = committee.committeeLeadIds.map((id) => userMap.get(id) ?? `#${id}`);
+    const joined = names.join(', ');
+    return truncate(joined, 50);
   };
 
   return (
@@ -113,8 +122,8 @@ const CommitteesList = ({ committees, selectedId, onSelect, organizations = [], 
                     }}
                   >
                     <TableCell>{committee.name}</TableCell>
-                    <TableCell sx={{ color: 'text.secondary' }}>{getOrganizationNames(committee)}</TableCell>
-                    <TableCell sx={{ color: 'text.secondary' }}>{getCommitteeLeadNames(committee)}</TableCell>
+                    <TableCell sx={{ color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getOrganizationNames(committee)}</TableCell>
+                    <TableCell sx={{ color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getCommitteeLeadNames(committee)}</TableCell>
                     <TableCell>
                       <Typography
                         component="span"
