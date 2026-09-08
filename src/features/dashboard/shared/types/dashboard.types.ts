@@ -25,6 +25,8 @@ export interface DashboardKpiItem {
   reportingPeriod?: string | null;
   kpiStatus?: 'ACTIVE' | 'ARCHIVED';
   archived?: boolean;
+  committeeId?: number;
+  committeeName?: string;
 }
 
 export interface DashboardCommitteeOption {
@@ -32,6 +34,8 @@ export interface DashboardCommitteeOption {
   name: string;
   organizationName: string;
   current: boolean;
+  hasPendingSubmissions?: boolean;
+  pendingSubmissionsCount?: number;
 }
 
 export interface DashboardApiResponse {

@@ -1,4 +1,6 @@
 import Alert from '@mui/material/Alert';
+import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
+import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import Stack from '@mui/material/Stack';
 import Snackbar from '@mui/material/Snackbar';
@@ -15,6 +17,7 @@ import type { DashboardApiResponse, DashboardKpiItem, DashboardStatus, Dashboard
 import DashboardHeader from './DashboardHeader';
 import DashboardLayout from './DashboardLayout';
 import CommitteeSelector from './CommitteeSelector';
+import CommitteeCardsGrid from './CommitteeCardsGrid';
 import { useDashboardShell } from './DashboardShellContext';
 import KpiDashboardCard from './KpiDashboardCard';
 import KpiFilterBar from './KpiFilterBar';
@@ -78,7 +81,7 @@ const RoleBasedDashboardPage = ({
         setIsLoading(false);
       }
     }
-  }, [role, selectedCommitteeId]);
+  }, [selectedCommitteeId]);
 
   useEffect(() => {
     void loadDashboard();
@@ -89,10 +92,21 @@ const RoleBasedDashboardPage = ({
   };
 
   useEffect(() => {
-    if (role === 'TBI_MANAGER' && dashboardData?.committees && dashboardData.committees.length > 0) {
+    if (
+      role === 'TBI_MANAGER' &&
+      selectedCommitteeId !== null &&
+      dashboardData?.committees &&
+      !dashboardData.committees.some((c) => c.id === selectedCommitteeId)
+    ) {
+      setSelectedCommitteeId(null);
+    }
+  }, [role, selectedCommitteeId, dashboardData?.committees]);
+
+  useEffect(() => {
+    if (role === 'TBI_MANAGER' && dashboardData) {
       setCommitteeSelector(
         <CommitteeSelector
-          committees={dashboardData.committees}
+          committees={dashboardData.committees ?? []}
           selectedId={selectedCommitteeId}
           onCommitteeChange={handleCommitteeChange}
         />
@@ -100,7 +114,7 @@ const RoleBasedDashboardPage = ({
     } else {
       setCommitteeSelector(null);
     }
-  }, [role, dashboardData?.committees, selectedCommitteeId, setCommitteeSelector]);
+  }, [role, dashboardData, selectedCommitteeId, setCommitteeSelector]);
 
   const handleCreateClick = () => {
     setSelectedKpiForEdit(null);
@@ -172,6 +186,28 @@ const RoleBasedDashboardPage = ({
     const kpis = dashboardData?.kpis ?? [];
 
     return kpis.filter((item) => {
+      if (role === 'TBI_MANAGER') {
+        const assignedCommittees = dashboardData?.committees ?? [];
+        if (assignedCommittees.length === 0) {
+          return false;
+        }
+
+        if (selectedCommitteeId !== null) {
+          const isAssigned = assignedCommittees.some((c) => c.id === selectedCommitteeId);
+          if (!isAssigned) {
+            return false;
+          }
+          if (item.committeeId != null && item.committeeId !== selectedCommitteeId) {
+            return false;
+          }
+        } else {
+          const assignedIds = assignedCommittees.map((c) => c.id);
+          if (item.committeeId != null && !assignedIds.includes(item.committeeId)) {
+            return false;
+          }
+        }
+      }
+
       if (search && !item.name.toLowerCase().includes(search.toLowerCase())) {
         return false;
       }
@@ -185,7 +221,7 @@ const RoleBasedDashboardPage = ({
       }
       return true;
     });
-  }, [dashboardData, organization, search, status]);
+  }, [dashboardData, organization, role, search, selectedCommitteeId, status]);
 
   const hasActiveFilters = Boolean(
     search.trim() || (role === 'DASIG_ADMIN' && organization !== 'ALL') || status !== 'ALL'
@@ -199,6 +235,13 @@ const RoleBasedDashboardPage = ({
     setStatus('ALL');
   };
 
+  const isAllCommitteesView = role === 'TBI_MANAGER' && selectedCommitteeId === null;
+
+  const selectedCommittee = useMemo(
+    () => dashboardData?.committees?.find((c) => c.id === selectedCommitteeId) ?? null,
+    [dashboardData?.committees, selectedCommitteeId]
+  );
+
   const topActions =
     role === 'DASIG_ADMIN' ? (
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ justifyContent: 'space-between' }}>
@@ -211,8 +254,15 @@ const RoleBasedDashboardPage = ({
     role === 'DASIG_ADMIN'
       ? title
       : role === 'TBI_MANAGER'
-        ? `${dashboardData?.committeeName ?? 'Committee'} KPI Dashboard`
+        ? selectedCommitteeId == null
+          ? 'All Committees Dashboard'
+          : `${selectedCommittee?.name ?? dashboardData?.committeeName ?? 'Committee'} KPI Dashboard`
         : `${dashboardData?.organizationName ?? 'Organization'} KPI Dashboard`;
+
+  const resolvedSubtitle =
+    role === 'TBI_MANAGER' && selectedCommitteeId == null
+      ? 'Overview of assigned committees, key metrics, and performance progress.'
+      : subtitle;
 
   if (isLoading) {
     return (
@@ -233,23 +283,56 @@ const RoleBasedDashboardPage = ({
   return (
     <>
       <DashboardLayout
-        header={<DashboardHeader title={resolvedTitle} subtitle={subtitle} />}
-        welcomeBanner={<AdminKpiSummaryCards kpis={filteredKpis} />}
+        header={
+          <Stack spacing={1.5} sx={{ alignItems: 'flex-start' }}>
+            {role === 'TBI_MANAGER' && selectedCommitteeId != null && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<ArrowBackOutlinedIcon sx={{ fontSize: 18 }} />}
+                onClick={() => handleCommitteeChange(null)}
+                sx={{
+                  borderRadius: 2.5,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.8125rem',
+                  borderColor: 'divider',
+                  color: 'text.primary',
+                  bgcolor: 'background.paper',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    bgcolor: 'background.paper',
+                    color: 'primary.main',
+                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
+                  },
+                }}
+              >
+                Back to All Committees
+              </Button>
+            )}
+            <DashboardHeader title={resolvedTitle} subtitle={resolvedSubtitle} />
+          </Stack>
+        }
+        welcomeBanner={isAllCommitteesView ? null : <AdminKpiSummaryCards kpis={filteredKpis} />}
         topActions={topActions}
         filterBar={
-          <KpiFilterBar
-            search={search}
-            status={status}
-            organization={organization}
-            organizations={organizations}
-            showOrganization={role === 'DASIG_ADMIN'}
-            organizationLocked={role !== 'DASIG_ADMIN'}
-            onSearchChange={setSearch}
-            onStatusChange={setStatus}
-            onOrganizationChange={setOrganization}
-            onResetFilters={handleResetFilters}
-            hasActiveFilters={hasActiveFilters}
-          />
+          isAllCommitteesView ? null : (
+            <KpiFilterBar
+              search={search}
+              status={status}
+              organization={organization}
+              organizations={organizations}
+              showOrganization={role === 'DASIG_ADMIN'}
+              organizationLocked={role !== 'DASIG_ADMIN'}
+              onSearchChange={setSearch}
+              onStatusChange={setStatus}
+              onOrganizationChange={setOrganization}
+              onResetFilters={handleResetFilters}
+              hasActiveFilters={hasActiveFilters}
+            />
+          )
         }
         content={
           role === 'DASIG_ADMIN' ? (
@@ -269,9 +352,17 @@ const RoleBasedDashboardPage = ({
                 />
               )}
             />
+          ) : isAllCommitteesView ? (
+            <CommitteeCardsGrid
+              committees={dashboardData?.committees ?? []}
+              kpis={dashboardData?.kpis ?? []}
+              search={search}
+              onSearchChange={setSearch}
+              onManageCommittee={(id) => handleCommitteeChange(id)}
+            />
           ) : (
             <KpisList
-              title={role === 'STAFF' ? 'Member KPIs' : 'Organization KPIs'}
+              title={role === 'STAFF' ? 'Member KPIs' : `${selectedCommittee?.name ?? 'Committee'} KPIs`}
               kpis={filteredKpis}
               selectedId={null}
               onSelectKpi={handleSelectKpi}

@@ -278,7 +278,7 @@ const mapStatus = (status: string) => {
 
   }
 
-  return { label: 'Behind Pace', bg: '#FFE2E2', color: '#C62828', achievementColor: '#DC2626' };
+  return { label: 'Delayed', bg: '#FFE2E2', color: '#C62828', achievementColor: '#DC2626' };
 
 };
 
@@ -1057,7 +1057,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                                 <Typography variant="caption" sx={{ color: '#9BA1AE', lineHeight: 1.5, display: 'block' }}>
 
-                                  {formatRoleLabel(submission.submittedByRole)}
+                                  {submission.organizationName ? `${submission.organizationName} • ` : ''}{formatRoleLabel(submission.submittedByRole)}
 
                                 </Typography>
 
@@ -1526,7 +1526,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                         <Typography variant="caption" sx={{ color: '#9BA1AE', lineHeight: 1.6, display: 'block', mt: 0.5 }}>
 
-                          {selectedKpiMeta?.organizationName ?? 'Organization'}
+                          {selectedSubmission.organizationName ?? selectedKpiMeta?.organizationName ?? 'Organization'}
 
                         </Typography>
 
