@@ -1,5 +1,6 @@
 ﻿import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
+import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -9,8 +10,10 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import type { OrganizationResponse } from '../../organization/types/organization.types';
+import type { UserResponse } from '../../user/types/user.types';
 import type { CommitteeFormValues } from '../types/committee.types';
 import OrganizationPickerDialog from './OrganizationPickerDialog';
+import UserPickerDialog from './UserPickerDialog';
 
 export const committeeFieldSx = {
   '& .MuiOutlinedInput-root': {
@@ -25,6 +28,7 @@ interface CommitteeFormFieldsProps {
   isSubmitting: boolean;
   readOnly?: boolean;
   organizations: OrganizationResponse[];
+  users: UserResponse[];
   onFieldChange: (field: keyof CommitteeFormValues, value: CommitteeFormValues[keyof CommitteeFormValues]) => void;
 }
 
@@ -45,9 +49,11 @@ const CommitteeFormFields = ({
   isSubmitting,
   readOnly = false,
   organizations,
+  users,
   onFieldChange,
 }: CommitteeFormFieldsProps) => {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [userPickerOpen, setUserPickerOpen] = useState(false);
   const fieldsDisabled = isSubmitting || readOnly;
 
   const handleOrgConfirm = (ids: number[]) => {
@@ -57,6 +63,18 @@ const CommitteeFormFields = ({
   const removeOrg = (id: number) => {
     onFieldChange('organizationIds', form.organizationIds.filter((x) => x !== id));
   };
+
+  const handleUserConfirm = (ids: number[]) => {
+    onFieldChange('committeeLeadIds', ids);
+  };
+
+  const removeUser = (id: number) => {
+    onFieldChange('committeeLeadIds', form.committeeLeadIds.filter((x) => x !== id));
+  };
+
+  const availableCommitteeLeads = users.filter(
+    (u) => u.role === 'TBI_MANAGER' && form.organizationIds.includes(u.organizationId ?? -1)
+  );
 
   return (
     <Box>
@@ -115,6 +133,43 @@ const CommitteeFormFields = ({
         </Grid>
 
         <Grid size={{ xs: 12, md: 6 }}>
+          <FieldLabel label="Committee Leads" />
+          <Button
+            variant="outlined"
+            startIcon={<PersonAddOutlinedIcon />}
+            onClick={() => setUserPickerOpen(true)}
+            disabled={fieldsDisabled || availableCommitteeLeads.length === 0}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              borderRadius: 2,
+              borderColor: 'divider',
+              color: 'text.primary',
+              '&:hover': { borderColor: 'primary.main', color: 'primary.main' },
+            }}
+          >
+            Add Committee Lead
+          </Button>
+
+          {form.committeeLeadIds.length > 0 && (
+            <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75, mt: 1 }}>
+              {form.committeeLeadIds.map((id) => {
+                const user = users.find((u) => u.id === id);
+                return (
+                  <Chip
+                    key={id}
+                    label={user?.name ?? `User #${id}`}
+                    size="small"
+                    onDelete={fieldsDisabled ? undefined : () => removeUser(id)}
+                    sx={{ borderRadius: 1.5, fontWeight: 500 }}
+                  />
+                );
+              })}
+            </Stack>
+          )}
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 6 }}>
           <FieldLabel label="Description" />
           <TextField
             fullWidth
@@ -136,6 +191,14 @@ const CommitteeFormFields = ({
         selectedIds={form.organizationIds}
         onClose={() => setPickerOpen(false)}
         onConfirm={handleOrgConfirm}
+      />
+
+      <UserPickerDialog
+        open={userPickerOpen}
+        users={availableCommitteeLeads}
+        selectedIds={form.committeeLeadIds}
+        onClose={() => setUserPickerOpen(false)}
+        onConfirm={handleUserConfirm}
       />
     </Box>
   );

@@ -84,7 +84,7 @@ const KpiDetailPage = () => {
     setIsLoadingKpi(true);
     setError(null);
     try {
-      const data = await dashboardService.getDashboard();
+      const data = await dashboardService.getDashboard(undefined);
       const found = data.kpis.find((item) => item.id === kpiId);
       if (found) {
         setKpi(found);

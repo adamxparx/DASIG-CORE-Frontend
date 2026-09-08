@@ -1,5 +1,4 @@
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
-import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
@@ -18,7 +17,7 @@ const KPI_CREATE_PATTERN = /^\/dashboard\/admin\/kpis\/create$/;
 const KPI_EDIT_PATTERN = /^\/dashboard\/admin\/kpis\/\d+\/edit$/;
 
 const DashboardUserHeader = () => {
-  const { setMobileOpen } = useDashboardShell();
+  const { committeeSelector } = useDashboardShell();
   const location = useLocation();
   const navigate = useNavigate();
   const session = getSession();
@@ -83,49 +82,42 @@ const DashboardUserHeader = () => {
         gap: 1,
       }}
     >
-      {(isKpiDetail || isKpiCreate || isKpiEdit) ? (
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', minWidth: 0 }}>
-          <IconButton
-            onClick={() => navigate(dashboardPath)}
-            size="small"
-            aria-label="Back to dashboard"
-            sx={{ color: 'text.secondary', flexShrink: 0 }}
-          >
-            <ArrowBackOutlinedIcon fontSize="small" />
-          </IconButton>
-          <Breadcrumbs separator="/" sx={{ fontSize: '0.875rem', minWidth: 0 }}>
-            <Link
-              href={dashboardPath}
-              onClick={(e) => {
-                e.preventDefault();
-                navigate(dashboardPath);
-              }}
-              variant="body2"
-              sx={{ color: 'text.secondary', textDecoration: 'none', '&:hover': { color: 'primary.main' } }}
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', minWidth: 0, flex: 1 }}>
+        {(isKpiDetail || isKpiCreate || isKpiEdit) ? (
+          <>
+            <IconButton
+              onClick={() => navigate(dashboardPath)}
+              size="small"
+              aria-label="Back to dashboard"
+              sx={{ color: 'text.secondary', flexShrink: 0 }}
             >
-              {breadcrumbLabel}
-            </Link>
-            <Typography variant="body2" noWrap sx={{ color: 'text.primary', fontWeight: 600 }}>
-              {isKpiCreate
-                ? 'Create New KPI'
-                : isKpiEdit
-                  ? 'Edit KPI'
-                  : (kpiName ?? 'KPI Details')}
-            </Typography>
-          </Breadcrumbs>
-        </Stack>
-      ) : (
-        <IconButton
-          onClick={() => setMobileOpen(true)}
-          size="small"
-          sx={{
-            display: { xs: 'inline-flex', md: 'none' },
-            color: 'text.secondary',
-          }}
-        >
-          <MenuOutlinedIcon fontSize="small" />
-        </IconButton>
-      )}
+              <ArrowBackOutlinedIcon fontSize="small" />
+            </IconButton>
+            <Breadcrumbs separator="/" sx={{ fontSize: '0.875rem', minWidth: 0 }}>
+              <Link
+                href={dashboardPath}
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate(dashboardPath);
+                }}
+                variant="body2"
+                sx={{ color: 'text.secondary', textDecoration: 'none', '&:hover': { color: 'primary.main' } }}
+              >
+                {breadcrumbLabel}
+              </Link>
+              <Typography variant="body2" noWrap sx={{ color: 'text.primary', fontWeight: 600 }}>
+                {isKpiCreate
+                  ? 'Create New KPI'
+                  : isKpiEdit
+                    ? 'Edit KPI'
+                    : (kpiName ?? 'KPI Details')}
+              </Typography>
+            </Breadcrumbs>
+          </>
+        ) : (
+          committeeSelector ?? <Box sx={{ flex: 1 }} />
+        )}
+      </Stack>
 
       <Stack
         spacing={0.25}

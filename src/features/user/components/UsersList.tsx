@@ -14,6 +14,7 @@ import TablePaginationBar, { TABLE_PAGE_SIZE } from '../../dashboard/shared/comp
 
 export interface UserListItem extends UserResponse {
   organizationName: string | null;
+  committeeNames: string[];
 }
 
 interface UsersListProps {
@@ -57,6 +58,11 @@ const UsersList = ({ users, selectedId, onSelect }: UsersListProps) => {
               <TableCell
                 sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
               >
+                Committees
+              </TableCell>
+              <TableCell
+                sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
+              >
                 Status
               </TableCell>
             </TableRow>
@@ -64,7 +70,7 @@ const UsersList = ({ users, selectedId, onSelect }: UsersListProps) => {
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} sx={{ border: 0, py: 6 }}>
+                <TableCell colSpan={5} sx={{ border: 0, py: 6 }}>
                   <Typography align="center" color="text.secondary">
                     There are no existing accounts yet.
                   </Typography>
@@ -94,6 +100,7 @@ const UsersList = ({ users, selectedId, onSelect }: UsersListProps) => {
                     <TableCell>{user.name}</TableCell>
                     <TableCell>{formatRoleLabel(user.role)}</TableCell>
                     <TableCell>{user.organizationName ?? '—'}</TableCell>
+                    <TableCell>{user.committeeNames?.length > 0 ? user.committeeNames.join(', ') : '—'}</TableCell>
                     <TableCell>
                       <Typography
                         component="span"

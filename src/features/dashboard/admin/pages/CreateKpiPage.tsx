@@ -189,11 +189,7 @@ const CreateKpiPage = () => {
     (commId: number): OrganizationResponse[] => {
       const comm = committees.find((c) => c.id === commId);
       if (!comm) return [];
-      return organizations.filter((org) => {
-        const inOrgIds = Array.isArray(comm.organizationIds) && comm.organizationIds.includes(org.id);
-        const isCommIdMatch = org.committeeId === comm.id;
-        return inOrgIds || isCommIdMatch;
-      });
+      return organizations.filter((org) => comm.organizationIds.includes(org.id));
     },
     [committees, organizations]
   );

@@ -8,6 +8,9 @@ import Typography from '@mui/material/Typography';
 import { type FormEvent, useEffect, useState } from 'react';
 import { ApiError } from '../../../lib/api/client';
 import type { OrganizationResponse } from '../../organization/types/organization.types';
+import type { UserResponse } from '../../user/types/user.types';
+import { userService } from '../../user/api/userService';
+import type { UpdateUserRequest } from '../../user/types/user.types';
 import { committeeService } from '../api/committeeService';
 import type { CommitteeFormValues, CommitteeResponse } from '../types/committee.types';
 import {
@@ -22,6 +25,7 @@ import DeactivateCommitteeDialog from './DeactivateCommitteeDialog';
 interface EditCommitteeFormProps {
   committee: CommitteeResponse;
   organizations: OrganizationResponse[];
+  users: UserResponse[];
   onUpdated: () => void;
   onDeactivated: () => void;
   onCancel: () => void;
@@ -30,6 +34,7 @@ interface EditCommitteeFormProps {
 const EditCommitteeForm = ({
   committee,
   organizations,
+  users,
   onUpdated,
   onDeactivated,
   onCancel,
@@ -52,6 +57,57 @@ const EditCommitteeForm = ({
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const syncUsersAfterUpdate = async (
+    committeeId: number,
+    newLeadIds: number[],
+    previousLeadIds: number[],
+  ) => {
+    const added = newLeadIds.filter((id) => !previousLeadIds.includes(id));
+    const removed = previousLeadIds.filter((id) => !newLeadIds.includes(id));
+
+    for (const userId of added) {
+      const user = users.find((u) => u.id === userId);
+      if (user && user.role === 'TBI_MANAGER') {
+        const currentCommitteeIds = user.committeeIds ?? [];
+        if (!currentCommitteeIds.includes(committeeId)) {
+          const payload: UpdateUserRequest = {
+            name: user.name,
+            email: user.email,
+            role: user.role as 'DASIG_ADMIN' | 'TBI_MANAGER' | 'STAFF',
+            organizationId: user.organizationId ?? undefined,
+            committeeIds: [...currentCommitteeIds, committeeId],
+          };
+          try {
+            await userService.update(userId, payload);
+          } catch {
+            // Ignore sync errors
+          }
+        }
+      }
+    }
+
+    for (const userId of removed) {
+      const user = users.find((u) => u.id === userId);
+      if (user && user.role === 'TBI_MANAGER') {
+        const currentCommitteeIds = user.committeeIds ?? [];
+        if (currentCommitteeIds.includes(committeeId)) {
+          const payload: UpdateUserRequest = {
+            name: user.name,
+            email: user.email,
+            role: user.role as 'DASIG_ADMIN' | 'TBI_MANAGER' | 'STAFF',
+            organizationId: user.organizationId ?? undefined,
+            committeeIds: currentCommitteeIds.filter((id) => id !== committeeId),
+          };
+          try {
+            await userService.update(userId, payload);
+          } catch {
+            // Ignore sync errors
+          }
+        }
+      }
+    }
+  };
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (isInactive) return;
@@ -64,7 +120,9 @@ const EditCommitteeForm = ({
     setSubmitError(null);
 
     try {
+      const previousLeadIds = committee.committeeLeadIds ?? [];
       await committeeService.update(committee.id, formValuesToPayload(form));
+      await syncUsersAfterUpdate(committee.id, form.committeeLeadIds, previousLeadIds);
       onUpdated();
     } catch (err) {
       setSubmitError(err instanceof ApiError ? err.message : 'Unable to update committee. Please try again.');
@@ -93,6 +151,7 @@ const EditCommitteeForm = ({
             isSubmitting={isSubmitting}
             readOnly={isInactive}
             organizations={organizations}
+            users={users}
             onFieldChange={setField}
           />
 

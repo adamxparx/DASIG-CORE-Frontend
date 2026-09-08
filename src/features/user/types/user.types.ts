@@ -7,6 +7,7 @@ export interface UserResponse {
   role: AccountRole | string;
   status: string;
   organizationId: number | null;
+  committeeIds: number[];
 }
 
 export interface CreateUserRequest {
@@ -14,6 +15,7 @@ export interface CreateUserRequest {
   email: string;
   role: AccountRole;
   organizationId?: number | null;
+  committeeIds?: number[];
 }
 
 export interface UpdateUserRequest {
@@ -21,6 +23,7 @@ export interface UpdateUserRequest {
   email: string;
   role: AccountRole;
   organizationId?: number | null;
+  committeeIds?: number[];
 }
 
 export interface CreateUserFormValues {
@@ -28,4 +31,5 @@ export interface CreateUserFormValues {
   email: string;
   role: AccountRole | '';
   organizationId: number | '';
+  committeeIds: number[];
 }

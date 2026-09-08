@@ -10,14 +10,17 @@ import DashboardHeader from '../../dashboard/shared/components/DashboardHeader';
 import { organizationService } from '../../organization/api/organizationService';
 import type { OrganizationResponse } from '../../organization/types/organization.types';
 import { committeeService } from '../api/committeeService';
+import type { CommitteeResponse } from '../types/committee.types';
+import { userService } from '../../user/api/userService';
+import type { UserResponse } from '../../user/types/user.types';
 import CreateCommitteeForm from '../components/CreateCommitteeForm';
 import EditCommitteeForm from '../components/EditCommitteeForm';
 import CommitteesList from '../components/CommitteesList';
-import type { CommitteeResponse } from '../types/committee.types';
 
 const CommitteeManagementPage = () => {
   const [committees, setCommittees] = useState<CommitteeResponse[]>([]);
   const [organizations, setOrganizations] = useState<OrganizationResponse[]>([]);
+  const [users, setUsers] = useState<UserResponse[]>([]);
   const [selectedCommittee, setSelectedCommittee] = useState<CommitteeResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,12 +30,14 @@ const CommitteeManagementPage = () => {
   const loadPageData = useCallback(async (silent = false) => {
     if (!silent) setIsLoading(true);
     try {
-      const [committeeData, orgData] = await Promise.all([
+      const [committeeData, orgData, userData] = await Promise.all([
         committeeService.getAll(),
         organizationService.getAll(),
+        userService.getAll(),
       ]);
       setCommittees(committeeData);
       setOrganizations(orgData);
+      setUsers(userData);
       setError(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to load committee data.');
@@ -108,12 +113,13 @@ const CommitteeManagementPage = () => {
             key={selectedCommittee.id}
             committee={selectedCommittee}
             organizations={organizations}
+            users={users}
             onUpdated={handleUpdated}
             onDeactivated={handleDeactivated}
             onCancel={handleEditCancel}
           />
         ) : (
-          <CreateCommitteeForm organizations={organizations} onCreated={handleCreated} />
+          <CreateCommitteeForm organizations={organizations} users={users} onCreated={handleCreated} />
         )}
 
         <Divider />

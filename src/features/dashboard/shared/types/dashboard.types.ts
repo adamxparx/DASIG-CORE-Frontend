@@ -27,6 +27,13 @@ export interface DashboardKpiItem {
   archived?: boolean;
 }
 
+export interface DashboardCommitteeOption {
+  id: number;
+  name: string;
+  organizationName: string;
+  current: boolean;
+}
+
 export interface DashboardApiResponse {
   role: UserRole;
   organizationId: number | null;
@@ -34,6 +41,7 @@ export interface DashboardApiResponse {
   committeeName: string | null;
   reportingPeriod?: string | null;
   kpis: DashboardKpiItem[];
+  committees?: DashboardCommitteeOption[];
 }
 
 export interface KpiPeriodSubmissionEntry {

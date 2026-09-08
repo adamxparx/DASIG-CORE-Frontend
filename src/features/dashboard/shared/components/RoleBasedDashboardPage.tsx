@@ -14,6 +14,8 @@ import { dashboardService } from '../api/dashboardService';
 import type { DashboardApiResponse, DashboardKpiItem, DashboardStatus, DashboardViewMode, UserRole } from '../types/dashboard.types';
 import DashboardHeader from './DashboardHeader';
 import DashboardLayout from './DashboardLayout';
+import CommitteeSelector from './CommitteeSelector';
+import { useDashboardShell } from './DashboardShellContext';
 import KpiDashboardCard from './KpiDashboardCard';
 import KpiFilterBar from './KpiFilterBar';
 import KpiGrid from './KpiGrid';
@@ -34,6 +36,7 @@ const RoleBasedDashboardPage = ({
   subtitle,
 }: RoleBasedDashboardPageProps) => {
   const navigate = useNavigate();
+  const { setCommitteeSelector } = useDashboardShell();
   const [dashboardData, setDashboardData] = useState<DashboardApiResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +44,7 @@ const RoleBasedDashboardPage = ({
   const [status, setStatus] = useState<DashboardStatus | 'ALL'>('ALL');
   const [organization, setOrganization] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<DashboardViewMode>('grid');
+  const [selectedCommitteeId, setSelectedCommitteeId] = useState<number | null>(null);
 
   // Form Dialog States
   const [formDialogOpen, setFormDialogOpen] = useState(false);
@@ -64,7 +68,7 @@ const RoleBasedDashboardPage = ({
       setIsLoading(true);
     }
     try {
-      const response = await dashboardService.getDashboard();
+      const response = await dashboardService.getDashboard(selectedCommitteeId ?? undefined);
       setDashboardData(response);
       setError(null);
     } catch (err) {
@@ -74,11 +78,29 @@ const RoleBasedDashboardPage = ({
         setIsLoading(false);
       }
     }
-  }, [role]);
+  }, [role, selectedCommitteeId]);
 
   useEffect(() => {
     void loadDashboard();
   }, [loadDashboard]);
+
+  const handleCommitteeChange = (id: number | null) => {
+    setSelectedCommitteeId(id);
+  };
+
+  useEffect(() => {
+    if (role === 'TBI_MANAGER' && dashboardData?.committees && dashboardData.committees.length > 0) {
+      setCommitteeSelector(
+        <CommitteeSelector
+          committees={dashboardData.committees}
+          selectedId={selectedCommitteeId}
+          onCommitteeChange={handleCommitteeChange}
+        />
+      );
+    } else {
+      setCommitteeSelector(null);
+    }
+  }, [role, dashboardData?.committees, selectedCommitteeId, setCommitteeSelector]);
 
   const handleCreateClick = () => {
     setSelectedKpiForEdit(null);
