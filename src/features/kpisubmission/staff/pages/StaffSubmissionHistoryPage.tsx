@@ -5,11 +5,11 @@ import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutline
 import CloseIcon from '@mui/icons-material/Close';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
-import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined';
 import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
 import RefreshOutlinedIcon from '@mui/icons-material/RefreshOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 import Alert from '@mui/material/Alert';
+import Badge from '@mui/material/Badge';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -28,6 +28,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { kpiSubmissionService } from '../../api/kpiSubmissionService';
@@ -149,7 +150,6 @@ const mapStatus = (status: string) => {
 
 const StaffSubmissionHistoryPage = () => {
   const [search, setSearch] = useState('');
-  const [selectedPeriod, setSelectedPeriod] = useState<'ALL' | string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<'ALL' | string>('ALL');
   const [selectedReviewStatus, setSelectedReviewStatus] = useState<'ALL' | SubmissionReviewStatus>('ALL');
   const [selectedKpiName, setSelectedKpiName] = useState<'ALL' | string>('ALL');
@@ -162,6 +162,7 @@ const StaffSubmissionHistoryPage = () => {
   const [documentError, setDocumentError] = useState<string | null>(null);
   const [isDocumentLoading, setIsDocumentLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [newlyReviewedIds, setNewlyReviewedIds] = useState<Set<number>>(new Set());
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -173,6 +174,19 @@ const StaffSubmissionHistoryPage = () => {
       ]);
       setSubmissions(submissionData);
       setAssignableKpis(assignableData);
+
+      const unviewedIds = submissionData
+        .filter(
+          (s) =>
+            s.memberViewed === false &&
+            (s.reviewStatus === 'APPROVED' || s.reviewStatus === 'REJECTED')
+        )
+        .map((s) => s.id);
+
+      if (unviewedIds.length > 0) {
+        setNewlyReviewedIds((prev) => new Set([...prev, ...unviewedIds]));
+        void kpiSubmissionService.markSubmissionsAsViewed(unviewedIds);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load submission history.');
     } finally {
@@ -188,20 +202,12 @@ const StaffSubmissionHistoryPage = () => {
     return new Map(assignableKpis.map((item) => [item.id, item]));
   }, [assignableKpis]);
 
-  const periodOptions = useMemo(() => {
-    return ['ALL', ...new Set(submissions.map((item) => item.reportingPeriod))];
-  }, [submissions]);
-
   const kpiOptions = useMemo(() => ['ALL', ...new Set(submissions.map((item) => item.kpiName))], [submissions]);
 
   const filteredSubmissions = useMemo(() => {
     const normalized = search.trim().toLowerCase();
 
     return submissions.filter((submission) => {
-      if (selectedPeriod !== 'ALL' && submission.reportingPeriod !== selectedPeriod) {
-        return false;
-      }
-
       if (selectedStatus !== 'ALL' && mapStatus(submission.performanceStatus).label !== selectedStatus) {
         return false;
       }
@@ -224,7 +230,7 @@ const StaffSubmissionHistoryPage = () => {
         submission.reportingPeriod.toLowerCase().includes(normalized)
       );
     });
-  }, [search, selectedPeriod, selectedStatus, selectedReviewStatus, selectedKpiName, submissions]);
+  }, [search, selectedStatus, selectedReviewStatus, selectedKpiName, submissions]);
 
   const totalPages = Math.max(1, Math.ceil(filteredSubmissions.length / PAGE_SIZE));
   const pagedSubmissions = filteredSubmissions.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -376,6 +382,22 @@ const StaffSubmissionHistoryPage = () => {
               </Stack>
             </Stack>
 
+            {newlyReviewedIds.size > 0 && (
+              <Alert
+                severity="info"
+                sx={{
+                  borderRadius: 2.5,
+                  bgcolor: '#EFF6FF',
+                  border: '1px solid #BFDBFE',
+                  color: '#1E40AF',
+                  '& .MuiAlert-icon': { color: '#3B82F6' },
+                  fontWeight: 500,
+                }}
+              >
+                You have {newlyReviewedIds.size} submission{newlyReviewedIds.size > 1 ? 's' : ''} with recent review decisions from your Committee Lead.
+              </Alert>
+            )}
+
             <Paper
               elevation={0}
               sx={{ border: '1px solid #E2E5EC', borderRadius: 2.5, p: { xs: 1.5, md: 2 }, bgcolor: '#fff' }}
@@ -397,35 +419,6 @@ const StaffSubmissionHistoryPage = () => {
                     },
                   }}
                 />
-                <Chip
-                  icon={<FilterListOutlinedIcon sx={{ fontSize: 16 }} />}
-                  label="Filters"
-                  variant="outlined"
-                  sx={{
-                    borderRadius: 2,
-                    borderColor: '#E2E5EC',
-                    bgcolor: '#fff',
-                    color: '#374151',
-                    fontWeight: 500,
-                    fontSize: '0.875rem',
-                    height: 40,
-                    flexShrink: 0,
-                    alignSelf: { xs: 'flex-start', lg: 'center' },
-                    '& .MuiChip-icon': { color: '#6B7280' },
-                  }}
-                />
-                <TextField
-                  select
-                  value={selectedPeriod}
-                  onChange={(event) => setSelectedPeriod(event.target.value)}
-                  sx={{ minWidth: { xs: '100%', lg: 150 }, ...inputFieldSx }}
-                >
-                  {periodOptions.map((period) => (
-                    <MenuItem key={period} value={period}>
-                      {period === 'ALL' ? 'All Periods' : period}
-                    </MenuItem>
-                  ))}
-                </TextField>
                 <TextField
                   select
                   value={selectedStatus}
@@ -482,7 +475,7 @@ const StaffSubmissionHistoryPage = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      {['Submission ID', 'KPI Name', 'Deadline', 'Submitted / Target', 'Achiev. %', 'Status', 'Review', 'Submitted At'].map((header) => (
+                      {['Submission ID', 'KPI Name', 'Progress', 'Review', 'Submitted At'].map((header) => (
                         <TableCell key={header} sx={tableHeaderCellSx}>
                           {header}
                         </TableCell>
@@ -492,7 +485,7 @@ const StaffSubmissionHistoryPage = () => {
                   <TableBody>
                     {!isLoading && pagedSubmissions.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={8} sx={{ borderBottom: 0 }}>
+                        <TableCell colSpan={5} sx={{ borderBottom: 0 }}>
                           <Typography sx={{ textAlign: 'center', py: 4, color: '#9BA1AE', lineHeight: 1.6 }}>
                             No submission records found.
                           </Typography>
@@ -519,37 +512,55 @@ const StaffSubmissionHistoryPage = () => {
                             {formatSubmissionId(submission.id)}
                           </TableCell>
                           <TableCell sx={{ ...tableBodyCellSx, color: '#374151' }}>{submission.kpiName}</TableCell>
-                          <TableCell sx={tableBodyCellSx}>{kpiMeta?.deadline ? formatDisplayDate(kpiMeta.deadline) : '--'}</TableCell>
                           <TableCell sx={tableBodyCellSx}>
-                            <Typography sx={{ fontWeight: 700, lineHeight: 1.5, color: '#111827' }}>
-                              {submission.submittedValue}
-                              {kpiMeta?.unit ? ` ${kpiMeta.unit}` : ''}
+                            <Typography sx={{ fontWeight: 700, lineHeight: 1.4, color: '#111827', fontSize: '0.875rem' }}>
+                              {submission.submittedValue}{kpiMeta?.targetValue ? ` / ${kpiMeta.targetValue}` : ''}{kpiMeta?.unit ? ` ${kpiMeta.unit}` : ''}
                             </Typography>
-                            <Typography variant="caption" sx={{ color: '#9BA1AE', lineHeight: 1.5, display: 'block' }}>
-                              Target: {kpiMeta?.targetValue ?? '--'}
-                              {kpiMeta?.unit ? ` ${kpiMeta.unit}` : ''}
-                            </Typography>
-                          </TableCell>
-                          <TableCell sx={{ ...tableBodyCellSx, fontWeight: 700, color: status.achievementColor }}>
-                            {(submission.achievementRate ?? 0).toFixed(0)}%
-                          </TableCell>
-                          <TableCell sx={tableBodyCellSx}>
-                            <Chip
-                              label={status.label}
-                              size="small"
-                              sx={{
-                                bgcolor: status.bg,
-                                color: status.color,
-                                fontWeight: 600,
-                                fontSize: '0.75rem',
-                                height: 26,
-                                borderRadius: 999,
-                                px: 0.5,
-                              }}
-                            />
+                            <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', mt: 0.5 }}>
+                              <Chip
+                                label={status.label}
+                                size="small"
+                                sx={{
+                                  bgcolor: status.bg,
+                                  color: status.color,
+                                  fontWeight: 700,
+                                  fontSize: '0.7rem',
+                                  height: 20,
+                                  borderRadius: 999,
+                                  px: 0.25,
+                                }}
+                              />
+                              <Typography variant="caption" sx={{ fontWeight: 700, color: status.achievementColor, fontSize: '0.75rem' }}>
+                                {(submission.achievementRate ?? 0).toFixed(0)}%
+                              </Typography>
+                            </Stack>
                           </TableCell>
                           <TableCell sx={tableBodyCellSx}>
-                            <SubmissionReviewBadge status={submission.reviewStatus} />
+                            {newlyReviewedIds.has(submission.id) || submission.memberViewed === false ? (
+                              <Tooltip title="Recently reviewed by Committee Lead" arrow placement="top">
+                                <Badge
+                                  variant="dot"
+                                  color="error"
+                                  overlap="circular"
+                                  sx={{
+                                    '& .MuiBadge-badge': {
+                                      bgcolor: '#EF4444',
+                                      boxShadow: '0 0 0 2px #fff',
+                                      top: 2,
+                                      right: 2,
+                                      width: 8,
+                                      height: 8,
+                                      minWidth: 8,
+                                      borderRadius: '50%',
+                                    },
+                                  }}
+                                >
+                                  <SubmissionReviewBadge status={submission.reviewStatus} />
+                                </Badge>
+                              </Tooltip>
+                            ) : (
+                              <SubmissionReviewBadge status={submission.reviewStatus} />
+                            )}
                           </TableCell>
                           <TableCell sx={{ ...tableBodyCellSx, color: '#6B7280' }}>
                             {formatDisplayDateTime(submission.createdAt)}
@@ -933,6 +944,27 @@ const StaffSubmissionHistoryPage = () => {
                     {selectedSubmission.notes ? `"${selectedSubmission.notes}"` : 'No notes provided.'}
                   </Typography>
                 </Paper>
+                {selectedSubmission.reviewStatus === 'APPROVED' && selectedSubmission.reviewedByName && (
+                  <Box sx={{ mt: 2 }}>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 2,
+                        borderRadius: 2.5,
+                        borderColor: '#A7F3D0',
+                        bgcolor: '#ECFDF5',
+                      }}
+                    >
+                      <Typography sx={{ fontWeight: 600, color: '#065F46', fontSize: '0.875rem' }}>
+                        Approved by {selectedSubmission.reviewedByName}
+                        {selectedSubmission.reviewedAt ? ` on ${formatDisplayDateTime(selectedSubmission.reviewedAt)}` : ''}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#047857', display: 'block', mt: 0.5 }}>
+                        This contribution has been approved as an official record for consortium KPIs.
+                      </Typography>
+                    </Paper>
+                  </Box>
+                )}
                 {selectedSubmission.reviewStatus === 'REJECTED' && (
                   <Box sx={{ mt: 2 }}>
                     <RejectionFeedbackPanel

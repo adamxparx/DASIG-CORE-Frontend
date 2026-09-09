@@ -4,6 +4,7 @@ import { tokenStorage } from '../../auth/utils/tokenStorage';
 import type {
   AssignableKpi,
   CreateKpiSubmissionRequest,
+  KpiSubmissionBadgeCountsResponse,
   KpiSubmissionResponse,
   ReviewKpiSubmissionRequest,
   SubmissionReviewStatus,
@@ -11,6 +12,8 @@ import type {
  
 const SUBMISSION_ENDPOINT = '/api/kpi-submissions';
 const ASSIGNABLE_ENDPOINT = '/api/kpi-submissions/assignable';
+
+export const SUBMISSIONS_CHANGED_EVENT = 'submissions:changed';
  
 export const kpiSubmissionService = {
   getAssignableKpis(): Promise<AssignableKpi[]> {
@@ -45,14 +48,28 @@ export const kpiSubmissionService = {
     return apiClient<KpiSubmissionResponse[]>(query ? `${SUBMISSION_ENDPOINT}?${query}` : SUBMISSION_ENDPOINT);
   },
 
-  reviewSubmission(
+  async reviewSubmission(
     submissionId: number,
     request: ReviewKpiSubmissionRequest,
   ): Promise<KpiSubmissionResponse> {
-    return apiClient<KpiSubmissionResponse>(`${SUBMISSION_ENDPOINT}/${submissionId}/review`, {
+    const response = await apiClient<KpiSubmissionResponse>(`${SUBMISSION_ENDPOINT}/${submissionId}/review`, {
       method: 'PATCH',
       body: request,
     });
+    window.dispatchEvent(new Event(SUBMISSIONS_CHANGED_EVENT));
+    return response;
+  },
+
+  getBadgeCounts(): Promise<KpiSubmissionBadgeCountsResponse> {
+    return apiClient<KpiSubmissionBadgeCountsResponse>(`${SUBMISSION_ENDPOINT}/badge-counts`);
+  },
+
+  async markSubmissionsAsViewed(submissionIds?: number[]): Promise<void> {
+    await apiClient<void>(`${SUBMISSION_ENDPOINT}/mark-viewed`, {
+      method: 'PATCH',
+      body: submissionIds && submissionIds.length > 0 ? { submissionIds } : {},
+    });
+    window.dispatchEvent(new Event(SUBMISSIONS_CHANGED_EVENT));
   },
  
   async downloadDocument(documentId: number): Promise<Blob> {
@@ -96,9 +113,11 @@ export const kpiSubmissionService = {
     }
  
     try {
-      return JSON.parse(bodyText) as KpiSubmissionResponse;
+      const created = JSON.parse(bodyText) as KpiSubmissionResponse;
+      window.dispatchEvent(new Event(SUBMISSIONS_CHANGED_EVENT));
+      return created;
     } catch {
       throw new ApiError('Invalid response from KPI submission endpoint.', response.status);
     }
   },
-};
+};
