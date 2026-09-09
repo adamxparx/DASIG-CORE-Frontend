@@ -226,7 +226,8 @@ const sectionLabelSx = {
 
 
 
-const formatSubmissionId = (id: number) => `SUB-${new Date().getFullYear()}-${String(id).padStart(4, '0')}`;
+const formatSubmissionReference = (submission: Pick<KpiSubmissionResponse, 'id' | 'referenceCode'>) =>
+  submission.referenceCode ?? String(submission.id);
 
 const formatDisplayDate = (rawDate: string) =>
   new Date(rawDate).toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' });
@@ -429,7 +430,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
         (submission.organizationName ?? '').toLowerCase().includes(normalized) ||
 
-        formatSubmissionId(submission.id).toLowerCase().includes(normalized)
+        formatSubmissionReference(submission).toLowerCase().includes(normalized)
 
       );
 
@@ -500,7 +501,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
       return [
 
-        formatSubmissionId(submission.id),
+        formatSubmissionReference(submission),
 
         submission.submittedByName ?? 'Unknown',
 
@@ -992,7 +993,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                     <TableRow>
                       {[
-                        'Submission ID',
+                        'Reference',
                         'Member',
                         'KPI Name',
                         'Progress',
@@ -1057,7 +1058,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                           <TableCell sx={{ ...tableBodyCellSx, fontWeight: 600, color: '#111827' }}>
 
-                            {formatSubmissionId(submission.id)}
+                            {formatSubmissionReference(submission)}
 
                           </TableCell>
 
@@ -1414,7 +1415,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                   <Typography variant="body2" sx={{ color: '#9BA1AE', lineHeight: 1.7, mt: 0.5 }}>
 
-                    ID: {formatSubmissionId(selectedSubmission.id)} •{' '}
+                    Reference: {formatSubmissionReference(selectedSubmission)} •{' '}
 
                     {mapStatus(selectedSubmission.performanceStatus).label}
 
