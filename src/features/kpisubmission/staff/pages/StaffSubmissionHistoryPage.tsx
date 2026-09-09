@@ -110,7 +110,8 @@ const sectionLabelSx = {
   lineHeight: 1.6,
 };
 
-const formatSubmissionId = (id: number) => `#SUB-${String(id).padStart(4, '0')}`;
+const formatSubmissionReference = (submission: Pick<KpiSubmissionResponse, 'id' | 'referenceCode'>) =>
+  submission.referenceCode ?? String(submission.id);
 const formatDisplayDate = (rawDate: string) =>
   new Date(rawDate).toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' });
 const formatDisplayDateTime = (rawDate: string) =>
@@ -226,7 +227,7 @@ const StaffSubmissionHistoryPage = () => {
 
       return (
         submission.kpiName.toLowerCase().includes(normalized) ||
-        formatSubmissionId(submission.id).toLowerCase().includes(normalized) ||
+        formatSubmissionReference(submission).toLowerCase().includes(normalized) ||
         submission.reportingPeriod.toLowerCase().includes(normalized)
       );
     });
@@ -246,11 +247,11 @@ const StaffSubmissionHistoryPage = () => {
     : null;
 
   const handleExportCsv = () => {
-    const header = ['subId', 'kpiName', 'deadline', 'submittedValue', 'targetValue', 'status', 'submittedAt'];
+    const header = ['reference', 'kpiName', 'deadline', 'submittedValue', 'targetValue', 'status', 'submittedAt'];
     const rows = filteredSubmissions.map((submission) => {
       const kpiMeta = assignableById.get(submission.kpiDefinitionId);
       return [
-        formatSubmissionId(submission.id),
+        formatSubmissionReference(submission),
         submission.kpiName,
         kpiMeta?.deadline ? formatDisplayDate(kpiMeta.deadline) : '',
         String(submission.submittedValue),
@@ -475,7 +476,7 @@ const StaffSubmissionHistoryPage = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      {['Submission ID', 'KPI Name', 'Progress', 'Review', 'Submitted At'].map((header) => (
+                      {['Reference', 'KPI Name', 'Progress', 'Review', 'Submitted At'].map((header) => (
                         <TableCell key={header} sx={tableHeaderCellSx}>
                           {header}
                         </TableCell>
@@ -509,7 +510,7 @@ const StaffSubmissionHistoryPage = () => {
                           }}
                         >
                           <TableCell sx={{ ...tableBodyCellSx, fontWeight: 600, color: '#111827' }}>
-                            {formatSubmissionId(submission.id)}
+                            {formatSubmissionReference(submission)}
                           </TableCell>
                           <TableCell sx={{ ...tableBodyCellSx, color: '#374151' }}>{submission.kpiName}</TableCell>
                           <TableCell sx={tableBodyCellSx}>
@@ -701,7 +702,7 @@ const StaffSubmissionHistoryPage = () => {
                   Submission Details
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#9BA1AE', lineHeight: 1.7, mt: 0.5 }}>
-                  ID: {formatSubmissionId(selectedSubmission.id)} • {mapStatus(selectedSubmission.performanceStatus).label}
+                  Reference: {formatSubmissionReference(selectedSubmission)} • {mapStatus(selectedSubmission.performanceStatus).label}
                 </Typography>
                 <Box sx={{ mt: 1 }}>
                   <SubmissionReviewBadge status={selectedSubmission.reviewStatus} />

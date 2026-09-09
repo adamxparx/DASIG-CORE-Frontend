@@ -48,6 +48,7 @@ export interface KpiSubmissionResponse {
   submissionType: 'INTERNAL' | 'FINAL';
   achievementRate: number;
   performanceStatus: string;
+  referenceCode?: string;
   reviewStatus?: SubmissionReviewStatus;
   rejectionReason?: string;
   reviewedByName?: string;
