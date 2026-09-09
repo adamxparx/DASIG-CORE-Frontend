@@ -69,6 +69,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { kpiSubmissionService } from '../../api/kpiSubmissionService';
 
 import type { AssignableKpi, KpiSubmissionResponse, SubmissionDocumentResponse, SubmissionReviewStatus } from '../../types/kpiSubmission.types';
+import { dashboardService } from '../../../dashboard/shared/api/dashboardService';
+import type { DashboardCommitteeOption } from '../../../dashboard/shared/types/dashboard.types';
 
 import ReviewActionDialog from '../../shared/components/ReviewActionDialog';
 
@@ -314,9 +316,13 @@ const TbiManagerSubmissionHistoryPage = () => {
 
   const [selectedKpiName, setSelectedKpiName] = useState<'ALL' | string>('ALL');
 
+  const [selectedCommitteeId, setSelectedCommitteeId] = useState<'ALL' | number>('ALL');
+
   const [submissions, setSubmissions] = useState<KpiSubmissionResponse[]>([]);
 
   const [assignableKpis, setAssignableKpis] = useState<AssignableKpi[]>([]);
+
+  const [committeeOptions, setCommitteeOptions] = useState<DashboardCommitteeOption[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -346,17 +352,23 @@ const TbiManagerSubmissionHistoryPage = () => {
 
     try {
 
-      const [submissionData, assignableData] = await Promise.all([
+      const [submissionData, assignableData, dashboardData] = await Promise.all([
 
-        kpiSubmissionService.getSubmissions(),
+        kpiSubmissionService.getSubmissions({
+          committeeId: selectedCommitteeId === 'ALL' ? undefined : selectedCommitteeId,
+        }),
 
         kpiSubmissionService.getAssignableKpis(),
+
+        dashboardService.getDashboard(),
 
       ]);
 
       setSubmissions(submissionData);
 
       setAssignableKpis(assignableData);
+
+      setCommitteeOptions(dashboardData.committees ?? []);
 
     } catch (err) {
 
@@ -368,7 +380,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
     }
 
-  }, []);
+  }, [selectedCommitteeId]);
 
 
 
@@ -420,6 +432,8 @@ const TbiManagerSubmissionHistoryPage = () => {
 
         (submission.submittedByName ?? '').toLowerCase().includes(normalized) ||
 
+        (submission.organizationName ?? '').toLowerCase().includes(normalized) ||
+
         formatSubmissionId(submission.id).toLowerCase().includes(normalized)
 
       );
@@ -467,6 +481,8 @@ const TbiManagerSubmissionHistoryPage = () => {
 
       'member',
 
+      'organization',
+
       'kpiName',
 
       'deadline',
@@ -492,6 +508,8 @@ const TbiManagerSubmissionHistoryPage = () => {
         formatSubmissionId(submission.id),
 
         submission.submittedByName ?? 'Unknown',
+
+        submission.organizationName ?? 'Unknown',
 
         submission.kpiName,
 
@@ -788,6 +806,20 @@ const TbiManagerSubmissionHistoryPage = () => {
 
 
                 <TextField
+                  select
+                  value={selectedCommitteeId}
+                  onChange={(event) => setSelectedCommitteeId(event.target.value === 'ALL' ? 'ALL' : Number(event.target.value))}
+                  sx={{ minWidth: { xs: '100%', lg: 190 }, ...inputFieldSx }}
+                >
+                  <MenuItem value="ALL">All Committees</MenuItem>
+                  {committeeOptions.map((committee) => (
+                    <MenuItem key={committee.id} value={committee.id}>
+                      {committee.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+
+                <TextField
 
                   select
 
@@ -933,6 +965,8 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                         'Member',
 
+                        'Organization',
+
                         'KPI Name',
 
                         'Deadline',
@@ -967,7 +1001,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                       <TableRow>
 
-                        <TableCell colSpan={9} sx={{ borderBottom: 0 }}>
+                        <TableCell colSpan={10} sx={{ borderBottom: 0 }}>
 
                           <Typography sx={{ textAlign: 'center', py: 4, color: '#9BA1AE', lineHeight: 1.6 }}>
 
@@ -1065,6 +1099,10 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                             </Stack>
 
+                          </TableCell>
+
+                          <TableCell sx={{ ...tableBodyCellSx, color: '#374151', fontWeight: 600 }}>
+                            {submission.organizationName ?? '--'}
                           </TableCell>
 
                           <TableCell sx={{ ...tableBodyCellSx, color: '#374151' }}>{submission.kpiName}</TableCell>

@@ -22,6 +22,7 @@ export const kpiSubmissionService = {
     reportingPeriod?: string;
     submissionType?: 'INTERNAL' | 'FINAL';
     reviewStatus?: SubmissionReviewStatus;
+    committeeId?: number;
   }): Promise<KpiSubmissionResponse[]> {
     const searchParams = new URLSearchParams();
     if (params?.kpiDefinitionId !== undefined) {
@@ -35,6 +36,9 @@ export const kpiSubmissionService = {
     }
     if (params?.reviewStatus) {
       searchParams.set('reviewStatus', params.reviewStatus);
+    }
+    if (params?.committeeId !== undefined) {
+      searchParams.set('committeeId', String(params.committeeId));
     }
  
     const query = searchParams.toString();
