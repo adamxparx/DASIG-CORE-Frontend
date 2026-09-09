@@ -27,6 +27,7 @@ import type { OrganizationResponse } from '../../../organization/types/organizat
 import { kpiService } from '../../shared/api/kpiService';
 import type {
   CreateKpiDefinitionRequest,
+  ReportingFrequency,
   UpdateKpiDefinitionRequest,
 } from '../../shared/types/kpi.types';
 import { getDeadlineFieldHelperText } from '../../../notification/utils/notificationDisplay';
@@ -98,6 +99,9 @@ const CreateKpiPage = () => {
     preloadedKpi ? formatDateForInput(preloadedKpi.deadline) : ''
   );
   const [committeeId, setCommitteeId] = useState<number | ''>('');
+  const [reportingFrequency, setReportingFrequency] = useState<ReportingFrequency>(
+    preloadedKpi?.reportingFrequency ?? 'ONE_TIME'
+  );
 
   /* ── UI / API state ─────────────────────── */
   const [committees, setCommittees] = useState<CommitteeResponse[]>([]);
@@ -147,6 +151,9 @@ const CreateKpiPage = () => {
           setTargetValue(String(kpiDef.targetValue));
           setUnit(kpiDef.unit);
           setDeadline(formatDateForInput(kpiDef.deadline));
+          if (kpiDef.reportingFrequency) {
+            setReportingFrequency(kpiDef.reportingFrequency);
+          }
 
           const matched = committeeData.find(
             (c) =>
@@ -255,7 +262,7 @@ const CreateKpiPage = () => {
       deadline,
       // Silent defaults — not exposed in the UI
       threshold: 100,
-      reportingFrequency: 'ONE_TIME' as const,
+      reportingFrequency: reportingFrequency || 'ONE_TIME',
     };
 
     try {
