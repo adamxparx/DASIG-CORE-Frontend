@@ -34,8 +34,8 @@ const AdminKpiSummaryCards: React.FC<AdminKpiSummaryCardsProps> = ({ kpis }) => 
       return computeKpiStatus(kpi.submittedValue, overallTarget, kpi.deadline) === 'AT_RISK';
     }).length;
 
-    // In progress: ON_TRACK (not completed, not delayed, not at risk)
-    const inProgress = Math.max(0, total - completed - delayed - atRisk);
+    // In progress: all active ongoing KPIs (includes ON_TRACK and AT_RISK)
+    const inProgress = Math.max(0, total - completed - delayed);
 
     const completedPercentage = total > 0 ? Math.round((completed / total) * 100) : 0;
     const inProgressPercentage = total > 0 ? Math.round((inProgress / total) * 100) : 0;
@@ -75,7 +75,10 @@ const AdminKpiSummaryCards: React.FC<AdminKpiSummaryCardsProps> = ({ kpis }) => 
     {
       title: 'IN PROGRESS KPIS',
       value: stats.inProgress,
-      subtitle: stats.total > 0 ? `${stats.inProgressPercentage}% of total (${stats.inProgress}/${stats.total})` : 'Ongoing submissions',
+      subtitle:
+        stats.total > 0
+          ? `${stats.inProgressPercentage}% of total (${stats.inProgress}/${stats.total}${stats.atRisk > 0 ? ` • ${stats.atRisk} at risk` : ''})`
+          : 'Ongoing submissions',
       accentColor: '#F59E0B',
       iconBg: '#FFFBEB',
       iconColor: '#F59E0B',
