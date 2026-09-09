@@ -88,6 +88,8 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
   }, []);
 
   useEffect(() => {
+    let active = true;
+
     const loadKpis = async () => {
       setIsLoadingKpis(true);
       try {
@@ -95,20 +97,34 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
           kpiSubmissionService.getAssignableKpis(),
           kpiSubmissionService.getSubmissions(),
         ]);
-        const finalSubmissionData = role === 'STAFF'
-          ? await kpiSubmissionService.getSubmissions({ submissionType: 'FINAL' })
-          : [];
+        const finalSubmissionData =
+          role === 'STAFF'
+            ? await kpiSubmissionService.getSubmissions({ submissionType: 'FINAL' })
+            : [];
+
+        if (!active) return;
+
         setAssignableKpis(data);
         setSubmissions([...submissionData, ...finalSubmissionData]);
-        setSelectedKpiId('');
+        setSelectedKpiId((prev) => {
+          if (prev === '') return '';
+          return data.some((kpi) => kpi.id === prev) ? prev : '';
+        });
       } catch (err) {
+        if (!active) return;
         showToast(err instanceof Error ? err.message : 'Failed to load assigned KPIs.', 'error');
       } finally {
-        setIsLoadingKpis(false);
+        if (active) {
+          setIsLoadingKpis(false);
+        }
       }
     };
 
     void loadKpis();
+
+    return () => {
+      active = false;
+    };
   }, [role, showToast]);
 
   const selectedKpi = assignableKpis.find((kpi) => kpi.id === selectedKpiId) ?? null;
