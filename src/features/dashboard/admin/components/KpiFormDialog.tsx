@@ -243,7 +243,7 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
       // Silent defaults — not exposed in the UI
       threshold: 100,
       committeeId: committeeId as number,
-      reportingFrequency: 'ONE_TIME' as const,
+      reportingFrequency: (isEdit && kpi?.reportingFrequency ? kpi.reportingFrequency : 'ONE_TIME'),
     };
 
     try {

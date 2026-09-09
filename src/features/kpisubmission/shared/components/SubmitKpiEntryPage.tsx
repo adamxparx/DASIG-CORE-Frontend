@@ -122,17 +122,14 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
   const submissionType = role === 'STAFF' ? 'INTERNAL' : 'FINAL';
 
   const applyTbiPrefill = (kpi: AssignableKpi | null, nextPeriod: string, nextSubmissionDate: string) => {
-    if (role !== 'TBI_MANAGER') {
+    if (role !== 'TBI_MANAGER' || !kpi || !nextPeriod) {
       return;
     }
 
-    if (!kpi || !nextPeriod) {
-      return;
-    }
-
+    const isOneTime = kpi.reportingFrequency === 'ONE_TIME';
     const tbiFinalSubmission = submissions.find((submission) =>
       submission.kpiDefinitionId === kpi.id &&
-      submission.reportingPeriod === nextPeriod &&
+      (isOneTime || submission.reportingPeriod === nextPeriod) &&
       submission.submissionType === 'FINAL'
     );
     if (tbiFinalSubmission) {
@@ -141,7 +138,7 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
 
     const staffInternalSubmission = submissions.find((submission) =>
       submission.kpiDefinitionId === kpi.id &&
-      submission.reportingPeriod === nextPeriod &&
+      (isOneTime || submission.reportingPeriod === nextPeriod) &&
       submission.submissionType === 'INTERNAL'
     );
     if (!staffInternalSubmission) {
@@ -195,7 +192,9 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
         submission.kpiDefinitionId === selectedKpi.id && submission.submissionType === submissionType
       )
     : [];
-  const previousSubmittedValue = sumPreviousPeriodValues(relatedSubmissions, periodOptions, period);
+  const previousSubmittedValue = selectedKpi?.reportingFrequency === 'ONE_TIME'
+    ? relatedSubmissions.reduce((sum, s) => sum + s.submittedValue, 0)
+    : sumPreviousPeriodValues(relatedSubmissions, periodOptions, period);
   const cumulativeSubmittedValue = previousSubmittedValue + numericSubmittedValue;
   const expectedTargetValue = selectedKpi
     ? getExpectedPeriodValue(selectedKpi.targetValue, periodOptions, period)
