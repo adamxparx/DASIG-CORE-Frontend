@@ -9,7 +9,8 @@ export const dashboardService = {
     return apiClient<DashboardApiResponse>(`${DASHBOARD_ENDPOINT}${query}`);
   },
 
-  getKpiPeriodHistory(kpiDefinitionId: number): Promise<KpiPeriodHistoryResponse> {
-    return apiClient<KpiPeriodHistoryResponse>(`${DASHBOARD_ENDPOINT}/kpis/${kpiDefinitionId}/period-history`);
+  getKpiPeriodHistory(kpiDefinitionId: number, committeeId?: number): Promise<KpiPeriodHistoryResponse> {
+    const query = committeeId != null ? `?committeeId=${committeeId}` : '';
+    return apiClient<KpiPeriodHistoryResponse>(`${DASHBOARD_ENDPOINT}/kpis/${kpiDefinitionId}/period-history${query}`);
   },
 };

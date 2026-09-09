@@ -30,6 +30,7 @@ import KpiProgressChart from '../../shared/components/KpiProgressChart';
 import DeleteKpiDialog from '../../admin/components/DeleteKpiDialog';
 import ArchiveKpiDialog from '../../admin/components/ArchiveKpiDialog';
 import UnarchiveKpiDialog from '../../admin/components/UnarchiveKpiDialog';
+import SubmissionReviewBadge from '../../../kpisubmission/shared/components/SubmissionReviewBadge';
 
 const formatDate = (date: string) =>
   new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -45,9 +46,25 @@ const mapPerformanceStatus = (status: string): DashboardStatus => {
   return 'DELAYED';
 };
 
-const formatSubmissionType = (type: 'INTERNAL' | 'FINAL') => {
-  if (type === 'INTERNAL') return 'Member Submission';
-  return 'Official Final';
+const dashboardStatusLabelMap: Record<DashboardStatus, string> = {
+  COMPLETED: 'Completed',
+  ON_TRACK: 'In Progress',
+  AT_RISK: 'At Risk',
+  DELAYED: 'Overdue',
+};
+
+const dashboardStatusArrowMap: Record<DashboardStatus, string> = {
+  COMPLETED: '↑',
+  ON_TRACK: '↑',
+  AT_RISK: '→',
+  DELAYED: '↓',
+};
+
+const simpleChipSx = {
+  bgcolor: '#F8FAFC',
+  border: '1px solid #E5E7EB',
+  color: '#374151',
+  fontWeight: 700,
 };
 
 const formatRoleLabel = (role: string) => {
@@ -55,6 +72,136 @@ const formatRoleLabel = (role: string) => {
   if (role === 'TBI_MANAGER') return 'Committee Lead';
   return role.replaceAll('_', ' ');
 };
+
+type SubmissionHistoryRow = KpiPeriodHistoryResponse['periods'][number]['submissions'][number] & {
+  rowKey: string;
+};
+
+const SubmissionRecordsTable = ({
+  rows,
+  unit,
+  emptyMessage,
+  showReview = false,
+}: {
+  rows: SubmissionHistoryRow[];
+  unit: string;
+  emptyMessage: string;
+  showReview?: boolean;
+}) => (
+  <Box sx={{ overflowX: 'auto' }}>
+    <Table
+      size="small"
+      sx={{
+        minWidth: showReview ? 860 : 780,
+        '& th': {
+          bgcolor: '#F8FAFC',
+          color: '#64748B',
+          fontSize: 12,
+          fontWeight: 800,
+          letterSpacing: 0.4,
+          textTransform: 'uppercase',
+          borderBottom: '1px solid #E5E7EB',
+        },
+        '& td': {
+          borderBottom: '1px solid #EEF2F7',
+          py: 1.5,
+        },
+        '& tbody tr:last-child td': {
+          borderBottom: 0,
+        },
+      }}
+    >
+      <TableHead>
+        <TableRow>
+          <TableCell>Submission Date</TableCell>
+          <TableCell>Organization</TableCell>
+          <TableCell>Submitted by</TableCell>
+          <TableCell>Value</TableCell>
+          <TableCell>Achievement</TableCell>
+          <TableCell>Status</TableCell>
+          {showReview && <TableCell>Review</TableCell>}
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {rows.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={showReview ? 7 : 6}>
+              <Box
+                sx={{
+                  border: '1px dashed #CBD5E1',
+                  borderRadius: 2,
+                  bgcolor: '#F8FAFC',
+                  px: 1.5,
+                  py: 1,
+                }}
+              >
+                <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 600 }}>
+                  {emptyMessage}
+                </Typography>
+              </Box>
+            </TableCell>
+          </TableRow>
+        ) : (
+          rows.map((submission, index) => (
+            <TableRow
+              key={submission.rowKey}
+              sx={{
+                bgcolor: index % 2 === 0 ? '#FFFFFF' : '#FBFDFF',
+                '&:hover': { bgcolor: '#F8FAFC' },
+              }}
+            >
+              <TableCell>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#111827' }}>
+                  {formatDate(submission.submissionDate)}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827' }}>
+                  {submission.organizationName ?? '--'}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Stack spacing={0.25}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827' }}>
+                    {submission.submittedByName}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#64748B' }}>
+                    {formatRoleLabel(submission.submittedByRole)}
+                  </Typography>
+                </Stack>
+              </TableCell>
+              <TableCell>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#111827' }}>
+                  {formatMetricValue(submission.submittedValue)}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#64748B' }}>
+                  {unit}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#111827' }}>
+                  {formatMetricValue(submission.achievementRate)}%
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Chip
+                  label={dashboardStatusLabelMap[mapPerformanceStatus(submission.performanceStatus)]}
+                  size="small"
+                  sx={simpleChipSx}
+                />
+              </TableCell>
+              {showReview && (
+                <TableCell>
+                  <SubmissionReviewBadge status={submission.reviewStatus} />
+                </TableCell>
+              )}
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  </Box>
+);
 
 const KpiDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -68,6 +215,7 @@ const KpiDetailPage = () => {
 
   const [kpi, setKpi] = useState<DashboardKpiItem | null>(null);
   const [history, setHistory] = useState<KpiPeriodHistoryResponse | null>(null);
+  const [selectedOrganizationName, setSelectedOrganizationName] = useState<string | null>(null);
   const [isLoadingKpi, setIsLoadingKpi] = useState(true);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,6 +248,7 @@ const KpiDetailPage = () => {
 
   useEffect(() => {
     if (kpiId) {
+      setSelectedOrganizationName(null);
       void loadKpi();
     }
   }, [kpiId]);
@@ -174,6 +323,36 @@ const KpiDetailPage = () => {
   }
 
   const isArchived = Boolean(kpi.archived || kpi.kpiStatus === 'ARCHIVED');
+  const isCommitteeLeadDetail = userRole === 'tbi_manager';
+  const showOrganizationAudit = isAdmin || isCommitteeLeadDetail;
+  const submissionRows =
+    history?.periods.flatMap((period) =>
+      period.submissions.map((submission) => ({
+        ...submission,
+        rowKey: `${period.reportingPeriod}-${submission.id}`,
+      }))
+    ) ?? [];
+  const derivedBreakdownMap = submissionRows
+    .filter((submission) => submission.submissionType === 'FINAL')
+    .reduce((map, submission) => {
+      const organizationName = submission.organizationName ?? 'Unassigned organization';
+      const existing = map.get(organizationName);
+      map.set(organizationName, {
+        organizationName,
+        submittedValue: (existing?.submittedValue ?? 0) + submission.submittedValue,
+        status: mapPerformanceStatus(submission.performanceStatus),
+      });
+      return map;
+    }, new Map<string, { organizationName: string; submittedValue: number; status: DashboardStatus }>());
+  const organizationBreakdowns =
+    isCommitteeLeadDetail && kpi.organizationBreakdowns && kpi.organizationBreakdowns.length > 0
+      ? kpi.organizationBreakdowns
+      : [...derivedBreakdownMap.values()];
+  const filteredSubmissionRows = selectedOrganizationName
+    ? submissionRows.filter((submission) => (submission.organizationName ?? 'Unassigned organization') === selectedOrganizationName)
+    : submissionRows;
+  const officialFinalRows = filteredSubmissionRows.filter((submission) => submission.submissionType === 'FINAL');
+  const memberSubmissionRows = filteredSubmissionRows.filter((submission) => submission.submissionType === 'INTERNAL');
 
   return (
     <AdminPageLayout>
@@ -336,7 +515,7 @@ const KpiDetailPage = () => {
 
         <Paper elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2.5 }}>
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
-            Period History
+            Submission History
           </Typography>
 
           {isLoadingHistory ? (
@@ -344,7 +523,7 @@ const KpiDetailPage = () => {
               <CircularProgress size={28} />
             </Stack>
           ) : error || !history ? (
-            <Alert severity="error">Unable to load period history.</Alert>
+            <Alert severity="error">Unable to load submission history.</Alert>
           ) : (
             <Stack spacing={2.5}>
               <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
@@ -356,139 +535,136 @@ const KpiDetailPage = () => {
               </Stack>
 
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Official final submissions by reporting period.
+                Official final submissions with organization audit details.
               </Typography>
 
               <KpiProgressChart history={history} role="DASIG_ADMIN" />
 
-              <Box sx={{ overflowX: 'auto' }}>
-                <Table size="small" sx={{ minWidth: 780 }}>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Period</TableCell>
-                      <TableCell>Submission</TableCell>
-                      <TableCell>Submitted by</TableCell>
-                      <TableCell>Value</TableCell>
-                      <TableCell>Achievement</TableCell>
-                      <TableCell>Status</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {history.periods.map((period: KpiPeriodHistoryResponse['periods'][number]) =>
-                      period.submissions.length === 0 ? (
-                        <TableRow
-                          key={period.reportingPeriod}
+              {showOrganizationAudit && (
+                <Box
+                  sx={{
+                    border: '1px solid #E5E7EB',
+                    borderRadius: 3,
+                    bgcolor: '#FFFFFF',
+                    boxShadow: '0 10px 30px rgba(15, 23, 42, 0.04)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <Stack spacing={0.5} sx={{ p: 2, borderBottom: '1px solid #E5E7EB' }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#111827' }}>
+                      Organization Breakdown
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      Click an organization to filter the records below.
+                    </Typography>
+                  </Stack>
+
+                  {organizationBreakdowns.length === 0 ? (
+                    <Box sx={{ p: 2 }}>
+                      <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                        No organization breakdown available for this KPI yet.
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Stack spacing={1.25} sx={{ p: 2 }}>
+                      <Stack
+                        direction={{ xs: 'column', sm: 'row' }}
+                        spacing={1}
+                        onClick={() => setSelectedOrganizationName(null)}
+                        sx={{
+                          justifyContent: 'space-between',
+                          alignItems: { sm: 'center' },
+                          cursor: 'pointer',
+                          borderRadius: 2,
+                          p: 1,
+                          bgcolor: selectedOrganizationName === null ? '#F8FAFC' : 'transparent',
+                          '&:hover': { bgcolor: '#F8FAFC' },
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ color: '#111827', fontWeight: 700 }}>
+                          All Organizations
+                        </Typography>
+                        <Chip label="Showing all records" size="small" sx={simpleChipSx} />
+                      </Stack>
+                      {organizationBreakdowns.map((breakdown) => (
+                        <Stack
+                          key={breakdown.organizationName}
+                          direction={{ xs: 'column', sm: 'row' }}
+                          spacing={1}
+                          onClick={() => setSelectedOrganizationName(breakdown.organizationName)}
                           sx={{
-                            bgcolor: period.current ? 'action.hover' : 'transparent',
+                            justifyContent: 'space-between',
+                            alignItems: { sm: 'center' },
+                            cursor: 'pointer',
+                            borderRadius: 2,
+                            p: 1,
+                            bgcolor: selectedOrganizationName === breakdown.organizationName ? '#F8FAFC' : 'transparent',
+                            '&:hover': { bgcolor: '#F8FAFC' },
                           }}
                         >
-                          <TableCell>
-                            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                              <Typography variant="body2" sx={{ fontWeight: period.current ? 800 : 600 }}>
-                                {period.reportingPeriod}
-                              </Typography>
-                              {period.current && (
-                                <Chip label="Current" size="small" color="primary" variant="outlined" sx={{ height: 22 }} />
-                              )}
-                            </Stack>
-                          </TableCell>
-                          <TableCell colSpan={5}>
-                            <Box
-                              sx={{
-                                border: '1px dashed',
-                                borderColor: 'divider',
-                                borderRadius: 1,
-                                bgcolor: 'action.hover',
-                                px: 1.5,
-                                py: 1,
-                              }}
-                            >
-                              <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                                No submission recorded for this period
-                              </Typography>
-                            </Box>
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        period.submissions.map((submission: KpiPeriodHistoryResponse['periods'][number]['submissions'][number], index: number) => (
-                          <TableRow
-                            key={`${period.reportingPeriod}-${submission.id}`}
-                            sx={{
-                              bgcolor: period.current ? 'action.hover' : index % 2 === 0 ? 'transparent' : 'action.hover',
-                            }}
-                          >
-                            <TableCell>
-                              {index === 0 ? (
-                                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                                  <Typography variant="body2" sx={{ fontWeight: period.current ? 800 : 600 }}>
-                                    {period.reportingPeriod}
-                                  </Typography>
-                                  {period.current && (
-                                    <Chip label="Current" size="small" color="primary" variant="outlined" sx={{ height: 22 }} />
-                                  )}
-                                </Stack>
-                              ) : (
-                                <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-                                  same period
-                                </Typography>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Chip
-                                label={formatSubmissionType(submission.submissionType)}
-                                size="small"
-                                sx={{
-                                  bgcolor: submission.submissionType === 'FINAL' ? 'success.light' : 'info.light',
-                                  color: submission.submissionType === 'FINAL' ? 'success.dark' : 'info.dark',
-                                  fontWeight: 700,
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Stack spacing={0.25}>
-                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                  {submission.submittedByName}
-                                </Typography>
-                                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                  {formatRoleLabel(submission.submittedByRole)}
-                                </Typography>
-                              </Stack>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                                {formatMetricValue(submission.submittedValue)}
-                              </Typography>
-                              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                {history.unit}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                                {formatMetricValue(submission.achievementRate)}%
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Chip
-                                label={mapPerformanceStatus(submission.performanceStatus)}
-                                size="small"
-                                sx={{
-                                  bgcolor: submission.performanceStatus === 'GREEN' ? 'success.light' : submission.performanceStatus === 'YELLOW' ? 'warning.light' : 'error.light',
-                                  color: submission.performanceStatus === 'GREEN' ? 'success.dark' : submission.performanceStatus === 'YELLOW' ? 'warning.dark' : 'error.dark',
-                                  fontWeight: 700,
-                                }}
-                              />
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )
-                    )}
-                  </TableBody>
-                </Table>
-              </Box>
+                          <Typography variant="body2" sx={{ color: '#111827', fontWeight: 700 }}>
+                            {breakdown.organizationName}
+                          </Typography>
+                          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                            <Typography variant="body2" sx={{ color: '#374151', fontWeight: 600 }}>
+                              {formatMetricValue(breakdown.submittedValue)} {history.unit}
+                            </Typography>
+                            <Chip
+                              label={dashboardStatusLabelMap[breakdown.status]}
+                              size="small"
+                              sx={simpleChipSx}
+                            />
+                            <Typography variant="body2" sx={{ color: '#111827', fontWeight: 800 }}>
+                              {dashboardStatusArrowMap[breakdown.status]}
+                            </Typography>
+                          </Stack>
+                        </Stack>
+                      ))}
+                    </Stack>
+                  )}
+                </Box>
+              )}
+
+              <Stack spacing={2}>
+                <Box>
+                  <Stack spacing={0.25} sx={{ mb: 1.25 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#111827' }}>
+                      Official Final Records
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      Records that affect official dashboard progress.
+                    </Typography>
+                  </Stack>
+                  <SubmissionRecordsTable
+                    rows={officialFinalRows}
+                    unit={history.unit}
+                    emptyMessage="No official final records found for this selection."
+                  />
+                </Box>
+
+                {(memberSubmissionRows.length > 0 || isCommitteeLeadDetail) && (
+                  <Box>
+                    <Stack spacing={0.25} sx={{ mb: 1.25 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#111827' }}>
+                        Member Submission Audit
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        Member submissions kept for review and audit history.
+                      </Typography>
+                    </Stack>
+                    <SubmissionRecordsTable
+                      rows={memberSubmissionRows}
+                      unit={history.unit}
+                      emptyMessage="No member submissions found for this selection."
+                      showReview
+                    />
+                  </Box>
+                )}
+              </Stack>
 
               {history.periods.length === 0 && (
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  No reporting periods are configured for this KPI yet.
+                  No submission history is available for this KPI yet.
                 </Typography>
               )}
             </Stack>

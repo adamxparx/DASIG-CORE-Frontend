@@ -27,6 +27,15 @@ export interface DashboardKpiItem {
   archived?: boolean;
   committeeId?: number;
   committeeName?: string;
+  organizationBreakdowns?: DashboardOrganizationProgress[];
+}
+
+export interface DashboardOrganizationProgress {
+  organizationId: number;
+  organizationName: string;
+  submittedValue: number;
+  achievementRate: number;
+  status: DashboardStatus;
 }
 
 export interface DashboardCommitteeOption {
@@ -59,6 +68,8 @@ export interface KpiPeriodSubmissionEntry {
   reviewedByName?: string;
   submittedByName: string;
   submittedByRole: string;
+  organizationId?: number;
+  organizationName?: string;
   submissionDate: string;
 }
 

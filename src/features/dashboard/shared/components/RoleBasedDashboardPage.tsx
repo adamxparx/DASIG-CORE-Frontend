@@ -394,6 +394,7 @@ const RoleBasedDashboardPage = ({
         open={historyDrawerOpen}
         kpi={selectedKpiForHistory}
         role={role}
+        committeeId={role === 'TBI_MANAGER' ? selectedCommitteeId ?? undefined : undefined}
         onClose={() => {
           setHistoryDrawerOpen(false);
           setSelectedKpiForHistory(null);

@@ -18,7 +18,6 @@ import { ApiError } from '../../../../lib/api/client';
 import { dashboardService } from '../api/dashboardService';
 import type { DashboardKpiItem, KpiPeriodHistoryResponse, UserRole } from '../types/dashboard.types';
 import KpiProgressChart from './KpiProgressChart';
-import KpiStatusBadge from './KpiStatusBadge';
 import type { DashboardStatus } from '../types/dashboard.types';
 import SubmissionReviewBadge from '../../../kpisubmission/shared/components/SubmissionReviewBadge';
 
@@ -26,6 +25,7 @@ interface KpiPeriodHistoryDrawerProps {
   open: boolean;
   kpi: DashboardKpiItem | null;
   role: UserRole;
+  committeeId?: number;
   onClose: () => void;
 }
 
@@ -42,6 +42,20 @@ const formatSubmissionType = (type: 'INTERNAL' | 'FINAL') => {
   return 'Official Final';
 };
 
+const dashboardStatusLabelMap: Record<DashboardStatus, string> = {
+  COMPLETED: 'Completed',
+  ON_TRACK: 'In Progress',
+  AT_RISK: 'At Risk',
+  DELAYED: 'Overdue',
+};
+
+const dashboardStatusArrowMap: Record<DashboardStatus, string> = {
+  COMPLETED: '↑',
+  ON_TRACK: '↑',
+  AT_RISK: '→',
+  DELAYED: '↓',
+};
+
 const formatDate = (rawDate: string) =>
   new Date(rawDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 
@@ -54,7 +68,14 @@ const formatRoleLabel = (role: string) => {
 const formatMetricValue = (value: number) =>
   value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDrawerProps) => {
+const simpleChipSx = {
+  bgcolor: '#F8FAFC',
+  border: '1px solid #E5E7EB',
+  color: '#374151',
+  fontWeight: 700,
+};
+
+const KpiPeriodHistoryDrawer = ({ open, kpi, role, committeeId, onClose }: KpiPeriodHistoryDrawerProps) => {
   const [history, setHistory] = useState<KpiPeriodHistoryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,24 +89,35 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDr
       setIsLoading(true);
       setError(null);
       try {
-        const response = await dashboardService.getKpiPeriodHistory(kpi.id);
+        const response = await dashboardService.getKpiPeriodHistory(kpi.id, committeeId);
         setHistory(response);
       } catch (err) {
         setHistory(null);
-        setError(err instanceof ApiError ? err.message : 'Unable to load period history.');
+        setError(err instanceof ApiError ? err.message : 'Unable to load submission history.');
       } finally {
         setIsLoading(false);
       }
     };
 
     void loadHistory();
-  }, [open, kpi]);
+  }, [open, kpi, committeeId]);
 
   const handleClose = () => {
     setHistory(null);
     setError(null);
     onClose();
   };
+
+  const totalSubmissionCount = history?.periods.reduce((total, period) => total + period.submissions.length, 0) ?? 0;
+  const submissionRows =
+    history?.periods.flatMap((period) =>
+      period.submissions.map((submission) => ({
+        ...submission,
+        rowKey: `${period.reportingPeriod}-${submission.id}`,
+      }))
+    ) ?? [];
+  const showOrganizationColumn = role !== 'STAFF';
+  const submissionTableColSpan = showOrganizationColumn ? 8 : 7;
 
   return (
     <Drawer
@@ -103,7 +135,7 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDr
         >
           <Box sx={{ pr: 2 }}>
             <Typography variant="overline" sx={{ color: '#6B7280', letterSpacing: 1 }}>
-              Period history
+              Submission history
             </Typography>
             <Typography variant="h5" sx={{ fontWeight: 700, color: '#1F2329' }}>
               {kpi?.name ?? 'KPI'}
@@ -112,7 +144,7 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDr
               {kpi?.organization}
             </Typography>
           </Box>
-          <IconButton onClick={handleClose} aria-label="Close period history">
+          <IconButton onClick={handleClose} aria-label="Close submission history">
             <CloseIcon />
           </IconButton>
         </Stack>
@@ -140,13 +172,61 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDr
 
               <Typography variant="body2" sx={{ color: '#6B7280' }}>
                 {role === 'DASIG_ADMIN'
-                  ? 'Official final submissions by reporting period.'
+                  ? 'Official final submissions with organization audit details.'
                   : role === 'STAFF'
-                    ? 'Official approved submissions by reporting period.'
-                    : 'Member submissions and official final submissions by period.'}
+                    ? 'Official approved submissions with their submitted dates.'
+                    : 'Member submissions and official final submissions with organization audit details.'}
               </Typography>
 
               <KpiProgressChart history={history} role={role} />
+
+              {role === 'TBI_MANAGER' && kpi?.organizationBreakdowns && kpi.organizationBreakdowns.length > 0 && (
+                <Box
+                  sx={{
+                    border: '1px solid #E5E7EB',
+                    borderRadius: 3,
+                    bgcolor: '#FFFFFF',
+                    boxShadow: '0 10px 30px rgba(15, 23, 42, 0.06)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <Stack spacing={0.5} sx={{ p: 2, borderBottom: '1px solid #E5E7EB' }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#111827' }}>
+                      Organization Breakdown
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#6B7280' }}>
+                      Official final progress contributed by each organization in this committee.
+                    </Typography>
+                  </Stack>
+                  <Stack spacing={1.25} sx={{ p: 2 }}>
+                    {kpi.organizationBreakdowns.map((breakdown) => (
+                      <Stack
+                        key={breakdown.organizationId}
+                        direction={{ xs: 'column', sm: 'row' }}
+                        spacing={1}
+                        sx={{ justifyContent: 'space-between', alignItems: { sm: 'center' } }}
+                      >
+                        <Typography variant="body2" sx={{ color: '#111827', fontWeight: 700 }}>
+                          {breakdown.organizationName}
+                        </Typography>
+                        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                          <Typography variant="body2" sx={{ color: '#374151', fontWeight: 600 }}>
+                            {formatMetricValue(breakdown.submittedValue)} {history.unit}
+                          </Typography>
+                          <Chip
+                            label={dashboardStatusLabelMap[breakdown.status]}
+                            size="small"
+                            sx={simpleChipSx}
+                          />
+                          <Typography variant="body2" sx={{ color: '#111827', fontWeight: 800 }}>
+                            {dashboardStatusArrowMap[breakdown.status]}
+                          </Typography>
+                        </Stack>
+                      </Stack>
+                    ))}
+                  </Stack>
+                </Box>
+              )}
 
               <Box
                 sx={{
@@ -170,14 +250,14 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDr
                 >
                   <Box>
                     <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#111827' }}>
-                      Period submission records
+                      Submission records
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#6B7280' }}>
-                      Exact submitted values used for the chart and dashboard status.
+                      Exact submitted values used for dashboard history and audit review.
                     </Typography>
                   </Box>
                   <Chip
-                    label={`${history.periods.length} periods`}
+                    label={`${totalSubmissionCount} records`}
                     size="small"
                     sx={{ bgcolor: '#EEF2FF', color: '#3730A3', fontWeight: 700 }}
                   />
@@ -209,8 +289,9 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDr
                   >
                     <TableHead>
                       <TableRow>
-                        <TableCell>Period</TableCell>
+                        <TableCell>Submission Date</TableCell>
                         <TableCell>Submission</TableCell>
+                        {showOrganizationColumn && <TableCell>Organization</TableCell>}
                         <TableCell>Submitted by</TableCell>
                         <TableCell align="right">Value</TableCell>
                         <TableCell align="right">Achievement</TableCell>
@@ -219,115 +300,87 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDr
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {history.periods.map((period) =>
-                        period.submissions.length === 0 ? (
+                      {submissionRows.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={submissionTableColSpan}>
+                            <Box
+                              sx={{
+                                border: '1px dashed #CBD5E1',
+                                borderRadius: 2,
+                                bgcolor: '#F8FAFC',
+                                px: 1.5,
+                                py: 1,
+                              }}
+                            >
+                              <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 600 }}>
+                                No submission recorded
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        submissionRows.map((submission, index) => (
                           <TableRow
-                            key={period.reportingPeriod}
+                            key={submission.rowKey}
                             sx={{
-                              bgcolor: period.current ? '#EFF6FF' : '#FFFFFF',
-                              opacity: period.current ? 1 : 0.9,
+                              bgcolor: index % 2 === 0 ? '#FFFFFF' : '#FBFDFF',
+                              '&:hover': { bgcolor: '#F8FAFC' },
                             }}
                           >
                             <TableCell>
-                              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                                <Typography variant="body2" sx={{ fontWeight: period.current ? 800 : 600, color: '#111827' }}>
-                                  {period.reportingPeriod}
-                                </Typography>
-                                {period.current && (
-                                  <Chip label="Current" size="small" color="primary" variant="outlined" sx={{ height: 22 }} />
-                                )}
-                              </Stack>
+                              <Typography variant="body2" sx={{ fontWeight: 700, color: '#111827' }}>
+                                {formatDate(submission.submissionDate)}
+                              </Typography>
                             </TableCell>
-                            <TableCell colSpan={6}>
-                              <Box
-                                sx={{
-                                  border: '1px dashed #CBD5E1',
-                                  borderRadius: 2,
-                                  bgcolor: '#F8FAFC',
-                                  px: 1.5,
-                                  py: 1,
-                                }}
-                              >
-                                <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 600 }}>
-                                  No submission recorded for this period
-                                </Typography>
-                              </Box>
+                            <TableCell>
+                              <Chip
+                                label={formatSubmissionType(submission.submissionType)}
+                                size="small"
+                                sx={simpleChipSx}
+                              />
                             </TableCell>
-                          </TableRow>
-                        ) : (
-                          period.submissions.map((submission, index) => (
-                            <TableRow
-                              key={`${period.reportingPeriod}-${submission.id}`}
-                              sx={{
-                                bgcolor: period.current ? '#EFF6FF' : index % 2 === 0 ? '#FFFFFF' : '#FBFDFF',
-                                '&:hover': { bgcolor: period.current ? '#DBEAFE' : '#F8FAFC' },
-                              }}
-                            >
+                            {showOrganizationColumn && (
                               <TableCell>
-                                {index === 0 ? (
-                                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                                    <Typography variant="body2" sx={{ fontWeight: period.current ? 800 : 600, color: '#111827' }}>
-                                      {period.reportingPeriod}
-                                    </Typography>
-                                    {period.current && (
-                                      <Chip
-                                        label="Current"
-                                        size="small"
-                                        color="primary"
-                                        variant="outlined"
-                                        sx={{ height: 22 }}
-                                      />
-                                    )}
-                                  </Stack>
-                                ) : (
-                                  <Typography variant="body2" sx={{ color: '#CBD5E1' }}>
-                                    same period
-                                  </Typography>
-                                )}
+                                <Typography variant="body2" sx={{ color: '#111827', fontWeight: 600 }}>
+                                  {submission.organizationName ?? '--'}
+                                </Typography>
                               </TableCell>
-                              <TableCell>
-                                <Chip
-                                  label={formatSubmissionType(submission.submissionType)}
-                                  size="small"
-                                  sx={{
-                                    bgcolor: submission.submissionType === 'FINAL' ? '#ECFDF5' : '#EFF6FF',
-                                    color: submission.submissionType === 'FINAL' ? '#047857' : '#1D4ED8',
-                                    fontWeight: 700,
-                                  }}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Stack spacing={0.25}>
-                                  <Typography variant="body2" sx={{ color: '#111827', fontWeight: 600 }}>
-                                    {submission.submittedByName}
-                                  </Typography>
-                                  <Typography variant="caption" sx={{ color: '#64748B' }}>
-                                    {formatRoleLabel(submission.submittedByRole)}
-                                  </Typography>
-                                </Stack>
-                              </TableCell>
-                              <TableCell align="right">
-                                <Typography variant="body2" sx={{ color: '#111827', fontWeight: 700 }}>
-                                  {formatMetricValue(submission.submittedValue)}
+                            )}
+                            <TableCell>
+                              <Stack spacing={0.25}>
+                                <Typography variant="body2" sx={{ color: '#111827', fontWeight: 600 }}>
+                                  {submission.submittedByName}
                                 </Typography>
                                 <Typography variant="caption" sx={{ color: '#64748B' }}>
-                                  {history.unit}
+                                  {formatRoleLabel(submission.submittedByRole)}
                                 </Typography>
-                              </TableCell>
-                              <TableCell align="right">
-                                <Typography variant="body2" sx={{ color: '#111827', fontWeight: 700 }}>
-                                  {formatMetricValue(submission.achievementRate)}%
-                                </Typography>
-                              </TableCell>
-                              <TableCell>
-                                <KpiStatusBadge status={mapPerformanceStatus(submission.performanceStatus)} />
-                              </TableCell>
-                              <TableCell>
-                                <SubmissionReviewBadge status={submission.reviewStatus} />
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )
+                              </Stack>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Typography variant="body2" sx={{ color: '#111827', fontWeight: 700 }}>
+                                {formatMetricValue(submission.submittedValue)}
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: '#64748B' }}>
+                                {history.unit}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Typography variant="body2" sx={{ color: '#111827', fontWeight: 700 }}>
+                                {formatMetricValue(submission.achievementRate)}%
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={dashboardStatusLabelMap[mapPerformanceStatus(submission.performanceStatus)]}
+                                size="small"
+                                sx={simpleChipSx}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <SubmissionReviewBadge status={submission.reviewStatus} />
+                            </TableCell>
+                          </TableRow>
+                        ))
                       )}
                     </TableBody>
                   </Table>
@@ -336,7 +389,7 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, onClose }: KpiPeriodHistoryDr
 
               {history.periods.length === 0 && (
                 <Typography variant="body2" sx={{ color: '#6B7280' }}>
-                  No reporting periods are configured for this KPI yet.
+                  No submission history is available for this KPI yet.
                 </Typography>
               )}
             </Stack>
