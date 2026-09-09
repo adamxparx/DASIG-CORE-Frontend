@@ -12,8 +12,6 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 
-import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined';
-
 import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
 
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
@@ -308,8 +306,6 @@ const TbiManagerSubmissionHistoryPage = () => {
 
   const [search, setSearch] = useState('');
 
-  const [selectedPeriod, setSelectedPeriod] = useState<'ALL' | string>('ALL');
-
   const [selectedStatus, setSelectedStatus] = useState<'ALL' | string>('ALL');
 
   const [selectedReviewStatus, setSelectedReviewStatus] = useState<'ALL' | SubmissionReviewStatus>('ALL');
@@ -400,11 +396,12 @@ const TbiManagerSubmissionHistoryPage = () => {
 
 
 
-  const periodOptions = useMemo(() => ['ALL', ...new Set(submissions.map((item) => item.reportingPeriod))], [submissions]);
-
-
-
   const kpiOptions = useMemo(() => ['ALL', ...new Set(submissions.map((item) => item.kpiName))], [submissions]);
+
+  const pendingReviewCount = useMemo(
+    () => submissions.filter((item) => item.reviewStatus === 'PENDING').length,
+    [submissions]
+  );
 
 
 
@@ -413,8 +410,6 @@ const TbiManagerSubmissionHistoryPage = () => {
     const normalized = search.trim().toLowerCase();
 
     return submissions.filter((submission) => {
-
-      if (selectedPeriod !== 'ALL' && submission.reportingPeriod !== selectedPeriod) return false;
 
       if (selectedStatus !== 'ALL' && mapStatus(submission.performanceStatus).label !== selectedStatus) return false;
 
@@ -440,7 +435,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
     });
 
-  }, [search, selectedPeriod, selectedStatus, selectedReviewStatus, selectedKpiName, submissions]);
+  }, [search, selectedStatus, selectedReviewStatus, selectedKpiName, submissions]);
 
 
 
@@ -723,7 +718,21 @@ const TbiManagerSubmissionHistoryPage = () => {
 
             </Stack>
 
-
+            {pendingReviewCount > 0 && (
+              <Alert
+                severity="warning"
+                sx={{
+                  borderRadius: 2.5,
+                  bgcolor: '#FEF3C7',
+                  border: '1px solid #FDE68A',
+                  color: '#92400E',
+                  '& .MuiAlert-icon': { color: '#D97706' },
+                  fontWeight: 500,
+                }}
+              >
+                You have {pendingReviewCount} member submission{pendingReviewCount > 1 ? 's' : ''} awaiting review and approval.
+              </Alert>
+            )}
 
             <Paper
 
@@ -769,42 +778,6 @@ const TbiManagerSubmissionHistoryPage = () => {
 
 
 
-                <Chip
-
-                  icon={<FilterListOutlinedIcon sx={{ fontSize: 16 }} />}
-
-                  label="Filters"
-
-                  variant="outlined"
-
-                  sx={{
-
-                    borderRadius: 2,
-
-                    borderColor: '#E2E5EC',
-
-                    bgcolor: '#fff',
-
-                    color: '#374151',
-
-                    fontWeight: 500,
-
-                    fontSize: '0.875rem',
-
-                    height: 40,
-
-                    flexShrink: 0,
-
-                    alignSelf: { xs: 'flex-start', lg: 'center' },
-
-                    '& .MuiChip-icon': { color: '#6B7280' },
-
-                  }}
-
-                />
-
-
-
                 <TextField
                   select
                   value={selectedCommitteeId}
@@ -817,30 +790,6 @@ const TbiManagerSubmissionHistoryPage = () => {
                       {committee.name}
                     </MenuItem>
                   ))}
-                </TextField>
-
-                <TextField
-
-                  select
-
-                  value={selectedPeriod}
-
-                  onChange={(event) => setSelectedPeriod(event.target.value)}
-
-                  sx={{ minWidth: { xs: '100%', lg: 150 }, ...inputFieldSx }}
-
-                >
-
-                  {periodOptions.map((period) => (
-
-                    <MenuItem key={period} value={period}>
-
-                      {period === 'ALL' ? 'All Periods' : period}
-
-                    </MenuItem>
-
-                  ))}
-
                 </TextField>
 
                 <TextField
@@ -868,27 +817,111 @@ const TbiManagerSubmissionHistoryPage = () => {
                 </TextField>
 
                 <TextField
-
                   select
-
                   value={selectedReviewStatus}
-
                   onChange={(event) => setSelectedReviewStatus(event.target.value as 'ALL' | SubmissionReviewStatus)}
-
-                  sx={{ minWidth: { xs: '100%', lg: 150 }, ...inputFieldSx }}
-
+                  sx={{ minWidth: { xs: '100%', lg: 165 }, ...inputFieldSx }}
+                  slotProps={{
+                    select: {
+                      renderValue: (selected: unknown) => {
+                      if (selected === 'ALL') {
+                        return (
+                          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                            <span>All Reviews</span>
+                            {pendingReviewCount > 0 && (
+                              <Box
+                                component="span"
+                                sx={{
+                                  bgcolor: '#EF4444',
+                                  color: '#fff',
+                                  fontWeight: 700,
+                                  fontSize: '0.72rem',
+                                  height: 18,
+                                  minWidth: 18,
+                                  px: 0.6,
+                                  borderRadius: 999,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  lineHeight: 1,
+                                }}
+                              >
+                                {pendingReviewCount}
+                              </Box>
+                            )}
+                          </Box>
+                        );
+                      }
+                      if (selected === 'PENDING') {
+                        return (
+                          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                            <span>Pending</span>
+                            {pendingReviewCount > 0 && (
+                              <Box
+                                component="span"
+                                sx={{
+                                  bgcolor: '#EF4444',
+                                  color: '#fff',
+                                  fontWeight: 700,
+                                  fontSize: '0.72rem',
+                                  height: 18,
+                                  minWidth: 18,
+                                  px: 0.6,
+                                  borderRadius: 999,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  lineHeight: 1,
+                                }}
+                              >
+                                {pendingReviewCount}
+                              </Box>
+                            )}
+                          </Box>
+                        );
+                      }
+                      if (selected === 'APPROVED') return 'Approved';
+                      if (selected === 'REJECTED') return 'Rejected';
+                        return String(selected);
+                      },
+                    },
+                  }}
                 >
-
-                  {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((status) => (
-
-                    <MenuItem key={status} value={status}>
-
-                      {status === 'ALL' ? 'All Reviews' : status.charAt(0) + status.slice(1).toLowerCase()}
-
-                    </MenuItem>
-
-                  ))}
-
+                  <MenuItem value="ALL">All Reviews</MenuItem>
+                  <MenuItem
+                    value="PENDING"
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 2,
+                    }}
+                  >
+                    <span>Pending</span>
+                    {pendingReviewCount > 0 && (
+                      <Box
+                        component="span"
+                        sx={{
+                          bgcolor: '#EF4444',
+                          color: '#fff',
+                          fontWeight: 700,
+                          fontSize: '0.72rem',
+                          height: 19,
+                          minWidth: 19,
+                          px: 0.65,
+                          borderRadius: 999,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          lineHeight: 1,
+                        }}
+                      >
+                        {pendingReviewCount}
+                      </Box>
+                    )}
+                  </MenuItem>
+                  <MenuItem value="APPROVED">Approved</MenuItem>
+                  <MenuItem value="REJECTED">Rejected</MenuItem>
                 </TextField>
 
                 <TextField
@@ -958,50 +991,25 @@ const TbiManagerSubmissionHistoryPage = () => {
                   <TableHead>
 
                     <TableRow>
-
                       {[
-
                         'Submission ID',
-
                         'Member',
-
-                        'Organization',
-
                         'KPI Name',
-
-                        'Deadline',
-
-                        'Submitted / Target',
-
-                        'Achiev. %',
-
-                        'Status',
-
+                        'Progress',
                         'Review',
-
                         'Submitted At',
-
                       ].map((header) => (
-
                         <TableCell key={header} sx={tableHeaderCellSx}>
-
                           {header}
-
                         </TableCell>
-
                       ))}
-
                     </TableRow>
-
                   </TableHead>
 
                   <TableBody>
-
                     {!isLoading && pagedSubmissions.length === 0 && (
-
                       <TableRow>
-
-                        <TableCell colSpan={10} sx={{ borderBottom: 0 }}>
+                        <TableCell colSpan={6} sx={{ borderBottom: 0 }}>
 
                           <Typography sx={{ textAlign: 'center', py: 4, color: '#9BA1AE', lineHeight: 1.6 }}>
 
@@ -1100,75 +1108,36 @@ const TbiManagerSubmissionHistoryPage = () => {
                             </Stack>
 
                           </TableCell>
-
-                          <TableCell sx={{ ...tableBodyCellSx, color: '#374151', fontWeight: 600 }}>
-                            {submission.organizationName ?? '--'}
+                          <TableCell sx={{ ...tableBodyCellSx, color: '#374151', fontWeight: 500 }}>
+                            {submission.kpiName}
                           </TableCell>
 
-                          <TableCell sx={{ ...tableBodyCellSx, color: '#374151' }}>{submission.kpiName}</TableCell>
-
-                          <TableCell sx={tableBodyCellSx}>{kpiMeta?.deadline ? formatDisplayDate(kpiMeta.deadline) : '--'}</TableCell>
-
                           <TableCell sx={tableBodyCellSx}>
-
-                            <Typography sx={{ fontWeight: 700, lineHeight: 1.5, color: '#111827' }}>
-
-                              {submission.submittedValue}
-
-                              {kpiMeta?.unit ? ` ${kpiMeta.unit}` : ''}
-
+                            <Typography sx={{ fontWeight: 700, lineHeight: 1.4, color: '#111827', fontSize: '0.875rem' }}>
+                              {submission.submittedValue}{kpiMeta?.targetValue ? ` / ${kpiMeta.targetValue}` : ''}{kpiMeta?.unit ? ` ${kpiMeta.unit}` : ''}
                             </Typography>
-
-                            <Typography variant="caption" sx={{ color: '#9BA1AE', lineHeight: 1.5, display: 'block' }}>
-
-                              Target: {kpiMeta?.targetValue ?? '--'}
-
-                              {kpiMeta?.unit ? ` ${kpiMeta.unit}` : ''}
-
-                            </Typography>
-
-                          </TableCell>
-
-                          <TableCell sx={{ ...tableBodyCellSx, fontWeight: 700, color: status.achievementColor }}>
-
-                            {(submission.achievementRate ?? 0).toFixed(0)}%
-
-                          </TableCell>
-
-                          <TableCell sx={tableBodyCellSx}>
-
-                            <Chip
-
-                              label={status.label}
-
-                              size="small"
-
-                              sx={{
-
-                                bgcolor: status.bg,
-
-                                color: status.color,
-
-                                fontWeight: 600,
-
-                                fontSize: '0.75rem',
-
-                                height: 26,
-
-                                borderRadius: 999,
-
-                                px: 0.5,
-
-                              }}
-
-                            />
-
+                            <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', mt: 0.5 }}>
+                              <Chip
+                                label={status.label}
+                                size="small"
+                                sx={{
+                                  bgcolor: status.bg,
+                                  color: status.color,
+                                  fontWeight: 700,
+                                  fontSize: '0.7rem',
+                                  height: 20,
+                                  borderRadius: 999,
+                                  px: 0.25,
+                                }}
+                              />
+                              <Typography variant="caption" sx={{ fontWeight: 700, color: status.achievementColor, fontSize: '0.75rem' }}>
+                                {(submission.achievementRate ?? 0).toFixed(0)}%
+                              </Typography>
+                            </Stack>
                           </TableCell>
 
                           <TableCell sx={tableBodyCellSx}>
-
                             <SubmissionReviewBadge status={submission.reviewStatus} />
-
                           </TableCell>
                           <TableCell sx={{ ...tableBodyCellSx, color: '#6B7280' }}>
                             {formatDisplayDateTime(submission.createdAt)}
@@ -1363,7 +1332,6 @@ const TbiManagerSubmissionHistoryPage = () => {
             </Paper>
 
           </Stack>
-
         </Box>
 
 

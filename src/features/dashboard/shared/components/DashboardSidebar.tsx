@@ -42,6 +42,7 @@ import dasig_logo from '../../../../assets/dasig_logo.svg';
 import { tokenStorage } from '../../../auth/utils/tokenStorage';
 import { useUnacknowledgedAlertCount } from '../../../alerts/hooks/useUnacknowledgedAlertCount';
 import { useUnreadNotificationCount } from '../../../notification/hooks/useUnreadNotificationCount';
+import { useSubmissionBadgeCounts } from '../../../kpisubmission/hooks/useSubmissionBadgeCounts';
 import { useDashboardShell } from '../components/DashboardShellContext';
 import type { UserRole } from '../types/dashboard.types';
 
@@ -383,6 +384,9 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
   const { unreadCount } = useUnreadNotificationCount(showNotificationBadge);
   const showAlertBadge = role === 'DASIG_ADMIN';
   const { unacknowledgedCount } = useUnacknowledgedAlertCount(showAlertBadge);
+  const { pendingCount, unreadReviewCount } = useSubmissionBadgeCounts(role);
+  const submissionHistoryBadgeCount =
+    role === 'TBI_MANAGER' ? pendingCount : role === 'STAFF' ? unreadReviewCount : 0;
 
   const accent = roleAccent[role];
   const tutorialSteps = tutorialStepsByRole[role] ?? [];
@@ -568,6 +572,19 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
                   color="error"
                   invisible={unacknowledgedCount === 0}
                   overlap="circular"
+                  max={99}
+                  sx={{
+                    '& .MuiBadge-badge': {
+                      boxShadow: '0 0 0 2px #fff',
+                    },
+                  }}
+                >
+                  {item.icon}
+                </Badge>
+              ) : item.key === 'history' && submissionHistoryBadgeCount > 0 ? (
+                <Badge
+                  badgeContent={submissionHistoryBadgeCount}
+                  color="error"
                   max={99}
                   sx={{
                     '& .MuiBadge-badge': {

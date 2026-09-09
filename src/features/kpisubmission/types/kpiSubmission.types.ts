@@ -54,5 +54,11 @@ export interface KpiSubmissionResponse {
   reviewedAt?: string;
   sourceSubmissionId?: number;
   documents: SubmissionDocumentResponse[];
+  memberViewed?: boolean;
   createdAt: string;
+}
+
+export interface KpiSubmissionBadgeCountsResponse {
+  pendingCount: number;
+  unreadReviewCount: number;
 }
