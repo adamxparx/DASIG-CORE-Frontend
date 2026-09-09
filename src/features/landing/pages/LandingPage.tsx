@@ -89,24 +89,22 @@ const LandingPage = () => {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
-        height: { md: '100vh' },
-        maxHeight: { md: '100vh' },
+        minHeight: '100dvh',
         display: 'flex',
         flexDirection: 'column',
         bgcolor: '#F8FAFC',
         backgroundImage: 'radial-gradient(ellipse 70% 40% at 50% -10%, rgba(66, 110, 240, 0.07), transparent 70%)',
         color: '#0F172A',
         overflowX: 'hidden',
-        overflowY: { xs: 'auto', md: 'hidden' },
+        overflowY: 'auto',
       }}
     >
       {/* Top Header */}
       <Box
         component="header"
         sx={{
-          py: 1.5,
-          px: { xs: 2.5, sm: 4, md: 6 },
+          py: { xs: 1.5, xl: 2 },
+          px: { xs: 2.5, sm: 4, md: 6, xl: 8 },
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -116,14 +114,22 @@ const LandingPage = () => {
           flexShrink: 0,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.75, xl: 2 } }}>
           <Box
             component="img"
             src={dasig_logo}
             alt="DASIG Logo"
-            sx={{ width: 40, height: 40, objectFit: 'contain' }}
+            sx={{ width: { xs: 40, xl: 46 }, height: { xs: 40, xl: 46 }, objectFit: 'contain' }}
           />
-          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#0F172A', letterSpacing: '-0.2px' }}>
+          <Typography
+            variant="subtitle1"
+            sx={{
+              fontWeight: 800,
+              color: '#0F172A',
+              letterSpacing: '-0.2px',
+              fontSize: { xs: '1rem', xl: '1.2rem' },
+            }}
+          >
             DASIG-CORE
           </Typography>
         </Box>
@@ -136,24 +142,30 @@ const LandingPage = () => {
           flexGrow: 1,
           display: 'flex',
           alignItems: 'center',
-          minHeight: { md: 0 },
-          py: { xs: 3.5, sm: 4.5, md: 0 },
+          py: { xs: 3.5, sm: 4.5, md: 3, xl: 5 },
         }}
       >
-        <Container maxWidth="lg" sx={{ my: { md: 'auto' }, px: { xs: 2.5, sm: 3, md: 4 } }}>
+        <Container
+          maxWidth={false}
+          sx={{
+            maxWidth: { xs: '100%', sm: 600, md: 1040, lg: 1200, xl: 1440 },
+            my: 'auto',
+            px: { xs: 2.5, sm: 3, md: 4, xl: 5 },
+          }}
+        >
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: '1.15fr 0.85fr' },
+              gridTemplateColumns: { xs: '1fr', md: '1.15fr 0.85fr', xl: '1.2fr 0.8fr' },
               gap: { xs: 0, md: 0 },
-              alignItems: 'stretch',
+              alignItems: 'center',
             }}
           >
             {/* Left Column: Brand & Context */}
             <Box
               sx={{
-                pr: { md: 5, lg: 7 },
-                py: { md: 2 },
+                pr: { md: 5, lg: 7, xl: 9 },
+                py: { md: 2, xl: 3 },
                 order: { xs: 2, md: 1 },
                 display: 'flex',
                 flexDirection: 'column',
@@ -164,11 +176,11 @@ const LandingPage = () => {
                 component="h1"
                 sx={{
                   fontWeight: 800,
-                  fontSize: { xs: '1.75rem', sm: '2.1rem', md: '2.35rem' },
+                  fontSize: { xs: '1.75rem', sm: '2.1rem', md: '2.35rem', xl: '2.85rem' },
                   letterSpacing: '-0.6px',
-                  lineHeight: 1.18,
+                  lineHeight: { xs: 1.18, xl: 1.16 },
                   color: '#0F172A',
-                  mb: 1.75,
+                  mb: { xs: 1.75, xl: 2.5 },
                 }}
               >
                 Consortium Oversight and Reporting Environment
@@ -178,10 +190,10 @@ const LandingPage = () => {
                 variant="body1"
                 sx={{
                   color: '#475569',
-                  fontSize: { xs: '0.925rem', md: '1rem' },
-                  lineHeight: 1.6,
-                  mb: 2.75,
-                  maxWidth: 540,
+                  fontSize: { xs: '0.925rem', md: '1rem', xl: '1.125rem' },
+                  lineHeight: { xs: 1.6, xl: 1.65 },
+                  mb: { xs: 2.75, xl: 3.75 },
+                  maxWidth: { xs: '100%', md: 540, xl: 640 },
                 }}
               >
                 DASIG-CORE centralizes KPI submission, verification, and governance. Empowering DASIG administrators,
@@ -189,44 +201,63 @@ const LandingPage = () => {
               </Typography>
 
               {/* Feature Highlights Cards */}
-              <Stack spacing={1.5} sx={{ mb: { xs: 2, md: 0 } }}>
+              <Stack spacing={{ xs: 1.5, xl: 2.25 }} sx={{ mb: { xs: 2, md: 0 } }}>
                 {featureHighlights.map((feat) => (
                   <Box
                     key={feat.title}
                     sx={{
                       display: 'flex',
                       alignItems: 'flex-start',
-                      gap: 1.75,
-                      p: 1.5,
+                      gap: { xs: 1.75, xl: 2.25 },
+                      p: { xs: 1.5, xl: 2 },
                       bgcolor: '#FFFFFF',
                       borderRadius: 2.5,
                       border: '1px solid rgba(226, 232, 240, 0.95)',
                       boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
-                      transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                      transition: 'border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease',
                       '&:hover': {
                         borderColor: 'rgba(66, 110, 240, 0.25)',
-                        boxShadow: '0 4px 12px rgba(15, 23, 42, 0.06)',
+                        boxShadow: '0 6px 18px rgba(15, 23, 42, 0.08)',
+                        transform: 'translateY(-1px)',
                       },
                     }}
                   >
                     <Box
                       sx={{
-                        p: 1,
+                        p: { xs: 1, xl: 1.25 },
                         borderRadius: 2,
                         bgcolor: 'rgba(66, 110, 240, 0.08)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0,
+                        '& svg': {
+                          fontSize: { xs: 20, xl: 24 },
+                        },
                       }}
                     >
                       {feat.icon}
                     </Box>
                     <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1E293B', fontSize: '0.875rem', mb: 0.25 }}>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          fontWeight: 700,
+                          color: '#1E293B',
+                          fontSize: { xs: '0.875rem', xl: '1rem' },
+                          mb: 0.25,
+                        }}
+                      >
                         {feat.title}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#64748B', lineHeight: 1.4, fontSize: '0.8rem' }}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: '#64748B',
+                          lineHeight: { xs: 1.4, xl: 1.5 },
+                          fontSize: { xs: '0.8rem', xl: '0.875rem' },
+                        }}
+                      >
                         {feat.description}
                       </Typography>
                     </Box>
@@ -238,9 +269,9 @@ const LandingPage = () => {
             {/* Right Column: Unboxed Login Form with Separator */}
             <Box
               sx={{
-                pl: { md: 5, lg: 7 },
-                py: { md: 2 },
-                pb: { xs: 4, md: 2 },
+                pl: { md: 5, lg: 7, xl: 9 },
+                py: { md: 2, xl: 3 },
+                pb: { xs: 4, md: 2, xl: 3 },
                 mb: { xs: 3, md: 0 },
                 borderLeft: { md: '1px solid rgba(226, 232, 240, 0.85)' },
                 borderBottom: { xs: '1px solid rgba(226, 232, 240, 0.85)', md: 'none' },
@@ -256,15 +287,31 @@ const LandingPage = () => {
                 onSubmit={handleSubmit}
                 sx={{
                   width: '100%',
-                  maxWidth: { xs: '100%', sm: 420 },
+                  maxWidth: { xs: '100%', sm: 420, xl: 470 },
                   mx: 'auto',
                 }}
               >
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="h5" component="h2" sx={{ fontWeight: 800, color: '#0F172A', letterSpacing: '-0.3px', fontSize: { xs: '1.4rem', md: '1.6rem' } }}>
+              <Box sx={{ mb: { xs: 3, xl: 3.5 } }}>
+                <Typography
+                  variant="h5"
+                  component="h2"
+                  sx={{
+                    fontWeight: 800,
+                    color: '#0F172A',
+                    letterSpacing: '-0.3px',
+                    fontSize: { xs: '1.4rem', md: '1.6rem', xl: '1.9rem' },
+                  }}
+                >
                   Sign In
                 </Typography>
-                <Typography variant="body2" sx={{ color: '#64748B', mt: 0.75, fontSize: '0.875rem' }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#64748B',
+                    mt: { xs: 0.75, xl: 1 },
+                    fontSize: { xs: '0.875rem', xl: '0.975rem' },
+                  }}
+                >
                   Enter your consortium credentials to access your dashboard.
                 </Typography>
               </Box>
@@ -281,7 +328,7 @@ const LandingPage = () => {
                 </Alert>
               )}
 
-              <Stack spacing={2.5}>
+              <Stack spacing={{ xs: 2.5, xl: 3 }}>
                 <TextField
                   fullWidth
                   id="email-input"
@@ -305,7 +352,7 @@ const LandingPage = () => {
                     },
                     formHelperText: {
                       id: 'email-helper-text',
-                      sx: { mx: 0, mt: 0.75, fontSize: '0.8rem', fontWeight: 500 },
+                      sx: { mx: 0, mt: 0.75, fontSize: { xs: '0.8rem', xl: '0.875rem' }, fontWeight: 500 },
                     },
                     input: {
                       startAdornment: (
@@ -313,7 +360,7 @@ const LandingPage = () => {
                           <EmailOutlinedIcon
                             sx={{
                               color: emailError ? 'error.main' : '#94A3B8',
-                              fontSize: 20,
+                              fontSize: { xs: 20, xl: 22 },
                               transition: 'color 0.2s ease',
                             }}
                           />
@@ -322,6 +369,10 @@ const LandingPage = () => {
                       sx: {
                         borderRadius: 2,
                         bgcolor: '#FFFFFF',
+                        fontSize: { xs: '0.95rem', xl: '1.05rem' },
+                        '& .MuiInputBase-input': {
+                          py: { xs: 1.75, xl: 2 },
+                        },
                       },
                     },
                   }}
@@ -350,7 +401,7 @@ const LandingPage = () => {
                     },
                     formHelperText: {
                       id: 'password-helper-text',
-                      sx: { mx: 0, mt: 0.75, fontSize: '0.8rem', fontWeight: 500 },
+                      sx: { mx: 0, mt: 0.75, fontSize: { xs: '0.8rem', xl: '0.875rem' }, fontWeight: 500 },
                     },
                     input: {
                       startAdornment: (
@@ -358,7 +409,7 @@ const LandingPage = () => {
                           <LockOutlinedIcon
                             sx={{
                               color: passwordError ? 'error.main' : '#94A3B8',
-                              fontSize: 20,
+                              fontSize: { xs: 20, xl: 22 },
                               transition: 'color 0.2s ease',
                             }}
                           />
@@ -380,6 +431,10 @@ const LandingPage = () => {
                       sx: {
                         borderRadius: 2,
                         bgcolor: '#FFFFFF',
+                        fontSize: { xs: '0.95rem', xl: '1.05rem' },
+                        '& .MuiInputBase-input': {
+                          py: { xs: 1.75, xl: 2 },
+                        },
                       },
                     },
                   }}
@@ -392,12 +447,12 @@ const LandingPage = () => {
                   disabled={isLoading}
                   aria-busy={isLoading}
                   sx={{
-                    mt: 0.5,
-                    py: 1.35,
+                    mt: { xs: 0.5, xl: 1 },
+                    py: { xs: 1.35, xl: 1.6 },
                     borderRadius: 2,
                     fontWeight: 700,
                     textTransform: 'none',
-                    fontSize: '0.95rem',
+                    fontSize: { xs: '0.95rem', xl: '1.05rem' },
                     bgcolor: 'primary.main',
                     color: '#FFFFFF',
                     boxShadow: '0 4px 14px rgba(66, 110, 240, 0.3)',
@@ -442,7 +497,7 @@ const LandingPage = () => {
       <Box
         component="footer"
         sx={{
-          py: { xs: 2, md: 1.5 },
+          py: { xs: 2, md: 1.5, xl: 2 },
           px: 3,
           textAlign: 'center',
           borderTop: '1px solid rgba(226, 232, 240, 0.8)',
@@ -451,7 +506,7 @@ const LandingPage = () => {
           mt: { xs: 4, md: 0 },
         }}
       >
-        <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 500 }}>
+        <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 500, fontSize: { xs: '0.75rem', xl: '0.85rem' } }}>
           &copy; {new Date().getFullYear()} DASIG-CORE
         </Typography>
       </Box>
