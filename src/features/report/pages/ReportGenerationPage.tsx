@@ -68,6 +68,7 @@ export default function ReportGenerationPage() {
   // Toast notifications
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastSeverity, setToastSeverity] = useState<'success' | 'error'>('success');
 
   // Historical Reports Log filters
   const [historySearch, setHistorySearch] = useState('');
@@ -103,7 +104,7 @@ export default function ReportGenerationPage() {
           prev && kpiData.some((k) => String(k.id) === prev) ? prev : String(kpiData[0]?.id ?? '')
         );
       } catch (err) {
-        showToast('Failed to load KPI list.');
+        showToast('Failed to load KPI list.', 'error');
       } finally {
         setIsKpisLoading(false);
       }
@@ -127,7 +128,7 @@ export default function ReportGenerationPage() {
           setSelectedCommitteeId('');
         }
       } catch (err) {
-        showToast('Failed to load committee list.');
+        showToast('Failed to load committee list.', 'error');
       } finally {
         setIsLoadingCommittees(false);
       }
@@ -152,8 +153,9 @@ export default function ReportGenerationPage() {
     void loadHistory();
   }, [loadHistory]);
 
-  const showToast = (message: string) => {
+  const showToast = (message: string, severity: 'success' | 'error') => {
     setToastMessage(message);
+    setToastSeverity(severity);
     setToastOpen(true);
   };
 
@@ -184,7 +186,7 @@ export default function ReportGenerationPage() {
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reportScope || !periodFrom || !periodTo || (reportScope === 'COMMITTEE' && !selectedCommitteeId) || (reportScope === 'KPI' && !selectedKpiId)) {
-      showToast('Please select all filter parameters.');
+      showToast('Please select all filter parameters.', 'error');
       return;
     }
 
@@ -213,10 +215,10 @@ export default function ReportGenerationPage() {
       }
 
       setActiveReport(report);
-      showToast('AI Narrative Report generated successfully.');
+      showToast('AI Narrative Report generated successfully.', 'success');
       void loadHistory(); // Refresh history log
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Unable to generate performance report.');
+      showToast(err instanceof Error ? err.message : 'Unable to generate performance report.', 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -235,9 +237,11 @@ export default function ReportGenerationPage() {
       link.click();
       link.parentNode?.removeChild(link);
       window.URL.revokeObjectURL(url);
-      showToast('PDF Performance report exported successfully.');
+      // We only know the PDF was generated and handed off to the browser here — not whether the
+      // user actually kept it, since browsers never report Save-dialog outcomes back to the page.
+      showToast('PDF download started.', 'success');
     } catch (err) {
-      showToast('Failed to export PDF.');
+      showToast('Failed to export PDF.', 'error');
     } finally {
       setIsExporting(false);
     }
@@ -433,7 +437,11 @@ export default function ReportGenerationPage() {
                 fullWidth
                 slotProps={{ inputLabel: { shrink: true } }}
                 value={periodFrom}
-                onChange={(e) => setPeriodFrom(e.target.value)}
+                onChange={(e) => {
+                  setPeriodFrom(e.target.value);
+                  // A changed date range no longer matches the report on screen, so re-enable generation.
+                  setActiveReport(null);
+                }}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
               />
 
@@ -446,7 +454,10 @@ export default function ReportGenerationPage() {
                 fullWidth
                 slotProps={{ inputLabel: { shrink: true } }}
                 value={periodTo}
-                onChange={(e) => setPeriodTo(e.target.value)}
+                onChange={(e) => {
+                  setPeriodTo(e.target.value);
+                  setActiveReport(null);
+                }}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
               />
 
@@ -469,7 +480,13 @@ export default function ReportGenerationPage() {
                   },
                 }}
               >
-                {isGenerating ? <CircularProgress size={22} color="inherit" /> : 'Generate AI Narrative'}
+                {isGenerating ? (
+                  <CircularProgress size={22} color="inherit" />
+                ) : activeReport ? (
+                  'Regenerate AI Narrative'
+                ) : (
+                  'Generate AI Narrative'
+                )}
               </Button>
             </Stack>
           </Card>
@@ -623,7 +640,7 @@ export default function ReportGenerationPage() {
               }}
             >
               <Typography variant="body2" color="text.secondary">
-                No historical performance reports found.
+                No reports found.
               </Typography>
             </Box>
           ) : filteredHistoryReports.length === 0 ? (
@@ -749,7 +766,7 @@ export default function ReportGenerationPage() {
         onClose={() => setToastOpen(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
-        <Alert severity="success" onClose={() => setToastOpen(false)} sx={{ borderRadius: 3, fontWeight: 600, px: 2 }}>
+        <Alert severity={toastSeverity} onClose={() => setToastOpen(false)} sx={{ borderRadius: 3, fontWeight: 600, px: 2 }}>
           {toastMessage}
         </Alert>
       </Snackbar>

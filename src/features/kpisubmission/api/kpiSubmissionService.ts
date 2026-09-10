@@ -64,6 +64,30 @@ export const kpiSubmissionService = {
     return apiClient<KpiSubmissionBadgeCountsResponse>(`${SUBMISSION_ENDPOINT}/badge-counts`);
   },
 
+  getSubmissionById(submissionId: number): Promise<KpiSubmissionResponse> {
+    return apiClient<KpiSubmissionResponse>(`${SUBMISSION_ENDPOINT}/${submissionId}`);
+  },
+
+  async downloadSubmissionDocumentAsAdmin(submissionId: number, documentId: number): Promise<Blob> {
+    const token = tokenStorage.get();
+    const response = await fetch(
+      getApiUrl(`${SUBMISSION_ENDPOINT}/${submissionId}/documents/${documentId}/download`),
+      {
+        headers: {
+          Accept: '*/*',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      },
+    );
+
+    if (!response.ok) {
+      const bodyText = await response.text();
+      throw new ApiError(bodyText || 'Failed to download submission document.', response.status);
+    }
+
+    return response.blob();
+  },
+
   async markSubmissionsAsViewed(submissionIds?: number[]): Promise<void> {
     await apiClient<void>(`${SUBMISSION_ENDPOINT}/mark-viewed`, {
       method: 'PATCH',

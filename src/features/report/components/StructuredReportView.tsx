@@ -5,6 +5,7 @@ import Typography from '@mui/material/Typography';
 import NarrativeReportParser from './NarrativeReportParser';
 import SectionSourceRefs from './SectionSourceRefs';
 import SourceCitationChip from './SourceCitationChip';
+import SubmissionDetailDrawer from './SubmissionDetailDrawer';
 import type { ReportCitation, ReportSection } from '../types/report.types';
 
 interface StructuredReportViewProps {
@@ -49,6 +50,7 @@ export default function StructuredReportView({ sections }: StructuredReportViewP
   }, [sections]);
 
   const [highlightedNumber, setHighlightedNumber] = useState<number | null>(null);
+  const [selectedCitation, setSelectedCitation] = useState<ReportCitation | null>(null);
 
   const handleSelectSource = (num: number) => {
     setHighlightedNumber(num);
@@ -102,11 +104,18 @@ export default function StructuredReportView({ sections }: StructuredReportViewP
                 number={idx + 1}
                 anchorId={`source-${idx + 1}`}
                 highlighted={highlightedNumber === idx + 1}
+                onOpenDetails={() => setSelectedCitation(citation)}
               />
             ))}
           </Stack>
         </Box>
       )}
+
+      <SubmissionDetailDrawer
+        citation={selectedCitation}
+        open={selectedCitation !== null}
+        onClose={() => setSelectedCitation(null)}
+      />
     </Stack>
   );
 }
