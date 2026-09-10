@@ -42,6 +42,14 @@ import StructuredReportView from '../components/StructuredReportView';
 import type { ReportResponse } from '../types/report.types';
 
 
+const getTodayDateString = () => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 export default function ReportGenerationPage() {
   const [activeTab, setActiveTab] = useState<'generate' | 'history'>('generate');
   const [committees, setCommittees] = useState<CommitteeResponse[]>([]);
@@ -187,6 +195,16 @@ export default function ReportGenerationPage() {
     e.preventDefault();
     if (!reportScope || !periodFrom || !periodTo || (reportScope === 'COMMITTEE' && !selectedCommitteeId) || (reportScope === 'KPI' && !selectedKpiId)) {
       showToast('Please select all filter parameters.', 'error');
+      return;
+    }
+
+    if (periodFrom > periodTo) {
+      showToast('Period From date must not be after Period To date.', 'error');
+      return;
+    }
+
+    if (periodTo > getTodayDateString()) {
+      showToast('Period To date must not be later than today.', 'error');
       return;
     }
 
@@ -435,7 +453,10 @@ export default function ReportGenerationPage() {
                 type="date"
                 size="small"
                 fullWidth
-                slotProps={{ inputLabel: { shrink: true } }}
+                slotProps={{
+                  inputLabel: { shrink: true },
+                  htmlInput: { max: periodTo || getTodayDateString() },
+                }}
                 value={periodFrom}
                 onChange={(e) => {
                   setPeriodFrom(e.target.value);
@@ -452,7 +473,10 @@ export default function ReportGenerationPage() {
                 type="date"
                 size="small"
                 fullWidth
-                slotProps={{ inputLabel: { shrink: true } }}
+                slotProps={{
+                  inputLabel: { shrink: true },
+                  htmlInput: { min: periodFrom || undefined, max: getTodayDateString() },
+                }}
                 value={periodTo}
                 onChange={(e) => {
                   setPeriodTo(e.target.value);
