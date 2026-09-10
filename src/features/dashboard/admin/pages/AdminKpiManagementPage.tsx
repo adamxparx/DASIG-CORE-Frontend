@@ -1,18 +1,13 @@
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import Stack from '@mui/material/Stack';
-import Snackbar from '@mui/material/Snackbar';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../../../../lib/api/client';
 import CreateKpiButton from '../../admin/components/CreateKpiButton';
-import DeleteKpiDialog from '../../admin/components/DeleteKpiDialog';
-import ArchiveKpiDialog from '../../admin/components/ArchiveKpiDialog';
-import UnarchiveKpiDialog from '../../admin/components/UnarchiveKpiDialog';
 import AdminKpiSummaryCards from '../../admin/components/AdminKpiSummaryCards';
 import { dashboardService } from '../../shared/api/dashboardService';
 import type { DashboardApiResponse, DashboardKpiItem, DashboardStatus } from '../../shared/types/dashboard.types';
@@ -32,20 +27,6 @@ const AdminKpiManagementPage = () => {
   const [committeeFilter, setCommitteeFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState<DashboardStatus | 'ALL'>('ALL');
   const [statusTab, setStatusTab] = useState<'ACTIVE' | 'ARCHIVED'>('ACTIVE');
-
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedKpiForDelete, setSelectedKpiForDelete] = useState<DashboardKpiItem | null>(null);
-
-  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
-  const [selectedKpiForArchive, setSelectedKpiForArchive] = useState<DashboardKpiItem | null>(null);
-
-  const [unarchiveDialogOpen, setUnarchiveDialogOpen] = useState(false);
-  const [selectedKpiForUnarchive, setSelectedKpiForUnarchive] = useState<DashboardKpiItem | null>(null);
-
-  const [toastOpen, setToastOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastSeverity, setToastSeverity] = useState<'success' | 'error'>('success');
-  const [toastAction, setToastAction] = useState<{ label: string; onClick: () => void } | null>(null);
 
   const loadDashboard = useCallback(async (silent = false) => {
     if (!silent) {
@@ -76,66 +57,6 @@ const AdminKpiManagementPage = () => {
     navigate(`/dashboard/admin/kpis/${kpi.id}`);
   };
 
-  const showToast = (
-    message: string,
-    severity: 'success' | 'error',
-    action?: { label: string; onClick: () => void }
-  ) => {
-    setToastMessage(message);
-    setToastSeverity(severity);
-    setToastAction(action ?? null);
-    setToastOpen(true);
-  };
-
-  const handleDeleteSuccess = () => {
-    void loadDashboard(true);
-    showToast('KPI deleted successfully.', 'success');
-    setDeleteDialogOpen(false);
-  };
-
-  const handleEditKpi = (kpi: DashboardKpiItem) => {
-    navigate(`/dashboard/admin/kpis/${kpi.id}/edit`, { state: { kpi } });
-  };
-
-  const handleDeleteKpi = (kpi: DashboardKpiItem) => {
-    setSelectedKpiForDelete(kpi);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleArchiveKpi = (kpi: DashboardKpiItem) => {
-    setSelectedKpiForArchive(kpi);
-    setArchiveDialogOpen(true);
-  };
-
-  const handleArchiveSuccess = () => {
-    void loadDashboard(true);
-    showToast('KPI archived successfully.', 'success', {
-      label: 'View Archived',
-      onClick: () => {
-        setStatusTab('ARCHIVED');
-        setToastOpen(false);
-      },
-    });
-    setArchiveDialogOpen(false);
-  };
-
-  const handleUnarchiveKpi = (kpi: DashboardKpiItem) => {
-    setSelectedKpiForUnarchive(kpi);
-    setUnarchiveDialogOpen(true);
-  };
-
-  const handleUnarchiveSuccess = () => {
-    void loadDashboard(true);
-    showToast('KPI restored to active status.', 'success', {
-      label: 'View Active',
-      onClick: () => {
-        setStatusTab('ACTIVE');
-        setToastOpen(false);
-      },
-    });
-    setUnarchiveDialogOpen(false);
-  };
-
   const { activeKpis, archivedKpis } = useMemo(() => {
     const kpis = dashboardData?.kpis ?? [];
     const active: DashboardKpiItem[] = [];
@@ -157,8 +78,9 @@ const AdminKpiManagementPage = () => {
     const kpis = dashboardData?.kpis ?? [];
     const orgs = new Set<string>();
     kpis.forEach((item) => {
-      if (item.organization && item.organization.trim()) {
-        orgs.add(item.organization.trim());
+      const committee = item.committeeName || item.organization;
+      if (committee && committee.trim()) {
+        orgs.add(committee.trim());
       }
     });
     return Array.from(orgs).sort((a, b) => a.localeCompare(b));
@@ -177,8 +99,11 @@ const AdminKpiManagementPage = () => {
         }
       }
 
-      if (committeeFilter !== 'ALL' && item.organization !== committeeFilter) {
-        return false;
+      if (committeeFilter !== 'ALL') {
+        const committee = item.committeeName || item.organization;
+        if (committee !== committeeFilter) {
+          return false;
+        }
       }
 
       if (statusFilter !== 'ALL') {
@@ -285,88 +210,12 @@ const AdminKpiManagementPage = () => {
             kpis={displayedKpis}
             selectedId={null}
             onSelectKpi={handleSelectKpi}
-            onEditKpi={statusTab === 'ACTIVE' ? handleEditKpi : undefined}
-            onDeleteKpi={handleDeleteKpi}
-            onArchiveKpi={statusTab === 'ACTIVE' ? handleArchiveKpi : undefined}
-            onUnarchiveKpi={statusTab === 'ARCHIVED' ? handleUnarchiveKpi : undefined}
             title={null}
             hasActiveFilters={hasActiveFilters}
             onResetFilters={handleResetFilters}
           />
         }
       />
-
-      {/* Archive Confirmation Modal */}
-      <ArchiveKpiDialog
-        open={archiveDialogOpen}
-        onClose={() => setArchiveDialogOpen(false)}
-        onSubmitSuccess={handleArchiveSuccess}
-        kpiId={selectedKpiForArchive?.id ?? null}
-        kpiName={selectedKpiForArchive?.name ?? ''}
-      />
-
-      {/* Restore / Unarchive Confirmation Modal */}
-      <UnarchiveKpiDialog
-        open={unarchiveDialogOpen}
-        onClose={() => setUnarchiveDialogOpen(false)}
-        onSubmitSuccess={handleUnarchiveSuccess}
-        kpiId={selectedKpiForUnarchive?.id ?? null}
-        kpiName={selectedKpiForUnarchive?.name ?? ''}
-      />
-
-      {/* Delete Confirmation Modal */}
-      <DeleteKpiDialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        onSubmitSuccess={handleDeleteSuccess}
-        kpiId={selectedKpiForDelete?.id ?? null}
-        kpiName={selectedKpiForDelete?.name ?? ''}
-      />
-
-      {/* Snackbar Feedback */}
-      <Snackbar
-        open={toastOpen}
-        autoHideDuration={5000}
-        onClose={() => setToastOpen(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert
-          severity={toastSeverity}
-          onClose={() => setToastOpen(false)}
-          action={
-            toastAction ? (
-              <Button
-                color="inherit"
-                size="small"
-                onClick={toastAction.onClick}
-                sx={{
-                  fontWeight: 700,
-                  fontSize: '0.8rem',
-                  textTransform: 'none',
-                  border: '1px solid',
-                  borderColor: 'currentColor',
-                  borderRadius: 1.5,
-                  px: 1,
-                  py: 0.25,
-                  ml: 1,
-                  '&:hover': {
-                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                  },
-                }}
-              >
-                {toastAction.label}
-              </Button>
-            ) : undefined
-          }
-          sx={{
-            borderRadius: 3,
-            fontWeight: 600,
-            boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.08)',
-          }}
-        >
-          {toastMessage}
-        </Alert>
-      </Snackbar>
     </>
   );
 };

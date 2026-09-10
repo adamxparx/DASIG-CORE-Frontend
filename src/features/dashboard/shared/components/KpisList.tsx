@@ -15,7 +15,6 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import { useState } from 'react';
 import type { DashboardKpiItem } from '../types/dashboard.types';
 import { computeKpiStatus } from '../utils/kpiStatusUtils';
-import KpiAdminActions from '../../admin/components/KpiAdminActions';
 import KpiStatusBadge from './KpiStatusBadge';
 import TablePaginationBar, { TABLE_PAGE_SIZE } from './TablePaginationBar';
 
@@ -43,15 +42,10 @@ const KpisList = ({
   kpis,
   selectedId,
   onSelectKpi,
-  onEditKpi,
-  onDeleteKpi,
-  onArchiveKpi,
-  onUnarchiveKpi,
   title = null,
   hasActiveFilters = false,
   onResetFilters,
 }: KpisListProps) => {
-  const hasAdminActions = Boolean(onEditKpi ?? onDeleteKpi ?? onArchiveKpi ?? onUnarchiveKpi);
   const [page, setPage] = useState(1);
 
   const totalPages = Math.max(1, Math.ceil(kpis.length / TABLE_PAGE_SIZE));
@@ -77,6 +71,9 @@ const KpisList = ({
               <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
                 KPI Title
               </TableCell>
+              <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
+                Committee
+              </TableCell>
               <TableCell
                 sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
               >
@@ -97,19 +94,12 @@ const KpisList = ({
               >
                 Deadline
               </TableCell>
-              {hasAdminActions && (
-                <TableCell
-                  sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider', width: 96 }}
-                >
-                  Actions
-                </TableCell>
-              )}
             </TableRow>
           </TableHead>
           <TableBody>
             {kpis.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={hasAdminActions ? 6 : 5} sx={{ border: 0, py: 6 }}>
+                <TableCell colSpan={6} sx={{ border: 0, py: 6 }}>
                   {hasActiveFilters ? (
                     <Stack
                       spacing={1.5}
@@ -154,11 +144,13 @@ const KpisList = ({
                 const overallTargetValue = kpi.overallTargetValue ?? kpi.targetValue;
                 const progressPercent = overallTargetValue > 0 ? (kpi.submittedValue / overallTargetValue) * 100 : 0;
                 const status = computeKpiStatus(kpi.submittedValue, overallTargetValue, kpi.deadline);
+                const committeeName = kpi.committeeName || kpi.organization || '—';
 
                 return (
                   <TableRow
                     key={kpi.id}
                     hover
+                    onClick={() => onSelectKpi(kpi)}
                     sx={{
                       cursor: 'pointer',
                       bgcolor: isSelected ? 'action.hover' : 'transparent',
@@ -172,7 +164,6 @@ const KpisList = ({
                     }}
                   >
                     <TableCell
-                      onClick={() => onSelectKpi(kpi)}
                       sx={{ color: 'primary.main', fontWeight: 600 }}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -194,6 +185,11 @@ const KpisList = ({
                       </Box>
                     </TableCell>
                     <TableCell>
+                      <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                        {committeeName}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
                         {formatMetricValue(overallTargetValue)} {kpi.unit}
                       </Typography>
@@ -211,20 +207,6 @@ const KpisList = ({
                         {formatDate(kpi.deadline)}
                       </Typography>
                     </TableCell>
-                    {hasAdminActions && (
-                      <TableCell
-                        onClick={(e) => e.stopPropagation()}
-                        sx={{ whiteSpace: 'nowrap' }}
-                      >
-                        <KpiAdminActions
-                          isArchived={Boolean(kpi.archived || kpi.kpiStatus === 'ARCHIVED')}
-                          onEdit={onEditKpi ? () => onEditKpi(kpi) : undefined}
-                          onDelete={onDeleteKpi ? () => onDeleteKpi(kpi) : undefined}
-                          onArchive={onArchiveKpi ? () => onArchiveKpi(kpi) : undefined}
-                          onUnarchive={onUnarchiveKpi ? () => onUnarchiveKpi(kpi) : undefined}
-                        />
-                      </TableCell>
-                    )}
                   </TableRow>
                 );
               })
