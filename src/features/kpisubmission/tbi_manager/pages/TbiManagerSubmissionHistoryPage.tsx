@@ -19,6 +19,7 @@ import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined
 import RefreshOutlinedIcon from '@mui/icons-material/RefreshOutlined';
 
 import SearchIcon from '@mui/icons-material/Search';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 
 import Alert from '@mui/material/Alert';
 
@@ -59,6 +60,8 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 
 import TextField from '@mui/material/TextField';
+
+import Tooltip from '@mui/material/Tooltip';
 
 import Typography from '@mui/material/Typography';
 
@@ -247,24 +250,6 @@ const formatRoleLabel = (role?: string) => {
   return role?.replace('_', ' ') ?? 'Member';
 };
 
-type DocumentPreview = {
-  document: SubmissionDocumentResponse;
-  kind: 'image' | 'pdf' | 'text';
-  url?: string;
-  text?: string;
-};
-
-const isImageDocument = (document: SubmissionDocumentResponse) => document.contentType.startsWith('image/');
-
-const isPdfDocument = (document: SubmissionDocumentResponse) => document.contentType === 'application/pdf';
-
-const isTextDocument = (document: SubmissionDocumentResponse) =>
-  document.contentType.startsWith('text/') ||
-  document.contentType === 'text/csv' ||
-  document.contentType === 'application/csv';
-
-
-
 const mapStatus = (status: string) => {
 
   if (status === 'GREEN') {
@@ -332,8 +317,6 @@ const TbiManagerSubmissionHistoryPage = () => {
   const [reviewDialogAction, setReviewDialogAction] = useState<Exclude<SubmissionReviewStatus, 'PENDING'> | null>(null);
 
   const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
-
-  const [documentPreview, setDocumentPreview] = useState<DocumentPreview | null>(null);
 
   const [documentError, setDocumentError] = useState<string | null>(null);
 
@@ -545,15 +528,6 @@ const TbiManagerSubmissionHistoryPage = () => {
 
   };
 
-  const clearDocumentPreview = useCallback(() => {
-    setDocumentPreview((current) => {
-      if (current?.url) {
-        URL.revokeObjectURL(current.url);
-      }
-      return null;
-    });
-  }, []);
-
   const downloadDocumentBlob = useCallback(async (document: SubmissionDocumentResponse) => {
     const blob = await kpiSubmissionService.downloadDocument(document.id);
     const url = URL.createObjectURL(blob);
@@ -564,36 +538,42 @@ const TbiManagerSubmissionHistoryPage = () => {
     URL.revokeObjectURL(url);
   }, []);
 
-  const handleDocumentClick = useCallback(async (document: SubmissionDocumentResponse) => {
+  const handleDocumentPreview = useCallback(async (document: SubmissionDocumentResponse) => {
     setDocumentError(null);
     setIsDocumentLoading(true);
-    clearDocumentPreview();
+    const previewWindow = window.open('', '_blank');
+
+    if (!previewWindow) {
+      setDocumentError('Unable to open preview. Please allow pop-ups for this site.');
+      setIsDocumentLoading(false);
+      return;
+    }
+    previewWindow.opener = null;
 
     try {
       const blob = await kpiSubmissionService.downloadDocument(document.id);
-
-      if (isImageDocument(document)) {
-        setDocumentPreview({ document, kind: 'image', url: URL.createObjectURL(blob) });
-        return;
-      }
-
-      if (isPdfDocument(document)) {
-        setDocumentPreview({ document, kind: 'pdf', url: URL.createObjectURL(blob) });
-        return;
-      }
-
-      if (isTextDocument(document)) {
-        setDocumentPreview({ document, kind: 'text', text: await blob.text() });
-        return;
-      }
-
-      await downloadDocumentBlob(document);
+      const url = URL.createObjectURL(blob);
+      previewWindow.location.href = url;
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (err) {
-      setDocumentError(err instanceof Error ? err.message : 'Unable to open supporting document.');
+      previewWindow.close();
+      setDocumentError(err instanceof Error ? err.message : 'Unable to preview supporting document.');
     } finally {
       setIsDocumentLoading(false);
     }
-  }, [clearDocumentPreview, downloadDocumentBlob]);
+  }, []);
+
+  const handleDocumentDownload = useCallback(async (document: SubmissionDocumentResponse) => {
+    setDocumentError(null);
+    setIsDocumentLoading(true);
+    try {
+      await downloadDocumentBlob(document);
+    } catch (err) {
+      setDocumentError(err instanceof Error ? err.message : 'Unable to download supporting document.');
+    } finally {
+      setIsDocumentLoading(false);
+    }
+  }, [downloadDocumentBlob]);
 
   const handleDownloadAllDocuments = useCallback(async () => {
     if (!selectedSubmission || selectedSubmission.documents.length === 0) {
@@ -614,10 +594,9 @@ const TbiManagerSubmissionHistoryPage = () => {
   }, [downloadDocumentBlob, selectedSubmission]);
 
   const handleCloseDetails = useCallback(() => {
-    clearDocumentPreview();
     setDocumentError(null);
     setSelectedSubmission(null);
-  }, [clearDocumentPreview]);
+  }, []);
 
   const handleSubmitReview = async (rejectionReason?: string) => {
     if (!selectedSubmission || !reviewDialogAction) {
@@ -1726,14 +1705,11 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                         variant="outlined"
 
-                        onClick={() => void handleDocumentClick(document)}
-
                         sx={{
                           p: 1.75,
                           borderRadius: 2.5,
                           borderColor: '#E2E5EC',
                           bgcolor: '#fff',
-                          cursor: 'pointer',
                           '&:hover': {
                             borderColor: '#C7D2FE',
                             bgcolor: '#F8FAFF',
@@ -1742,7 +1718,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                       >
 
-                        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+                        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
 
                           <Box
 
@@ -1799,6 +1775,32 @@ const TbiManagerSubmissionHistoryPage = () => {
                             </Typography>
 
                           </Box>
+                          <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
+                            <Tooltip title="Preview document">
+                              <span>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => void handleDocumentPreview(document)}
+                                  disabled={isDocumentLoading}
+                                  aria-label={`Preview ${document.fileName}`}
+                                >
+                                  <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                            <Tooltip title="Download document">
+                              <span>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => void handleDocumentDownload(document)}
+                                  disabled={isDocumentLoading}
+                                  aria-label={`Download ${document.fileName}`}
+                                >
+                                  <DownloadOutlinedIcon sx={{ fontSize: 18 }} />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          </Stack>
                         </Stack>
 
                       </Paper>
@@ -1813,61 +1815,6 @@ const TbiManagerSubmissionHistoryPage = () => {
                     <Alert severity="error" sx={{ mt: 1.5 }}>
                       {documentError}
                     </Alert>
-                  )}
-
-                  {documentPreview && (
-                    <Paper
-                      variant="outlined"
-                      sx={{ mt: 1.5, borderRadius: 2.5, borderColor: '#E2E5EC', overflow: 'hidden' }}
-                    >
-                      <Stack
-                        direction="row"
-                        sx={{ alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1, bgcolor: '#F9FAFB' }}
-                      >
-                        <Typography noWrap sx={{ fontWeight: 600, color: '#111827', fontSize: '0.875rem' }}>
-                          Preview: {documentPreview.document.fileName}
-                        </Typography>
-                        <IconButton size="small" onClick={clearDocumentPreview}>
-                          <CloseIcon sx={{ fontSize: 16 }} />
-                        </IconButton>
-                      </Stack>
-
-                      {documentPreview.kind === 'image' && documentPreview.url && (
-                        <Box
-                          component="img"
-                          src={documentPreview.url}
-                          alt={documentPreview.document.fileName}
-                          sx={{ width: '100%', maxHeight: 360, objectFit: 'contain', display: 'block', bgcolor: '#fff' }}
-                        />
-                      )}
-
-                      {documentPreview.kind === 'pdf' && documentPreview.url && (
-                        <Box
-                          component="iframe"
-                          src={documentPreview.url}
-                          title={documentPreview.document.fileName}
-                          sx={{ width: '100%', height: 420, border: 0, display: 'block', bgcolor: '#fff' }}
-                        />
-                      )}
-
-                      {documentPreview.kind === 'text' && (
-                        <Box
-                          component="pre"
-                          sx={{
-                            m: 0,
-                            p: 1.5,
-                            maxHeight: 360,
-                            overflow: 'auto',
-                            bgcolor: '#fff',
-                            color: '#111827',
-                            fontSize: '0.75rem',
-                            whiteSpace: 'pre-wrap',
-                          }}
-                        >
-                          {documentPreview.text}
-                        </Box>
-                      )}
-                    </Paper>
                   )}
 
                 </Box>

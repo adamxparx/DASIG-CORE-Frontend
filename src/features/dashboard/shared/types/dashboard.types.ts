@@ -59,6 +59,7 @@ export interface DashboardApiResponse {
 
 export interface KpiPeriodSubmissionEntry {
   id: number;
+  referenceCode?: string;
   submissionType: 'INTERNAL' | 'FINAL';
   submittedValue: number;
   achievementRate: number;

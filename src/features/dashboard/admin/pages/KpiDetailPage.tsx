@@ -38,28 +38,6 @@ const formatDate = (date: string) =>
 const formatMetricValue = (value: number) =>
   value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-import type { DashboardStatus } from '../../shared/types/dashboard.types';
-
-const mapPerformanceStatus = (status: string): DashboardStatus => {
-  if (status === 'GREEN') return 'ON_TRACK';
-  if (status === 'YELLOW') return 'AT_RISK';
-  return 'DELAYED';
-};
-
-const dashboardStatusLabelMap: Record<DashboardStatus, string> = {
-  COMPLETED: 'Completed',
-  ON_TRACK: 'In Progress',
-  AT_RISK: 'At Risk',
-  DELAYED: 'Overdue',
-};
-
-const dashboardStatusArrowMap: Record<DashboardStatus, string> = {
-  COMPLETED: '↑',
-  ON_TRACK: '↑',
-  AT_RISK: '→',
-  DELAYED: '↓',
-};
-
 const simpleChipSx = {
   bgcolor: '#F8FAFC',
   border: '1px solid #E5E7EB',
@@ -92,7 +70,7 @@ const SubmissionRecordsTable = ({
     <Table
       size="small"
       sx={{
-        minWidth: showReview ? 860 : 780,
+        minWidth: showReview ? 780 : 700,
         '& th': {
           bgcolor: '#F8FAFC',
           color: '#64748B',
@@ -113,12 +91,12 @@ const SubmissionRecordsTable = ({
     >
       <TableHead>
         <TableRow>
+          <TableCell>Reference</TableCell>
           <TableCell>Submission Date</TableCell>
           <TableCell>Organization</TableCell>
           <TableCell>Submitted by</TableCell>
           <TableCell>Value</TableCell>
           <TableCell>Achievement</TableCell>
-          <TableCell>Status</TableCell>
           {showReview && <TableCell>Review</TableCell>}
         </TableRow>
       </TableHead>
@@ -152,6 +130,11 @@ const SubmissionRecordsTable = ({
             >
               <TableCell>
                 <Typography variant="body2" sx={{ fontWeight: 700, color: '#111827' }}>
+                  {submission.referenceCode ?? submission.id}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#111827' }}>
                   {formatDate(submission.submissionDate)}
                 </Typography>
               </TableCell>
@@ -182,13 +165,6 @@ const SubmissionRecordsTable = ({
                 <Typography variant="body2" sx={{ fontWeight: 700, color: '#111827' }}>
                   {formatMetricValue(submission.achievementRate)}%
                 </Typography>
-              </TableCell>
-              <TableCell>
-                <Chip
-                  label={dashboardStatusLabelMap[mapPerformanceStatus(submission.performanceStatus)]}
-                  size="small"
-                  sx={simpleChipSx}
-                />
               </TableCell>
               {showReview && (
                 <TableCell>
@@ -337,13 +313,14 @@ const KpiDetailPage = () => {
     .reduce((map, submission) => {
       const organizationName = submission.organizationName ?? 'Unassigned organization';
       const existing = map.get(organizationName);
+      const submittedValue = (existing?.submittedValue ?? 0) + submission.submittedValue;
       map.set(organizationName, {
         organizationName,
-        submittedValue: (existing?.submittedValue ?? 0) + submission.submittedValue,
-        status: mapPerformanceStatus(submission.performanceStatus),
+        submittedValue,
+        achievementRate: kpi.targetValue > 0 ? (submittedValue / kpi.targetValue) * 100 : 0,
       });
       return map;
-    }, new Map<string, { organizationName: string; submittedValue: number; status: DashboardStatus }>());
+    }, new Map<string, { organizationName: string; submittedValue: number; achievementRate: number }>());
   const organizationBreakdowns =
     isCommitteeLeadDetail && kpi.organizationBreakdowns && kpi.organizationBreakdowns.length > 0
       ? kpi.organizationBreakdowns
@@ -352,7 +329,6 @@ const KpiDetailPage = () => {
     ? submissionRows.filter((submission) => (submission.organizationName ?? 'Unassigned organization') === selectedOrganizationName)
     : submissionRows;
   const officialFinalRows = filteredSubmissionRows.filter((submission) => submission.submissionType === 'FINAL');
-  const memberSubmissionRows = filteredSubmissionRows.filter((submission) => submission.submissionType === 'INTERNAL');
 
   return (
     <AdminPageLayout>
@@ -609,13 +585,8 @@ const KpiDetailPage = () => {
                             <Typography variant="body2" sx={{ color: '#374151', fontWeight: 600 }}>
                               {formatMetricValue(breakdown.submittedValue)} {history.unit}
                             </Typography>
-                            <Chip
-                              label={dashboardStatusLabelMap[breakdown.status]}
-                              size="small"
-                              sx={simpleChipSx}
-                            />
-                            <Typography variant="body2" sx={{ color: '#111827', fontWeight: 800 }}>
-                              {dashboardStatusArrowMap[breakdown.status]}
+                            <Typography variant="body2" sx={{ color: '#111827', fontWeight: 700 }}>
+                              Achievement rate: {formatMetricValue(breakdown.achievementRate)}%
                             </Typography>
                           </Stack>
                         </Stack>
@@ -639,27 +610,10 @@ const KpiDetailPage = () => {
                     rows={officialFinalRows}
                     unit={history.unit}
                     emptyMessage="No official final records found for this selection."
+                    showReview={isCommitteeLeadDetail}
                   />
                 </Box>
 
-                {(memberSubmissionRows.length > 0 || isCommitteeLeadDetail) && (
-                  <Box>
-                    <Stack spacing={0.25} sx={{ mb: 1.25 }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#111827' }}>
-                        Member Submission Audit
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                        Member submissions kept for review and audit history.
-                      </Typography>
-                    </Stack>
-                    <SubmissionRecordsTable
-                      rows={memberSubmissionRows}
-                      unit={history.unit}
-                      emptyMessage="No member submissions found for this selection."
-                      showReview
-                    />
-                  </Box>
-                )}
               </Stack>
 
               {history.periods.length === 0 && (
