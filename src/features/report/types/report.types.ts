@@ -1,5 +1,6 @@
 export interface ReportCitation {
   submissionId: number;
+  submissionReference: string;
   kpiName: string;
   organizationName: string;
   submittedValue: number;
