@@ -223,14 +223,26 @@ const CreateKpiPage = () => {
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!name.trim()) newErrors.name = 'KPI Name is required';
-    if (!description.trim()) newErrors.description = 'Description is required';
+    if (!name.trim()) {
+      newErrors.name = 'KPI Name is required';
+    } else if (name.trim().length > 255) {
+      newErrors.name = 'KPI name must not exceed 255 characters';
+    }
+    if (!description.trim()) {
+      newErrors.description = 'Description is required';
+    } else if (description.trim().length > 5000) {
+      newErrors.description = 'Description must not exceed 5000 characters';
+    }
     if (!targetValue.trim()) {
       newErrors.targetValue = 'Target Value is required';
     } else if (isNaN(Number(targetValue)) || Number(targetValue) <= 0) {
       newErrors.targetValue = 'Target Value must be a number greater than 0';
     }
-    if (!unit.trim()) newErrors.unit = 'Unit is required';
+    if (!unit.trim()) {
+      newErrors.unit = 'Unit is required';
+    } else if (unit.trim().length > 255) {
+      newErrors.unit = 'Unit must not exceed 255 characters';
+    }
     if (!deadline) {
       newErrors.deadline = 'Deadline is required';
     } else {
@@ -336,10 +348,11 @@ const CreateKpiPage = () => {
                 if (errors.name) setErrors((prev) => ({ ...prev, name: '' }));
               }}
               error={!!errors.name}
-              helperText={errors.name}
+              helperText={errors.name || `${name.length}/255`}
               disabled={isSubmitting}
               hiddenLabel
               sx={inputSx}
+              slotProps={{ htmlInput: { maxLength: 255 } }}
             />
           </Grid>
 
@@ -358,10 +371,11 @@ const CreateKpiPage = () => {
                 if (errors.description) setErrors((prev) => ({ ...prev, description: '' }));
               }}
               error={!!errors.description}
-              helperText={errors.description}
+              helperText={errors.description || `${description.length}/5000`}
               disabled={isSubmitting}
               hiddenLabel
               sx={inputSx}
+              slotProps={{ htmlInput: { maxLength: 5000 } }}
             />
           </Grid>
 
@@ -401,6 +415,7 @@ const CreateKpiPage = () => {
               disabled={isSubmitting}
               hiddenLabel
               sx={inputSx}
+              slotProps={{ htmlInput: { maxLength: 255 } }}
             />
           </Grid>
 
