@@ -257,6 +257,11 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
       return;
     }
 
+    if (Number(submittedValue) < 0) {
+      showToast('Submitted value must not be negative.', 'error');
+      return;
+    }
+
     if (!period) {
       showToast('Please select a reporting period.', 'error');
       return;

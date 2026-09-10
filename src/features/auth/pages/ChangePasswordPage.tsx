@@ -38,8 +38,8 @@ const ChangePasswordPage = () => {
       return;
     }
 
-    if (newPassword.length < 8) {
-      setError('New password must be at least 8 characters long.');
+    if (newPassword.length < 8 || newPassword.length > 100) {
+      setError('New password must be between 8 and 100 characters long.');
       return;
     }
 
@@ -128,9 +128,9 @@ const ChangePasswordPage = () => {
           autoComplete="new-password"
           required
           disabled={isSubmitting}
-          helperText="At least 8 characters."
+          helperText="8-100 characters."
           sx={{ mb: 3 }}
-          slotProps={inputSlotProps}
+          slotProps={{ ...inputSlotProps, htmlInput: { maxLength: 100 } }}
         />
 
         <TextField
