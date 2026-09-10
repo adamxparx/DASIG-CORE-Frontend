@@ -18,7 +18,6 @@ import { ApiError } from '../../../../lib/api/client';
 import { dashboardService } from '../api/dashboardService';
 import type { DashboardKpiItem, KpiPeriodHistoryResponse, UserRole } from '../types/dashboard.types';
 import KpiProgressChart from './KpiProgressChart';
-import type { DashboardStatus } from '../types/dashboard.types';
 import SubmissionReviewBadge from '../../../kpisubmission/shared/components/SubmissionReviewBadge';
 
 interface KpiPeriodHistoryDrawerProps {
@@ -28,33 +27,6 @@ interface KpiPeriodHistoryDrawerProps {
   committeeId?: number;
   onClose: () => void;
 }
-
-const mapPerformanceStatus = (status: string): DashboardStatus => {
-  if (status === 'GREEN') return 'ON_TRACK';
-  if (status === 'YELLOW') return 'AT_RISK';
-  return 'DELAYED';
-};
-
-const formatSubmissionType = (type: 'INTERNAL' | 'FINAL') => {
-  if (type === 'INTERNAL') {
-    return 'Member Submission';
-  }
-  return 'Official Final';
-};
-
-const dashboardStatusLabelMap: Record<DashboardStatus, string> = {
-  COMPLETED: 'Completed',
-  ON_TRACK: 'In Progress',
-  AT_RISK: 'At Risk',
-  DELAYED: 'Overdue',
-};
-
-const dashboardStatusArrowMap: Record<DashboardStatus, string> = {
-  COMPLETED: '↑',
-  ON_TRACK: '↑',
-  AT_RISK: '→',
-  DELAYED: '↓',
-};
 
 const formatDate = (rawDate: string) =>
   new Date(rawDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -67,13 +39,6 @@ const formatRoleLabel = (role: string) => {
 
 const formatMetricValue = (value: number) =>
   value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-const simpleChipSx = {
-  bgcolor: '#F8FAFC',
-  border: '1px solid #E5E7EB',
-  color: '#374151',
-  fontWeight: 700,
-};
 
 const KpiPeriodHistoryDrawer = ({ open, kpi, role, committeeId, onClose }: KpiPeriodHistoryDrawerProps) => {
   const [history, setHistory] = useState<KpiPeriodHistoryResponse | null>(null);
@@ -108,16 +73,18 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, committeeId, onClose }: KpiPe
     onClose();
   };
 
-  const totalSubmissionCount = history?.periods.reduce((total, period) => total + period.submissions.length, 0) ?? 0;
   const submissionRows =
     history?.periods.flatMap((period) =>
-      period.submissions.map((submission) => ({
-        ...submission,
-        rowKey: `${period.reportingPeriod}-${submission.id}`,
-      }))
+      period.submissions
+        .filter((submission) => submission.submissionType === 'FINAL')
+        .map((submission) => ({
+          ...submission,
+          rowKey: `${period.reportingPeriod}-${submission.id}`,
+        }))
     ) ?? [];
+  const totalSubmissionCount = submissionRows.length;
   const showOrganizationColumn = role !== 'STAFF';
-  const submissionTableColSpan = showOrganizationColumn ? 8 : 7;
+  const submissionTableColSpan = showOrganizationColumn ? 6 : 5;
 
   return (
     <Drawer
@@ -175,7 +142,7 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, committeeId, onClose }: KpiPe
                   ? 'Official final submissions with organization audit details.'
                   : role === 'STAFF'
                     ? 'Official approved submissions with their submitted dates.'
-                    : 'Member submissions and official final submissions with organization audit details.'}
+                    : 'Official final submissions with organization audit details.'}
               </Typography>
 
               <KpiProgressChart history={history} role={role} />
@@ -213,13 +180,8 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, committeeId, onClose }: KpiPe
                           <Typography variant="body2" sx={{ color: '#374151', fontWeight: 600 }}>
                             {formatMetricValue(breakdown.submittedValue)} {history.unit}
                           </Typography>
-                          <Chip
-                            label={dashboardStatusLabelMap[breakdown.status]}
-                            size="small"
-                            sx={simpleChipSx}
-                          />
-                          <Typography variant="body2" sx={{ color: '#111827', fontWeight: 800 }}>
-                            {dashboardStatusArrowMap[breakdown.status]}
+                          <Typography variant="body2" sx={{ color: '#111827', fontWeight: 700 }}>
+                            Achievement rate: {formatMetricValue(breakdown.achievementRate)}%
                           </Typography>
                         </Stack>
                       </Stack>
@@ -250,10 +212,10 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, committeeId, onClose }: KpiPe
                 >
                   <Box>
                     <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#111827' }}>
-                      Submission records
+                      Official Final Records
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#6B7280' }}>
-                      Exact submitted values used for dashboard history and audit review.
+                      Exact submitted values used for dashboard history.
                     </Typography>
                   </Box>
                   <Chip
@@ -267,7 +229,7 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, committeeId, onClose }: KpiPe
                   <Table
                     size="small"
                     sx={{
-                      minWidth: 780,
+                      minWidth: 700,
                       '& th': {
                         borderBottom: '1px solid #E5E7EB',
                         bgcolor: '#F8FAFC',
@@ -290,12 +252,10 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, committeeId, onClose }: KpiPe
                     <TableHead>
                       <TableRow>
                         <TableCell>Submission Date</TableCell>
-                        <TableCell>Submission</TableCell>
                         {showOrganizationColumn && <TableCell>Organization</TableCell>}
                         <TableCell>Submitted by</TableCell>
                         <TableCell align="right">Value</TableCell>
                         <TableCell align="right">Achievement</TableCell>
-                        <TableCell>Status</TableCell>
                         <TableCell>Review</TableCell>
                       </TableRow>
                     </TableHead>
@@ -332,13 +292,6 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, committeeId, onClose }: KpiPe
                                 {formatDate(submission.submissionDate)}
                               </Typography>
                             </TableCell>
-                            <TableCell>
-                              <Chip
-                                label={formatSubmissionType(submission.submissionType)}
-                                size="small"
-                                sx={simpleChipSx}
-                              />
-                            </TableCell>
                             {showOrganizationColumn && (
                               <TableCell>
                                 <Typography variant="body2" sx={{ color: '#111827', fontWeight: 600 }}>
@@ -368,13 +321,6 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, committeeId, onClose }: KpiPe
                               <Typography variant="body2" sx={{ color: '#111827', fontWeight: 700 }}>
                                 {formatMetricValue(submission.achievementRate)}%
                               </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Chip
-                                label={dashboardStatusLabelMap[mapPerformanceStatus(submission.performanceStatus)]}
-                                size="small"
-                                sx={simpleChipSx}
-                              />
                             </TableCell>
                             <TableCell>
                               <SubmissionReviewBadge status={submission.reviewStatus} />
