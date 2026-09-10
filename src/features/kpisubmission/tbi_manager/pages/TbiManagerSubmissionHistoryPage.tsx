@@ -994,7 +994,7 @@ const TbiManagerSubmissionHistoryPage = () => {
                     <TableRow>
                       {[
                         'Reference',
-                        'Member',
+                        'Submitted By',
                         'KPI Name',
                         'Progress',
                         'Review',
