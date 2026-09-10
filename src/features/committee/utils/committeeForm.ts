@@ -20,6 +20,8 @@ export function validateCommitteeForm(form: CommitteeFormValues): Record<string,
   const errors: Record<string, string> = {};
   if (!form.name.trim()) {
     errors.name = 'Committee name is required';
+  } else if (form.name.trim().length > 255) {
+    errors.name = 'Committee name must not exceed 255 characters';
   }
   return errors;
 }

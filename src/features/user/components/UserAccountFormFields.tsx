@@ -75,10 +75,11 @@ const UserAccountFormFields = ({
           value={form.name}
           onChange={(e) => onFieldChange('name', e.target.value)}
           error={!!errors.name}
-          helperText={errors.name}
+          helperText={errors.name || `${form.name.length}/255`}
           disabled={fieldsDisabled}
           hiddenLabel
           sx={userFieldSx}
+          slotProps={{ htmlInput: { maxLength: 255 } }}
         />
       </Grid>
 

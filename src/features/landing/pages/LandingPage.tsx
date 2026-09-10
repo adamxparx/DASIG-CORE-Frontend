@@ -349,6 +349,7 @@ const LandingPage = () => {
                       'aria-required': 'true',
                       'aria-invalid': Boolean(emailError),
                       'aria-describedby': emailError ? 'email-helper-text' : undefined,
+                      maxLength: 255,
                     },
                     formHelperText: {
                       id: 'email-helper-text',
@@ -398,6 +399,7 @@ const LandingPage = () => {
                       'aria-required': 'true',
                       'aria-invalid': Boolean(passwordError),
                       'aria-describedby': passwordError ? 'password-helper-text' : undefined,
+                      maxLength: 100,
                     },
                     formHelperText: {
                       id: 'password-helper-text',

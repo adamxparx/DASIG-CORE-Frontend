@@ -39,10 +39,11 @@ const OrganizationFormFields = ({
             value={form.name}
             onChange={(e) => onFieldChange('name', e.target.value)}
             error={!!errors.name}
-            helperText={errors.name}
+            helperText={errors.name || `${form.name.length}/255`}
             disabled={fieldsDisabled}
             hiddenLabel
             sx={organizationFieldSx}
+            slotProps={{ htmlInput: { maxLength: 255 } }}
           />
         </Grid>
 
@@ -54,10 +55,11 @@ const OrganizationFormFields = ({
             value={form.address}
             onChange={(e) => onFieldChange('address', e.target.value)}
             error={!!errors.address}
-            helperText={errors.address}
+            helperText={errors.address || `${form.address.length}/255`}
             disabled={fieldsDisabled}
             hiddenLabel
             sx={organizationFieldSx}
+            slotProps={{ htmlInput: { maxLength: 255 } }}
           />
         </Grid>
 
@@ -68,9 +70,12 @@ const OrganizationFormFields = ({
             placeholder="Number"
             value={form.contactNumber}
             onChange={(e) => onFieldChange('contactNumber', e.target.value)}
+            error={!!errors.contactNumber}
+            helperText={errors.contactNumber}
             disabled={fieldsDisabled}
             hiddenLabel
             sx={organizationFieldSx}
+            slotProps={{ htmlInput: { maxLength: 30 } }}
           />
         </Grid>
 
@@ -87,6 +92,7 @@ const OrganizationFormFields = ({
             disabled={fieldsDisabled}
             hiddenLabel
             sx={organizationFieldSx}
+            slotProps={{ htmlInput: { maxLength: 255 } }}
           />
         </Grid>
 

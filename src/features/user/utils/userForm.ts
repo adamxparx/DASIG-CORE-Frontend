@@ -26,6 +26,8 @@ export function validateUserForm(form: CreateUserFormValues): Record<string, str
 
   if (!form.name.trim()) {
     errors.name = 'Name is required';
+  } else if (form.name.trim().length > 255) {
+    errors.name = 'Name must not exceed 255 characters';
   }
   if (!form.email.trim()) {
     errors.email = 'Email is required';
