@@ -39,6 +39,17 @@ import SubmissionReviewBadge from '../../shared/components/SubmissionReviewBadge
 
 const PAGE_SIZE = 6;
 
+const DOWNLOAD_DOCUMENT_FALLBACK = 'Unable to download this document. Please try again later.';
+const PREVIEW_DOCUMENT_FALLBACK = 'Unable to preview this document. Please try again later.';
+
+const getFriendlyDocumentErrorMessage = (err: unknown, fallback: string) => {
+  if (!(err instanceof Error) || !err.message || err.message === 'Internal Server Error' || err.message.startsWith('{')) {
+    return fallback;
+  }
+
+  return err.message === DOWNLOAD_DOCUMENT_FALLBACK ? fallback : err.message;
+};
+
 const inputFieldSx = {
   '& .MuiOutlinedInput-root': {
     borderRadius: 2,
@@ -284,7 +295,7 @@ const StaffSubmissionHistoryPage = () => {
       window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (err) {
       previewWindow.close();
-      setDocumentError(err instanceof Error ? err.message : 'Unable to preview supporting document.');
+      setDocumentError(getFriendlyDocumentErrorMessage(err, PREVIEW_DOCUMENT_FALLBACK));
     } finally {
       setIsDocumentLoading(false);
     }
@@ -296,7 +307,7 @@ const StaffSubmissionHistoryPage = () => {
     try {
       await downloadDocumentBlob(document);
     } catch (err) {
-      setDocumentError(err instanceof Error ? err.message : 'Unable to download supporting document.');
+      setDocumentError(getFriendlyDocumentErrorMessage(err, DOWNLOAD_DOCUMENT_FALLBACK));
     } finally {
       setIsDocumentLoading(false);
     }
@@ -314,7 +325,7 @@ const StaffSubmissionHistoryPage = () => {
         await downloadDocumentBlob(document);
       }
     } catch (err) {
-      setDocumentError(err instanceof Error ? err.message : 'Unable to download supporting documents.');
+      setDocumentError(getFriendlyDocumentErrorMessage(err, 'Unable to download supporting documents. Please try again later.'));
     } finally {
       setIsDocumentLoading(false);
     }

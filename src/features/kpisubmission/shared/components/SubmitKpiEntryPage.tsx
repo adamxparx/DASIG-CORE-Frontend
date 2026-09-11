@@ -44,6 +44,20 @@ const formatDeadline = (rawDate: string) =>
 const formatMetricValue = (value: number) =>
   value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_UPLOAD_EXTENSIONS = new Set(['pdf', 'png', 'jpg', 'jpeg', 'xlsx', 'xls', 'csv']);
+const ALLOWED_UPLOAD_TYPES = new Set([
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+  'text/csv',
+  'application/csv',
+]);
+const ACCEPTED_UPLOAD_FORMATS = '.pdf,.png,.jpg,.jpeg,.xlsx,.xls,.csv';
+
 const getSelectablePeriodOptionsForKpi = (kpi: AssignableKpi) => {
   const frequency = kpi.reportingFrequency ?? 'QUARTERLY';
   return getPeriodOptions(frequency, kpi.deadline).filter((option) => !isFuturePeriod(frequency, option));
@@ -59,6 +73,62 @@ const getDefaultPeriodForKpi = (kpi: AssignableKpi) => {
 };
 
 const getDefaultSubmissionDateForKpi = (_kpi: AssignableKpi, today: string) => today;
+
+const getDateOnly = (rawDate?: string) => rawDate?.slice(0, 10) ?? '';
+
+const getKpiCreationDate = (kpi: AssignableKpi, today: string) => {
+  const creationDate = getDateOnly(kpi.createdAt);
+  return creationDate && creationDate <= today ? creationDate : today;
+};
+
+const getFileExtension = (fileName: string) => fileName.split('.').pop()?.toLowerCase() ?? '';
+
+const isAllowedUploadFile = (file: File) =>
+  ALLOWED_UPLOAD_TYPES.has(file.type) || ALLOWED_UPLOAD_EXTENSIONS.has(getFileExtension(file.name));
+
+const getUploadValidationError = (files: File[]) => {
+  if (files.some((file) => file.size === 0)) {
+    return 'Uploaded files cannot be empty.';
+  }
+
+  if (files.some((file) => file.size > MAX_UPLOAD_SIZE_BYTES)) {
+    return 'Each uploaded file must be 10 MB or smaller.';
+  }
+
+  if (files.some((file) => !isAllowedUploadFile(file))) {
+    return 'Unsupported file type. Please upload PDF, PNG, JPG, JPEG, XLSX, XLS, or CSV files only.';
+  }
+
+  return null;
+};
+
+const getSubmitErrorMessage = (err: unknown) => {
+  const fallback = 'Unable to submit KPI entry.';
+  if (!(err instanceof Error) || !err.message) {
+    return fallback;
+  }
+
+  const message = err.message.trim();
+  if (!message || message === 'Internal Server Error') {
+    return fallback;
+  }
+
+  if (message.startsWith('{')) {
+    try {
+      const body = JSON.parse(message) as {
+        message?: string;
+        detail?: string;
+        error?: string;
+      };
+      const parsedMessage = body.message ?? body.detail ?? body.error;
+      return parsedMessage && parsedMessage !== 'Internal Server Error' ? parsedMessage : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  return message;
+};
 
 const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -128,7 +198,7 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
   }, [role, showToast]);
 
   const selectedKpi = assignableKpis.find((kpi) => kpi.id === selectedKpiId) ?? null;
-  const submissionDateMin = today;
+  const submissionDateMin = selectedKpi ? getKpiCreationDate(selectedKpi, today) : today;
   const periodOptions = useMemo(() => {
     if (!selectedKpi) {
       return [];
@@ -235,7 +305,15 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
   const handleFilesSelected: ChangeEventHandler<HTMLInputElement> = (event) => {
     const nextFiles = Array.from(event.target.files ?? []);
     if (nextFiles.length > 0) {
-      setFiles((current) => [...current, ...nextFiles].slice(0, 5));
+      const validationError = getUploadValidationError(nextFiles);
+      if (validationError) {
+        showToast(validationError, 'error');
+      }
+
+      const validFiles = nextFiles.filter((file) => !getUploadValidationError([file]));
+      if (validFiles.length > 0) {
+        setFiles((current) => [...current, ...validFiles]);
+      }
     }
     event.target.value = '';
   };
@@ -273,7 +351,18 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
     }
 
     if (submissionDate < submissionDateMin) {
-      showToast('Submission date cannot be before today.', 'error');
+      showToast('Submission date cannot be before the KPI creation date.', 'error');
+      return;
+    }
+
+    if (submissionDate > today) {
+      showToast('Submission date cannot be in the future.', 'error');
+      return;
+    }
+
+    const uploadValidationError = getUploadValidationError(files);
+    if (uploadValidationError) {
+      showToast(uploadValidationError, 'error');
       return;
     }
 
@@ -294,7 +383,7 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
       setNotes('');
       setFiles([]);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Unable to submit KPI entry.', 'error');
+      showToast(getSubmitErrorMessage(err), 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -422,13 +511,14 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                     disabled={!selectedKpi}
                     helperText={
                       selectedKpi
-                        ? 'Select submission date (can be submitted before or after the deadline).'
+                        ? 'Select a date from the KPI creation date up to today.'
                         : undefined
                     }
                     slotProps={{
                       inputLabel: { shrink: true },
                       htmlInput: {
                         min: selectedKpi ? submissionDateMin : undefined,
+                        max: selectedKpi ? today : undefined,
                       },
                     }}
                   />
@@ -466,14 +556,21 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                     }}
                   >
                     <CloudUploadOutlinedIcon sx={{ color: '#696FDA', mb: 0.5 }} />
-                    <Typography sx={{ color: '#1F2329', mb: 0.5 }}>Click to upload or drag and drop</Typography>
+                    <Typography sx={{ color: '#1F2329', mb: 0.5 }}>Click to upload</Typography>
                     <Typography variant="caption" sx={{ color: '#8A91A1', display: 'block', mb: 1.5 }}>
-                      SVG, PNG, JPG or PDF (max. 10MB)
+                      PDF, PNG, JPG, JPEG, XLSX, XLS, or CSV (max. 10 MB each)
                     </Typography>
                     <Button variant="outlined" onClick={handlePickFiles}>
                       Browse Files
                     </Button>
-                    <input ref={fileInputRef} type="file" multiple hidden onChange={handleFilesSelected} />
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      hidden
+                      accept={ACCEPTED_UPLOAD_FORMATS}
+                      onChange={handleFilesSelected}
+                    />
                   </Paper>
 
                   <Stack spacing={1} sx={{ mt: 1.5 }}>

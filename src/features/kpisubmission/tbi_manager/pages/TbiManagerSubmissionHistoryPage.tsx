@@ -45,6 +45,8 @@ import MenuItem from '@mui/material/MenuItem';
 
 import Paper from '@mui/material/Paper';
 
+import Snackbar from '@mui/material/Snackbar';
+
 import Stack from '@mui/material/Stack';
 
 import Table from '@mui/material/Table';
@@ -82,6 +84,17 @@ import SubmissionReviewBadge from '../../shared/components/SubmissionReviewBadge
 
 
 const PAGE_SIZE = 6;
+
+const DOWNLOAD_DOCUMENT_FALLBACK = 'Unable to download this document. Please try again later.';
+const PREVIEW_DOCUMENT_FALLBACK = 'Unable to preview this document. Please try again later.';
+
+const getFriendlyDocumentErrorMessage = (err: unknown, fallback: string) => {
+  if (!(err instanceof Error) || !err.message || err.message === 'Internal Server Error' || err.message.startsWith('{')) {
+    return fallback;
+  }
+
+  return err.message === DOWNLOAD_DOCUMENT_FALLBACK ? fallback : err.message;
+};
 
 
 
@@ -317,6 +330,8 @@ const TbiManagerSubmissionHistoryPage = () => {
   const [reviewDialogAction, setReviewDialogAction] = useState<Exclude<SubmissionReviewStatus, 'PENDING'> | null>(null);
 
   const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
+
+  const [reviewToast, setReviewToast] = useState<{ message: string; severity: 'success' | 'error' } | null>(null);
 
   const [documentError, setDocumentError] = useState<string | null>(null);
 
@@ -557,7 +572,7 @@ const TbiManagerSubmissionHistoryPage = () => {
       window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (err) {
       previewWindow.close();
-      setDocumentError(err instanceof Error ? err.message : 'Unable to preview supporting document.');
+      setDocumentError(getFriendlyDocumentErrorMessage(err, PREVIEW_DOCUMENT_FALLBACK));
     } finally {
       setIsDocumentLoading(false);
     }
@@ -569,7 +584,7 @@ const TbiManagerSubmissionHistoryPage = () => {
     try {
       await downloadDocumentBlob(document);
     } catch (err) {
-      setDocumentError(err instanceof Error ? err.message : 'Unable to download supporting document.');
+      setDocumentError(getFriendlyDocumentErrorMessage(err, DOWNLOAD_DOCUMENT_FALLBACK));
     } finally {
       setIsDocumentLoading(false);
     }
@@ -587,7 +602,7 @@ const TbiManagerSubmissionHistoryPage = () => {
         await downloadDocumentBlob(document);
       }
     } catch (err) {
-      setDocumentError(err instanceof Error ? err.message : 'Unable to download supporting documents.');
+      setDocumentError(getFriendlyDocumentErrorMessage(err, 'Unable to download supporting documents. Please try again later.'));
     } finally {
       setIsDocumentLoading(false);
     }
@@ -603,11 +618,13 @@ const TbiManagerSubmissionHistoryPage = () => {
       return;
     }
 
+    const action = reviewDialogAction;
     setIsReviewSubmitting(true);
     setError(null);
+    setReviewToast(null);
     try {
       const reviewedSubmission = await kpiSubmissionService.reviewSubmission(selectedSubmission.id, {
-        reviewStatus: reviewDialogAction,
+        reviewStatus: action,
         rejectionReason,
       });
       setSubmissions((current) =>
@@ -615,8 +632,15 @@ const TbiManagerSubmissionHistoryPage = () => {
       );
       setSelectedSubmission(reviewedSubmission);
       setReviewDialogAction(null);
+      setReviewToast({
+        message: action === 'APPROVED' ? 'Submission approved' : 'Submission returned along with the comment',
+        severity: 'success',
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to review submission.');
+      setReviewToast({
+        message: err instanceof Error ? err.message : 'Unable to update the submission review. Please try again.',
+        severity: 'error',
+      });
     } finally {
       setIsReviewSubmitting(false);
     }
@@ -1996,6 +2020,21 @@ const TbiManagerSubmissionHistoryPage = () => {
         onClose={() => setReviewDialogAction(null)}
         onSubmit={(rejectionReason) => void handleSubmitReview(rejectionReason)}
       />
+
+      <Snackbar
+        open={Boolean(reviewToast)}
+        autoHideDuration={5000}
+        onClose={() => setReviewToast(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          severity={reviewToast?.severity ?? 'success'}
+          onClose={() => setReviewToast(null)}
+          sx={{ borderRadius: 3, fontWeight: 600 }}
+        >
+          {reviewToast?.message}
+        </Alert>
+      </Snackbar>
 
     </>
 
