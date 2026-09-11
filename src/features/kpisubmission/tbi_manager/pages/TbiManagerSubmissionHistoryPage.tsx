@@ -248,14 +248,20 @@ const formatSubmissionReference = (submission: Pick<KpiSubmissionResponse, 'id' 
 const formatDisplayDate = (rawDate: string) =>
   new Date(rawDate).toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' });
 
-const formatDisplayDateTime = (rawDate: string) =>
-  new Date(rawDate).toLocaleString(undefined, {
-    month: 'short',
-    day: '2-digit',
-    year: 'numeric',
+const formatSubmissionDateTime = (submissionDate: string, createdAt: string) => {
+  const submittedDate = formatDisplayDate(submissionDate);
+  const submittedTime = new Date(createdAt).toLocaleTimeString(undefined, {
     hour: 'numeric',
     minute: '2-digit',
   });
+  return `${submittedDate}, ${submittedTime}`;
+};
+
+const compareBySubmissionDateTimeDesc = (a: KpiSubmissionResponse, b: KpiSubmissionResponse) => {
+  const dateComparison = b.submissionDate.localeCompare(a.submissionDate);
+  if (dateComparison !== 0) return dateComparison;
+  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+};
 
 const formatRoleLabel = (role?: string) => {
   if (role === 'STAFF') return 'Member';
@@ -432,7 +438,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
       );
 
-    });
+    }).sort(compareBySubmissionDateTimeDesc);
 
   }, [search, selectedStatus, selectedReviewStatus, selectedKpiName, submissions]);
 
@@ -517,7 +523,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
         mapStatus(submission.performanceStatus).label,
 
-        formatDisplayDateTime(submission.createdAt),
+        formatSubmissionDateTime(submission.submissionDate, submission.createdAt),
 
       ];
 
@@ -1144,7 +1150,7 @@ const TbiManagerSubmissionHistoryPage = () => {
                             <SubmissionReviewBadge status={submission.reviewStatus} />
                           </TableCell>
                           <TableCell sx={{ ...tableBodyCellSx, color: '#6B7280' }}>
-                            {formatDisplayDateTime(submission.createdAt)}
+                            {formatSubmissionDateTime(submission.submissionDate, submission.createdAt)}
                           </TableCell>
 
                         </TableRow>
@@ -1596,7 +1602,7 @@ const TbiManagerSubmissionHistoryPage = () => {
                         <AccessTimeOutlinedIcon sx={{ fontSize: 14, color: '#9BA1AE' }} />
 
                         <Typography variant="caption" sx={{ color: '#9BA1AE', lineHeight: 1.6 }}>
-                          Submitted at: {formatDisplayDateTime(selectedSubmission.createdAt)}
+                          Submitted at: {formatSubmissionDateTime(selectedSubmission.submissionDate, selectedSubmission.createdAt)}
                         </Typography>
 
                       </Stack>

@@ -134,6 +134,19 @@ const formatDisplayDateTime = (rawDate: string) =>
     hour: 'numeric',
     minute: '2-digit',
   });
+const formatSubmissionDateTime = (submissionDate: string, createdAt: string) => {
+  const submittedDate = formatDisplayDate(submissionDate);
+  const submittedTime = new Date(createdAt).toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  return `${submittedDate}, ${submittedTime}`;
+};
+const compareBySubmissionDateTimeDesc = (a: KpiSubmissionResponse, b: KpiSubmissionResponse) => {
+  const dateComparison = b.submissionDate.localeCompare(a.submissionDate);
+  if (dateComparison !== 0) return dateComparison;
+  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+};
 
 const mapStatus = (status: string) => {
   if (status === 'GREEN') {
@@ -225,7 +238,7 @@ const StaffSubmissionHistoryPage = () => {
         formatSubmissionReference(submission).toLowerCase().includes(normalized) ||
         submission.reportingPeriod.toLowerCase().includes(normalized)
       );
-    });
+    }).sort(compareBySubmissionDateTimeDesc);
   }, [search, selectedStatus, selectedReviewStatus, selectedKpiName, submissions]);
 
   const totalPages = Math.max(1, Math.ceil(filteredSubmissions.length / PAGE_SIZE));
@@ -252,7 +265,7 @@ const StaffSubmissionHistoryPage = () => {
         String(submission.submittedValue),
         String(kpiMeta?.targetValue ?? ''),
         mapStatus(submission.performanceStatus).label,
-        formatDisplayDateTime(submission.createdAt),
+        formatSubmissionDateTime(submission.submissionDate, submission.createdAt),
       ];
     });
 
@@ -555,7 +568,7 @@ const StaffSubmissionHistoryPage = () => {
                             )}
                           </TableCell>
                           <TableCell sx={{ ...tableBodyCellSx, color: '#6B7280' }}>
-                            {formatDisplayDateTime(submission.createdAt)}
+                            {formatSubmissionDateTime(submission.submissionDate, submission.createdAt)}
                           </TableCell>
                         </TableRow>
                       );
@@ -740,7 +753,7 @@ const StaffSubmissionHistoryPage = () => {
                     <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
                       <AccessTimeOutlinedIcon sx={{ fontSize: 14, color: '#9BA1AE' }} />
                       <Typography variant="caption" sx={{ color: '#9BA1AE', lineHeight: 1.6 }}>
-                        Submitted at: {formatDisplayDateTime(selectedSubmission.createdAt)}
+                        Submitted at: {formatSubmissionDateTime(selectedSubmission.submissionDate, selectedSubmission.createdAt)}
                       </Typography>
                     </Stack>
                   </Stack>
