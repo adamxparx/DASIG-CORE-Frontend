@@ -103,9 +103,7 @@ const AdminKpiSummaryCards: React.FC<AdminKpiSummaryCardsProps> = ({ kpis }) => 
             elevation={0}
             sx={{
               borderRadius: 2.5,
-              border: '1px solid',
-              borderColor: 'divider',
-              borderLeft: `4px solid ${card.accentColor}`,
+              border: `1.5px solid ${card.accentColor}`,
               bgcolor: '#FFFFFF',
               transition: 'transform 0.15s ease, box-shadow 0.15s ease',
               '&:hover': {

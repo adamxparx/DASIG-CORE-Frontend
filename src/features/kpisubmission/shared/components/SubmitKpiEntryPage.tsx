@@ -7,10 +7,12 @@ import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import LinearProgress from '@mui/material/LinearProgress';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
+import Skeleton from '@mui/material/Skeleton';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
@@ -391,8 +393,8 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
 
   return (
     <>
-    <Box sx={{ minHeight: '100%', bgcolor: '#F7F8FB', p: { xs: 2, md: 4 } }}>
-      <Stack spacing={2} sx={{ maxWidth: 1080, width: '100%', mx: 'auto' }}>
+    <Box sx={{ minHeight: '100%', bgcolor: 'background.default', p: { xs: 2, md: 3 } }}>
+      <Stack spacing={3}>
           <Stack spacing={0.75}>
             <Chip
               label={role === 'STAFF' ? 'Member' : 'Committee Lead'}
@@ -404,9 +406,58 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
             </Typography>
           </Stack>
 
-          <Paper elevation={0} sx={{ borderRadius: 3, border: '1px solid #E2E5EC', overflow: 'hidden' }}>
-            <Box sx={{ p: { xs: 2, md: 3 } }}>
+          <Paper elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 3 }}>
+            {isLoadingKpis ? (
               <Stack spacing={3}>
+                <Box>
+                  <Skeleton variant="rounded" height={28} width={200} />
+                  <Skeleton variant="rounded" height={18} width={420} sx={{ mt: 1 }} />
+                </Box>
+
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                  <Skeleton variant="rounded" height={56} sx={{ flex: 1, bgcolor: 'grey.100' }} />
+                  <Skeleton variant="rounded" height={56} sx={{ flex: 1, bgcolor: 'grey.100' }} />
+                </Stack>
+
+                <Paper elevation={0} sx={{ bgcolor: '#F6F7FA', border: '1px solid #ECEEF3', borderRadius: 2.5, p: 2 }}>
+                  <Skeleton variant="rounded" height={20} width={140} sx={{ mb: 1 }} />
+                  <Skeleton variant="rounded" height={32} width="60%" />
+                  <Skeleton variant="rounded" height={16} width="30%" sx={{ mt: 0.75 }} />
+                </Paper>
+
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                  <Skeleton variant="rounded" height={56} sx={{ flex: 1, bgcolor: 'grey.100' }} />
+                  <Skeleton variant="rounded" height={56} sx={{ flex: 1, bgcolor: 'grey.100' }} />
+                </Stack>
+
+                <Box>
+                  <Skeleton variant="rounded" height={20} width={220} sx={{ mb: 1, alignSelf: 'flex-start' }} />
+                  <Skeleton variant="rounded" height={8} sx={{ width: '100%', height: 8, borderRadius: 999, bgcolor: '#E8EBF2' }} />
+                </Box>
+
+                <Paper elevation={0} sx={{ border: '1px dashed #CFD5E1', borderRadius: 2, p: 3, textAlign: 'center', bgcolor: '#FAFBFD' }}>
+                  <Skeleton variant="circular" height={48} width={48} sx={{ mx: 'auto' }} />
+                  <Skeleton variant="rounded" height={20} width={160} sx={{ mt: 1.5, mx: 'auto' }} />
+                  <Skeleton variant="rounded" height={16} width={280} sx={{ mt: 1, mx: 'auto' }} />
+                </Paper>
+
+                <Skeleton variant="rounded" height={140} sx={{ width: '100%', bgcolor: 'grey.100' }} />
+
+                <Paper elevation={0} sx={{ bgcolor: '#F8F9FC', border: '1px solid #E5E8F1', borderRadius: 2, p: 1.5 }}>
+                  <Skeleton variant="rounded" height={20} width={320} sx={{ mb: 1 }} />
+                  <Skeleton variant="rounded" height={16} width="90%" />
+                  <Skeleton variant="rounded" height={16} width="80%" sx={{ mt: 0.5 }} />
+                </Paper>
+
+                <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end', mt: 3 }}>
+                  <Skeleton variant="rounded" height={40} width={100} />
+                  <Skeleton variant="rounded" height={40} width={110} />
+                  <Skeleton variant="rounded" height={40} width={140} />
+                </Stack>
+              </Stack>
+            ) : (
+              <>
+                <Stack spacing={3}>
                 <Box>
                   <Typography variant="h6" sx={{ fontWeight: 700, color: '#20242A' }}>
                     KPI Details & Entry
@@ -415,8 +466,6 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                     Provide the final values and supporting documents for your assigned metric.
                   </Typography>
                 </Box>
-
-                {isLoadingKpis && <LinearProgress />}
 
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                   <TextField
@@ -630,27 +679,60 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                   </Stack>
                 </Paper>
               </Stack>
-            </Box>
 
-            <Divider />
-
-            <Stack direction="row" sx={{ px: { xs: 2, md: 3 }, py: 2, justifyContent: 'space-between' }}>
-              <Button color="inherit">Cancel</Button>
-
-              <Stack direction="row" spacing={1}>
-                <Button variant="outlined" disabled>
+              <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end', mt: 3 }}>
+                <Button
+                  type="button"
+                  variant="outlined"
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    borderRadius: 2,
+                    px: 2.5,
+                    borderColor: 'divider',
+                    color: 'text.primary',
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="outlined"
+                  disabled
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    borderRadius: 2,
+                    px: 2.5,
+                    borderColor: 'divider',
+                    color: 'text.primary',
+                  }}
+                >
                   Save Draft
                 </Button>
                 <Button
                   variant="contained"
                   onClick={handleSubmit}
                   disabled={isSubmitting || isLoadingKpis || !selectedKpi || !period}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    borderRadius: 2,
+                    px: 2.5,
+                    boxShadow: 'none',
+                    '&:hover': { boxShadow: 'none' },
+                  }}
                 >
-                  {isSubmitting ? 'Submitting...' : 'Submit KPI'}
+                  {isSubmitting ? (
+                    <CircularProgress size={22} color="inherit" />
+                  ) : (
+                    'Submit KPI'
+                  )}
                 </Button>
               </Stack>
-            </Stack>
-          </Paper>
+                </>
+              )}
+            </Paper>
         </Stack>
     </Box>
     <Snackbar

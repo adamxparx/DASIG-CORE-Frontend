@@ -1,6 +1,5 @@
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
 import Stack from '@mui/material/Stack';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
@@ -17,6 +16,7 @@ import KpiFilterBar from '../../shared/components/KpiFilterBar';
 import KpisList from '../../shared/components/KpisList';
 import { computeKpiStatus } from '../../shared/utils/kpiStatusUtils';
 import { routes } from '../../../../routes';
+import { DashboardSkeleton } from '../../../../features/shared/components';
 
 const AdminKpiManagementPage = () => {
   const navigate = useNavigate();
@@ -129,11 +129,7 @@ const AdminKpiManagementPage = () => {
   };
 
   if (isLoading) {
-    return (
-      <Stack sx={{ minHeight: '50vh', alignItems: 'center', justifyContent: 'center' }}>
-        <CircularProgress />
-      </Stack>
-    );
+    return <DashboardSkeleton showBanner showFilters cardCount={6} />;
   }
 
   if (error) {

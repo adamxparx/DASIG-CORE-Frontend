@@ -2,7 +2,6 @@ import ErrorIcon from '@mui/icons-material/Error';
 import SearchIcon from '@mui/icons-material/Search';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
 import FormControl from '@mui/material/FormControl';
 import InputAdornment from '@mui/material/InputAdornment';
 import InputLabel from '@mui/material/InputLabel';
@@ -28,6 +27,7 @@ import { alertsService } from '../api/alertsService';
 import { formatValue, getAcknowledgmentBadgeInfo, getPerformanceBadgeInfo } from '../components/AlertCard';
 import AlertDetailModal from '../components/AlertDetailModal';
 import type { AlertDetailResponse } from '../types/alerts.types';
+import { AlertsSkeleton } from '../../../features/shared/components';
 
 export default function AdminAlertsPage() {
   const [alerts, setAlerts] = useState<AlertDetailResponse[]>([]);
@@ -143,9 +143,7 @@ export default function AdminAlertsPage() {
   if (isLoading) {
     return (
       <AdminPageLayout>
-        <Stack sx={{ minHeight: '50vh', alignItems: 'center', justifyContent: 'center' }}>
-          <CircularProgress sx={{ color: '#426ef0' }} />
-        </Stack>
+        <AlertsSkeleton />
       </AdminPageLayout>
     );
   }
@@ -368,7 +366,7 @@ export default function AdminAlertsPage() {
             >
               <Table>
                 <TableHead>
-                  <TableRow>
+                  <TableRow sx={{ bgcolor: '#F9FAFB' }}>
                     <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
                       KPI
                     </TableCell>

@@ -13,7 +13,6 @@ import Alert from '@mui/material/Alert';
 import Badge from '@mui/material/Badge';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
@@ -34,6 +33,7 @@ import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { kpiSubmissionService } from '../../api/kpiSubmissionService';
 import type { AssignableKpi, KpiSubmissionResponse, SubmissionDocumentResponse, SubmissionReviewStatus } from '../../types/kpiSubmission.types';
+import { TableSkeleton } from '../../../shared/components';
 import RejectionFeedbackPanel from '../../shared/components/RejectionFeedbackPanel';
 import SubmissionReviewBadge from '../../shared/components/SubmissionReviewBadge';
 
@@ -463,45 +463,50 @@ const StaffSubmissionHistoryPage = () => {
               </Stack>
             </Paper>
 
-            <Paper
-              elevation={0}
-              sx={{
-                border: '1px solid #E2E5EC',
-                borderRadius: 3,
-                overflow: 'hidden',
-                bgcolor: '#fff',
-                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-              }}
-            >
-              {isLoading && <LinearProgress sx={{ height: 3, bgcolor: '#EEF0F4', '& .MuiLinearProgress-bar': { bgcolor: '#6366F1' } }} />}
-              {error && <Alert severity="error">{error}</Alert>}
+            {isLoading ? (
+              <TableSkeleton
+                rows={5}
+                columns={5}
+                headers={['Reference', 'KPI Name', 'Progress', 'Review', 'Submitted At']}
+                showPagination
+              />
+            ) : (
+              <Paper
+                elevation={0}
+                sx={{
+                  border: '1px solid #E2E5EC',
+                  borderRadius: 3,
+                  overflow: 'hidden',
+                  bgcolor: '#fff',
+                  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+                }}
+              >
+                {error && <Alert severity="error" sx={{ mx: 2.5, mt: 2 }}>{error}</Alert>}
 
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      {['Reference', 'KPI Name', 'Progress', 'Review', 'Submitted At'].map((header) => (
-                        <TableCell key={header} sx={tableHeaderCellSx}>
-                          {header}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {!isLoading && pagedSubmissions.length === 0 && (
+                <TableContainer>
+                  <Table>
+                    <TableHead>
                       <TableRow>
-                        <TableCell colSpan={5} sx={{ borderBottom: 0 }}>
-                          <Typography sx={{ textAlign: 'center', py: 4, color: '#9BA1AE', lineHeight: 1.6 }}>
-                            No submission records found.
-                          </Typography>
-                        </TableCell>
+                        {['Reference', 'KPI Name', 'Progress', 'Review', 'Submitted At'].map((header) => (
+                          <TableCell key={header} sx={tableHeaderCellSx}>
+                            {header}
+                          </TableCell>
+                        ))}
                       </TableRow>
-                    )}
+                    </TableHead>
+                    <TableBody>
+                      {pagedSubmissions.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} sx={{ borderBottom: 0 }}>
+                            <Typography sx={{ textAlign: 'center', py: 4, color: '#9BA1AE', lineHeight: 1.6 }}>
+                              No submission records found.
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      )}
 
-                    {pagedSubmissions.map((submission) => {
-                      const kpiMeta = assignableById.get(submission.kpiDefinitionId);
-                      const status = mapStatus(submission.performanceStatus);
-                      return (
+                      {pagedSubmissions.map((submission) => {
+                       return (
                         <TableRow
                           key={submission.id}
                           hover
@@ -519,26 +524,8 @@ const StaffSubmissionHistoryPage = () => {
                           <TableCell sx={{ ...tableBodyCellSx, color: '#374151' }}>{submission.kpiName}</TableCell>
                           <TableCell sx={tableBodyCellSx}>
                             <Typography sx={{ fontWeight: 700, lineHeight: 1.4, color: '#111827', fontSize: '0.875rem' }}>
-                              {submission.submittedValue}{kpiMeta?.targetValue ? ` / ${kpiMeta.targetValue}` : ''}{kpiMeta?.unit ? ` ${kpiMeta.unit}` : ''}
+                              {(submission.achievementRate ?? 0).toFixed(0)}%
                             </Typography>
-                            <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', mt: 0.5 }}>
-                              <Chip
-                                label={status.label}
-                                size="small"
-                                sx={{
-                                  bgcolor: status.bg,
-                                  color: status.color,
-                                  fontWeight: 700,
-                                  fontSize: '0.7rem',
-                                  height: 20,
-                                  borderRadius: 999,
-                                  px: 0.25,
-                                }}
-                              />
-                              <Typography variant="caption" sx={{ fontWeight: 700, color: status.achievementColor, fontSize: '0.75rem' }}>
-                                {(submission.achievementRate ?? 0).toFixed(0)}%
-                              </Typography>
-                            </Stack>
                           </TableCell>
                           <TableCell sx={tableBodyCellSx}>
                             {newlyReviewedIds.has(submission.id) || submission.memberViewed === false ? (
@@ -568,7 +555,7 @@ const StaffSubmissionHistoryPage = () => {
                             )}
                           </TableCell>
                           <TableCell sx={{ ...tableBodyCellSx, color: '#6B7280' }}>
-                            {formatSubmissionDateTime(submission.submissionDate, submission.createdAt)}
+                            {formatDisplayDate(submission.submissionDate)}
                           </TableCell>
                         </TableRow>
                       );
@@ -664,6 +651,7 @@ const StaffSubmissionHistoryPage = () => {
                 </Stack>
               </Stack>
             </Paper>
+            )}
           </Stack>
         </Box>
 
@@ -883,9 +871,9 @@ const StaffSubmissionHistoryPage = () => {
                             </span>
                           </Tooltip>
                         </Stack>
-                      </Stack>
-                    </Paper>
-                  ))}
+              </Stack>
+            </Paper>
+                    ))}
                 </Stack>
 
                 {isDocumentLoading && <LinearProgress sx={{ mt: 1.5 }} />}

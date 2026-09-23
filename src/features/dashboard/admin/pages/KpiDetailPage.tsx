@@ -8,9 +8,9 @@ import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import Paper from '@mui/material/Paper';
+import Skeleton from '@mui/material/Skeleton';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
@@ -31,6 +31,7 @@ import DeleteKpiDialog from '../../admin/components/DeleteKpiDialog';
 import ArchiveKpiDialog from '../../admin/components/ArchiveKpiDialog';
 import UnarchiveKpiDialog from '../../admin/components/UnarchiveKpiDialog';
 import SubmissionReviewBadge from '../../../kpisubmission/shared/components/SubmissionReviewBadge';
+import { KpiDetailSkeleton } from '../../../shared/components';
 
 const formatDate = (date: string) =>
   new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -90,7 +91,7 @@ const SubmissionRecordsTable = ({
       }}
     >
       <TableHead>
-        <TableRow>
+        <TableRow sx={{ bgcolor: '#F9FAFB' }}>
           <TableCell>Reference</TableCell>
           <TableCell>Submission Date</TableCell>
           <TableCell>Organization</TableCell>
@@ -281,9 +282,7 @@ const KpiDetailPage = () => {
   if (isLoadingKpi) {
     return (
       <AdminPageLayout>
-        <Stack sx={{ minHeight: '50vh', alignItems: 'center', justifyContent: 'center' }}>
-          <CircularProgress />
-        </Stack>
+        <KpiDetailSkeleton />
       </AdminPageLayout>
     );
   }
@@ -496,7 +495,7 @@ const KpiDetailPage = () => {
 
           {isLoadingHistory ? (
             <Stack sx={{ py: 4, alignItems: 'center' }}>
-              <CircularProgress size={28} />
+              <Skeleton variant="circular" width={28} height={28} />
             </Stack>
           ) : error || !history ? (
             <Alert severity="error">Unable to load submission history.</Alert>

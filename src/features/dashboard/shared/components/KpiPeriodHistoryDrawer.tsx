@@ -250,7 +250,7 @@ const KpiPeriodHistoryDrawer = ({ open, kpi, role, committeeId, onClose }: KpiPe
                     }}
                   >
                     <TableHead>
-                      <TableRow>
+                      <TableRow sx={{ bgcolor: '#F9FAFB' }}>
                         <TableCell>Submission Date</TableCell>
                         {showOrganizationColumn && <TableCell>Organization</TableCell>}
                         <TableCell>Submitted by</TableCell>

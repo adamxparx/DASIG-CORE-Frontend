@@ -1,5 +1,4 @@
 ﻿import Alert from '@mui/material/Alert';
-import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
@@ -16,6 +15,7 @@ import type { UserResponse } from '../../user/types/user.types';
 import CreateCommitteeForm from '../components/CreateCommitteeForm';
 import EditCommitteeForm from '../components/EditCommitteeForm';
 import CommitteesList from '../components/CommitteesList';
+import { ManagementPageSkeleton } from '../../shared/components';
 
 const CommitteeManagementPage = () => {
   const [committees, setCommittees] = useState<CommitteeResponse[]>([]);
@@ -84,9 +84,7 @@ const CommitteeManagementPage = () => {
   if (isLoading) {
     return (
       <AdminPageLayout>
-        <Stack sx={{ minHeight: '50vh', alignItems: 'center', justifyContent: 'center' }}>
-          <CircularProgress />
-        </Stack>
+        <ManagementPageSkeleton formFields={3} tableColumns={4} tableRows={5} />
       </AdminPageLayout>
     );
   }

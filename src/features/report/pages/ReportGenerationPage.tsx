@@ -5,7 +5,6 @@ import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
-import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -19,6 +18,7 @@ import RadioGroup from '@mui/material/RadioGroup';
 import Select from '@mui/material/Select';
 import type { SelectChangeEvent } from '@mui/material/Select';
 import Snackbar from '@mui/material/Snackbar';
+import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Tab from '@mui/material/Tab';
 import Table from '@mui/material/Table';
@@ -40,6 +40,8 @@ import { reportService } from '../api/reportService';
 import NarrativeReportParser from '../components/NarrativeReportParser';
 import StructuredReportView from '../components/StructuredReportView';
 import type { ReportResponse } from '../types/report.types';
+import { SkeletonLoader, ReportGenerationSkeleton } from '../../shared/components';
+import dasig_logo from '../../../assets/dasig_logo.svg';
 
 
 const getTodayDateString = () => {
@@ -276,9 +278,7 @@ export default function ReportGenerationPage() {
   if (isLoadingCommittees) {
     return (
       <AdminPageLayout>
-        <Stack sx={{ minHeight: '50vh', alignItems: 'center', justifyContent: 'center' }}>
-          <CircularProgress sx={{ color: '#426ef0' }} />
-        </Stack>
+        <ReportGenerationSkeleton />
       </AdminPageLayout>
     );
   }
@@ -421,7 +421,7 @@ export default function ReportGenerationPage() {
                   >
                     {isKpisLoading ? (
                       <MenuItem disabled value="">
-                        <CircularProgress size={16} sx={{ mr: 1, color: '#426ef0' }} />
+                        <SkeletonLoader count={1} height={16} width={100} gap={0} direction="row" />
                         Loading KPIs...
                       </MenuItem>
                     ) : kpis.length === 0 ? (
@@ -505,7 +505,7 @@ export default function ReportGenerationPage() {
                 }}
               >
                 {isGenerating ? (
-                  <CircularProgress size={22} color="inherit" />
+                  <Skeleton variant="circular" width={22} height={22} sx={{ mr: 1 }} />
                 ) : activeReport ? (
                   'Regenerate AI Narrative'
                 ) : (
@@ -533,7 +533,23 @@ export default function ReportGenerationPage() {
             {/* Loading Indicator */}
             {isGenerating ? (
               <Stack sx={{ flexGrow: 1, alignItems: 'center', justifyContent: 'center', py: 8, textAlign: 'center', spacing: 2 }}>
-                <CircularProgress size={40} sx={{ color: '#426ef0', mb: 2 }} />
+                <Box
+                  sx={{
+                    mb: 2,
+                    width: 80,
+                    height: 80,
+                    opacity: 0.45,
+                    filter: 'grayscale(100%)',
+                    animation: 'blink 1.6s ease-in-out infinite',
+                    '@keyframes blink': {
+                      '0%': { opacity: 0.2, filter: 'grayscale(100%)' },
+                      '50%': { opacity: 0.65, filter: 'grayscale(100%)' },
+                      '100%': { opacity: 0.2, filter: 'grayscale(100%)' },
+                    },
+                  }}
+                >
+                  <img src={dasig_logo} alt="Dasig Core" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                </Box>
                 <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary', mb: 1 }}>
                   Generating Narrative...
                 </Typography>
@@ -563,7 +579,7 @@ export default function ReportGenerationPage() {
                     onClick={() => handleExportPdf(activeReport.id)}
                     disabled={isExporting}
                     variant="outlined"
-                    startIcon={isExporting ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon />}
+                    startIcon={isExporting ? <Skeleton variant="circular" width={16} height={16} /> : <DownloadIcon />}
                     sx={{
                       borderRadius: 2,
                       textTransform: 'none',
@@ -650,7 +666,7 @@ export default function ReportGenerationPage() {
 
           {isHistoryLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress size={24} sx={{ color: '#426ef0' }} />
+              <Skeleton variant="circular" width={24} height={24} sx={{ color: '#426ef0' }} />
             </Box>
           ) : historyReports.length === 0 ? (
             <Box

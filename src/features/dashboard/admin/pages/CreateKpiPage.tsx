@@ -32,6 +32,7 @@ import type {
 } from '../../shared/types/kpi.types';
 import { getDeadlineFieldHelperText } from '../../../notification/utils/notificationDisplay';
 import { routes } from '../../../../routes';
+import { FormSkeleton } from '../../../shared/components';
 
 /* ─────────────────────────────────────────────
    Small helpers
@@ -302,9 +303,9 @@ const CreateKpiPage = () => {
   /* ── Loading skeletons ──────────────────── */
   if (isLoadingKpi) {
     return (
-      <Stack sx={{ minHeight: '60vh', alignItems: 'center', justifyContent: 'center' }}>
-        <CircularProgress />
-      </Stack>
+      <Box sx={{ px: { xs: 3, sm: 5 }, py: { xs: 3, md: 4 }, maxWidth: 860 }}>
+        <FormSkeleton fields={8} showTitle />
+      </Box>
     );
   }
 

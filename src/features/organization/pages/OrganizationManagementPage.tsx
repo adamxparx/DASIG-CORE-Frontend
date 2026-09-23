@@ -1,5 +1,4 @@
 import Alert from '@mui/material/Alert';
-import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
@@ -12,6 +11,7 @@ import CreateOrganizationForm from '../components/CreateOrganizationForm';
 import EditOrganizationForm from '../components/EditOrganizationForm';
 import OrganizationsList from '../components/OrganizationsList';
 import type { OrganizationResponse } from '../types/organization.types';
+import { ManagementPageSkeleton } from '../../shared/components';
 
 const OrganizationManagementPage = () => {
   const [organizations, setOrganizations] = useState<OrganizationResponse[]>([]);
@@ -76,9 +76,7 @@ const OrganizationManagementPage = () => {
   if (isLoading) {
     return (
       <AdminPageLayout>
-        <Stack sx={{ minHeight: '50vh', alignItems: 'center', justifyContent: 'center' }}>
-          <CircularProgress />
-        </Stack>
+        <ManagementPageSkeleton formFields={3} tableColumns={3} tableRows={5} />
       </AdminPageLayout>
     );
   }
