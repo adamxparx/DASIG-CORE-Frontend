@@ -1,7 +1,6 @@
 import Alert from '@mui/material/Alert';
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
 import Button from '@mui/material/Button';
-import CircularProgress from '@mui/material/CircularProgress';
 import Stack from '@mui/material/Stack';
 import Snackbar from '@mui/material/Snackbar';
 import { useEffect, useMemo, useState, useCallback } from 'react';
@@ -26,6 +25,7 @@ import KpisList from './KpisList';
 import KpiPeriodHistoryDrawer from './KpiPeriodHistoryDrawer';
 import { getDeadlineAlertLeadDays } from '../../../notification/utils/notificationDisplay';
 import type { KpiSubmitSuccessContext } from '../../admin/components/KpiFormDialog';
+import { DashboardSkeleton } from '../../../../features/shared/components';
 
 interface RoleBasedDashboardPageProps {
   role: UserRole;
@@ -265,11 +265,7 @@ const RoleBasedDashboardPage = ({
       : subtitle;
 
   if (isLoading) {
-    return (
-      <Stack sx={{ minHeight: '50vh', alignItems: 'center', justifyContent: 'center' }}>
-        <CircularProgress />
-      </Stack>
-    );
+    return <DashboardSkeleton showBanner={role !== 'TBI_MANAGER'} showFilters cardCount={6} />;
   }
 
   if (error) {

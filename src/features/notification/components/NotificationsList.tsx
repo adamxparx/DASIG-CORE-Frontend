@@ -2,8 +2,8 @@ import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined
 import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
 import Paper from '@mui/material/Paper';
+import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { NotificationResponse } from '../types/notification.types';
@@ -29,8 +29,24 @@ const NotificationsList = ({
 }: NotificationsListProps) => {
   if (isLoading) {
     return (
-      <Stack sx={{ py: 8, alignItems: 'center' }}>
-        <CircularProgress />
+      <Stack spacing={1.5}>
+        {Array.from({ length: 5 }).map((_, index) => (
+          <Paper key={index} elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 2.5 }}>
+            <Stack spacing={1.5}>
+              <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <Stack spacing={1} sx={{ flex: 1 }}>
+                  <Skeleton variant="rounded" height={20} width="50%" />
+                  <Skeleton variant="rounded" height={16} width="90%" />
+                </Stack>
+                <Skeleton variant="rounded" height={24} width={90} />
+              </Stack>
+              <Stack direction="row" spacing={2}>
+                <Skeleton variant="rounded" height={16} width={140} />
+                <Skeleton variant="rounded" height={16} width={160} />
+              </Stack>
+            </Stack>
+          </Paper>
+        ))}
       </Stack>
     );
   }

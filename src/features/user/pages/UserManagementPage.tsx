@@ -1,6 +1,6 @@
 import Alert from '@mui/material/Alert';
-import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
+import Skeleton from '@mui/material/Skeleton';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import { useCallback, useEffect, useState } from 'react';
@@ -16,6 +16,7 @@ import CreateUserAccountForm from '../components/CreateUserAccountForm';
 import EditUserAccountForm from '../components/EditUserAccountForm';
 import UsersList, { type UserListItem } from '../components/UsersList';
 import type { UserResponse } from '../types/user.types';
+import { ManagementPageSkeleton } from '../../shared/components';
 
 function toUserListItem(user: UserResponse, organizations: OrganizationResponse[], committees: CommitteeResponse[]): UserListItem {
   const organization = organizations.find((org) => org.id === user.organizationId);
@@ -114,9 +115,11 @@ const UserManagementPage = () => {
   if (isLoading) {
     return (
       <AdminPageLayout>
-        <Stack sx={{ minHeight: '50vh', alignItems: 'center', justifyContent: 'center' }}>
-          <CircularProgress />
-        </Stack>
+        <ManagementPageSkeleton
+          formFields={5}
+          tableColumns={5}
+          tableRows={5}
+        />
       </AdminPageLayout>
     );
   }
@@ -136,8 +139,17 @@ const UserManagementPage = () => {
         <Divider />
 
         {isLoadingUser ? (
-          <Stack sx={{ py: 6, alignItems: 'center' }}>
-            <CircularProgress size={32} />
+          <Stack spacing={2.5} sx={{ p: 2.5, border: 1, borderColor: 'divider', borderRadius: 2 }}>
+            {Array.from({ length: 5 }).map((_, index) => (
+              <Stack key={index} spacing={1}>
+                <Skeleton variant="rounded" height={16} width={140} />
+                <Skeleton variant="rounded" height={40} sx={{ bgcolor: 'grey.100' }} />
+              </Stack>
+            ))}
+            <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end', mt: 1 }}>
+              <Skeleton variant="rounded" height={36} width={90} />
+              <Skeleton variant="rounded" height={36} width={110} />
+            </Stack>
           </Stack>
         ) : selectedUser ? (
           <EditUserAccountForm

@@ -39,7 +39,7 @@ const OrganizationsList = ({ organizations, selectedId, onSelect }: Organization
       >
         <Table>
           <TableHead>
-            <TableRow>
+            <TableRow sx={{ bgcolor: '#F9FAFB' }}>
               <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
                 Name
               </TableCell>

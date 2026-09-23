@@ -1,0 +1,11 @@
+export { default as SkeletonLoader } from './SkeletonLoader';
+export { default as KpiCardSkeleton } from './skeletons/KpiCardSkeleton';
+export { default as TableSkeleton } from './skeletons/TableSkeleton';
+export { default as FormSkeleton } from './skeletons/FormSkeleton';
+export { default as ListSkeleton } from './skeletons/ListSkeleton';
+export { default as DashboardSkeleton } from './skeletons/DashboardSkeleton';
+export { default as AdminPageSkeleton } from './skeletons/AdminPageSkeleton';
+export { default as KpiDetailSkeleton } from './skeletons/KpiDetailSkeleton';
+export { default as ReportGenerationSkeleton } from './skeletons/ReportGenerationSkeleton';
+export { default as ManagementPageSkeleton } from './skeletons/ManagementPageSkeleton';
+export { default as AlertsSkeleton } from './skeletons/AlertsSkeleton';
