@@ -12,6 +12,10 @@ export const userService = {
     return apiClient<UserResponse>(`${USERS_ENDPOINT}/${id}`);
   },
 
+  getCurrentUser(): Promise<UserResponse> {
+    return apiClient<UserResponse>(`${USERS_ENDPOINT}/me`);
+  },
+
   create(request: CreateUserRequest): Promise<UserResponse> {
     return apiClient<UserResponse>(USERS_ENDPOINT, {
       method: 'POST',
@@ -28,6 +32,12 @@ export const userService = {
 
   deactivate(id: number): Promise<void> {
     return apiClient<void>(`${USERS_ENDPOINT}/${id}/deactivate`, {
+      method: 'PATCH',
+    });
+  },
+
+  activate(id: number): Promise<void> {
+    return apiClient<void>(`${USERS_ENDPOINT}/${id}/activate`, {
       method: 'PATCH',
     });
   },
