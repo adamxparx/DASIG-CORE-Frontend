@@ -3,7 +3,7 @@ import { getAuthRedirectPath, getSession } from '../../../auth/utils/session';
 import type { UserRole as AuthUserRole } from '../../../auth/types/auth.types';
 import type { UserRole as DashboardUserRole } from '../types/dashboard.types';
 import { routes } from '../../../../routes';
-import DashboardShellLayout from './DashboardShellLayout';
+import OrganizationGate from './OrganizationGate';
 
 interface ProtectedDashboardLayoutProps {
   requiredRole: AuthUserRole;
@@ -25,7 +25,7 @@ const ProtectedDashboardLayout = ({ requiredRole, dashboardRole }: ProtectedDash
     return <Navigate to={session.dashboardPath} replace />;
   }
 
-  return <DashboardShellLayout role={dashboardRole} />;
+  return <OrganizationGate role={dashboardRole} />;
 };
 
 export default ProtectedDashboardLayout;

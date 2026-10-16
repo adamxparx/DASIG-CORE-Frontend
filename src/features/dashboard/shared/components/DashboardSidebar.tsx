@@ -40,6 +40,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { routes } from '../../../../routes';
 import dasig_logo from '../../../../assets/dasig_logo.svg';
 import { tokenStorage } from '../../../auth/utils/tokenStorage';
+import { useMsal } from '@azure/msal-react';
 import { useUnacknowledgedAlertCount } from '../../../alerts/hooks/useUnacknowledgedAlertCount';
 import { useUnreadNotificationCount } from '../../../notification/hooks/useUnreadNotificationCount';
 import { useSubmissionBadgeCounts } from '../../../kpisubmission/hooks/useSubmissionBadgeCounts';
@@ -426,10 +427,23 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
     }
   };
 
+  const { instance, accounts } = useMsal();
+
   const handleLogout = () => {
     setLogoutDialogOpen(false);
+    
+    // 1. Clear local application storage
     tokenStorage.clear();
-    navigate(routes.auth, { replace: true });
+    
+    // 2. Clear Microsoft session if user logged in via Entra ID
+    if (accounts.length > 0) {
+      instance.logoutRedirect({
+        postLogoutRedirectUri: window.location.origin + routes.auth,
+      });
+    } else {
+      // Standard logout redirect for non-Microsoft users
+      navigate(routes.auth, { replace: true });
+    }
   };
 
   const handleNavClick = (item: SidebarItem) => {

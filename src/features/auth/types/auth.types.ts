@@ -12,6 +12,7 @@ export type JwtPayload = {
   role?: string;
   name?: string;
   mustChangePassword?: boolean;
+  organizationId?: number | null;
   iat?: number;
   exp?: number;
 };

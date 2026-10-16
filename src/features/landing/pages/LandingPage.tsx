@@ -1,5 +1,5 @@
-import { type FormEvent, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { type FormEvent, useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -19,16 +19,78 @@ import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import dasig_logo from '../../../assets/dasig_logo.svg';
 import { useLogin } from '../../auth/hooks/useLogin';
+import { loginRequest, apiRequest } from '../../../lib/config/authConfig';
+import Divider from '@mui/material/Divider';
+import MicrosoftIcon from '@mui/icons-material/Window';
+import { tokenStorage } from '../../auth/utils/tokenStorage';
+import { getSession } from '../../auth/utils/session';
+import { useMsal, useIsAuthenticated } from '@azure/msal-react';
+import type { TokenClaims } from '@azure/msal-common';
 
 const LandingPage = () => {
   const location = useLocation();
+  const { instance, inProgress } = useMsal();
+  const isAuthenticated = useIsAuthenticated();
+
   const successMessage = (location.state as { message?: string } | null)?.message;
+
+  const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
+
+  useEffect(() => {
+    // Only run if MSAL is idle and thinks we are authenticated
+    if (isAuthenticated && inProgress === "none") {
+      const activeAccount = instance.getAllAccounts()[0];
+      
+      if (activeAccount) {
+        // 1. SAFETY CHECK: Does the Entra ID account actually have your custom roles?
+        const msalRoles = (activeAccount.idTokenClaims as TokenClaims)?.roles;
+        
+        if (!msalRoles || msalRoles.length === 0) {
+          console.error("LOOP BLOCKED: User is logged in to Microsoft, but has NO App Roles assigned in Entra ID.");
+          return; // Stop here so it doesn't reload infinitely
+        }
+
+        // 2. LOOP PREVENTION: Only attempt to sync if tokenStorage is currently empty
+        if (!tokenStorage.get()) {
+          console.log("Attempting silent token acquisition for API roles...");
+          instance.acquireTokenSilent({
+            scopes: ["User.Read"], // Force exactly this scope
+            account: activeAccount
+          }).then((response) => {
+            console.log("Token acquired successfully, syncing to session");
+            // Use idToken for session storage
+            tokenStorage.set(response.idToken);
+            window.location.href = '/'; // Forces App.tsx to run getSession() again
+          }).catch((e) => {
+            console.error("Silent token acquisition failed:", e);
+            // In private mode or if silent auth fails, fall back to redirect
+            if (e.name === "InteractionRequiredAuthError" || e.errorCode === "interaction_required") {
+              console.log("Falling back to interactive token acquisition...");
+              instance.acquireTokenRedirect({
+                ...apiRequest,
+                account: activeAccount
+              }).catch((redirectError) => {
+                console.error("Redirect token acquisition also failed:", redirectError);
+              });
+            }
+          });
+        } else {
+          console.log("Token already in storage, navigating to dashboard");
+          // Token exists but we're still on landing page - navigate to dashboard
+          const session = getSession();
+          if (session) {
+            navigate(session.dashboardPath, { replace: true });
+          }
+        }
+      }
+    }
+  }, [isAuthenticated, inProgress, instance, navigate]);
 
   const { login, error, isLoading } = useLogin();
 
@@ -66,6 +128,12 @@ const LandingPage = () => {
     }
 
     void login({ username: email.trim(), password });
+  };
+
+  const handleMicrosoftLogin = () => {
+    instance.loginRedirect(loginRequest).catch((error) => {
+      console.error("Microsoft Login Error:", error);
+    });
   };
 
   const featureHighlights = [
@@ -488,6 +556,36 @@ const LandingPage = () => {
                     'Sign In'
                   )}
                 </Button>
+
+                <Divider sx={{ typography: 'body2', color: '#94A3B8', py: 1 }}>
+                  OR
+                </Divider>
+
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={handleMicrosoftLogin}
+                  disabled={isLoading}
+                  startIcon={<MicrosoftIcon />}
+                  sx={{
+                    py: { xs: 1.2, xl: 1.4 },
+                    borderRadius: 2,
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    fontSize: { xs: '0.95rem', xl: '1.05rem' },
+                    color: '#1E293B',
+                    borderColor: 'rgba(226, 232, 240, 0.95)',
+                    bgcolor: '#FFFFFF',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: '#F8FAFC',
+                      borderColor: '#CBD5E1',
+                    },
+                  }}
+                >
+                  Continue with Microsoft
+                </Button>
+
               </Stack>
             </Box>
           </Box>

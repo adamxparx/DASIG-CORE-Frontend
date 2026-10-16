@@ -112,6 +112,12 @@ const UserManagementPage = () => {
     showToast('User account deactivated successfully.');
   };
 
+  const handleActivated = () => {
+    setSelectedUser(null);
+    void loadPageData(true);
+    showToast('User account activated successfully.');
+  };
+
   if (isLoading) {
     return (
       <AdminPageLayout>
@@ -159,6 +165,7 @@ const UserManagementPage = () => {
             committees={committees}
             onUpdated={handleUpdated}
             onDeactivated={handleDeactivated}
+            onActivated={handleActivated}
             onCancel={handleEditCancel}
           />
         ) : (

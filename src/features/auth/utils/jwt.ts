@@ -14,7 +14,16 @@ export function decodeJwtPayload(token: string): JwtPayload {
   }
 
   const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
-  return JSON.parse(atob(normalized)) as JwtPayload;
+  const decoded = JSON.parse(atob(normalized));
+
+  // NORMALIZATION FOR ENTRA ID TOKENS
+  // If the token comes from Microsoft, it has a 'roles' array.
+  // We map the first role in the array to your expected 'role' string format.
+  if (decoded.roles && Array.isArray(decoded.roles) && decoded.roles.length > 0) {
+    decoded.role = `ROLE_${decoded.roles[0]}`; 
+  }
+
+  return decoded as JwtPayload;
 }
 
 export function getDashboardPathForRole(role: string | undefined): string | null {
