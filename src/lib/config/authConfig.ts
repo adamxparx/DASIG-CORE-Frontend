@@ -4,7 +4,9 @@ export const msalConfig: Configuration = {
     auth: {
         clientId: import.meta.env.VITE_ENTRA_CLIENT_ID,
         authority: `https://login.microsoftonline.com/${import.meta.env.VITE_ENTRA_TENANT_ID}`,
-        redirectUri: "http://localhost:5173",
+        // Dynamically use the active domain (localhost or https://dasig-core.site)
+        // If you are using /auth.html, append it like: `${window.location.origin}/auth.html`
+        redirectUri: window.location.origin, 
     },
     cache: {
         cacheLocation: "sessionStorage"
