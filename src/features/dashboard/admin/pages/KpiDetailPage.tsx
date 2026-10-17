@@ -27,11 +27,14 @@ import type { DashboardKpiItem, KpiPeriodHistoryResponse } from '../../shared/ty
 import AdminPageLayout from '../../shared/components/AdminPageLayout';
 import DashboardHeader from '../../shared/components/DashboardHeader';
 import KpiProgressChart from '../../shared/components/KpiProgressChart';
+import KpiStatusBadge from '../../shared/components/KpiStatusBadge';
+import KpiStatusBanner from '../../shared/components/KpiStatusBanner';
 import DeleteKpiDialog from '../../admin/components/DeleteKpiDialog';
 import ArchiveKpiDialog from '../../admin/components/ArchiveKpiDialog';
 import UnarchiveKpiDialog from '../../admin/components/UnarchiveKpiDialog';
 import SubmissionReviewBadge from '../../../kpisubmission/shared/components/SubmissionReviewBadge';
 import { KpiDetailSkeleton } from '../../../shared/components';
+import { getDaysLeftLabel } from '../../../notification/utils/notificationDisplay';
 
 const formatDate = (date: string) =>
   new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -337,6 +340,7 @@ const KpiDetailPage = () => {
           title={
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
               <span>{kpi.name}</span>
+              <KpiStatusBadge status={kpi.status} />
               {isArchived && (
                 <Chip
                   label="Archived"
@@ -450,6 +454,13 @@ const KpiDetailPage = () => {
           </Alert>
         )}
 
+        <KpiStatusBanner
+          status={kpi.status}
+          submittedValue={kpi.submittedValue}
+          targetValue={kpi.overallTargetValue ?? kpi.targetValue}
+          unit={kpi.unit}
+        />
+
         <Divider />
 
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2.5}>
@@ -483,7 +494,7 @@ const KpiDetailPage = () => {
                 {formatDate(kpi.deadline)}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {kpi.status === 'COMPLETED' ? 'Completed' : kpi.status === 'ON_TRACK' ? 'In progress' : kpi.status === 'AT_RISK' ? 'At risk' : 'Overdue'}
+                {getDaysLeftLabel(kpi.deadline)}
               </Typography>
             </CardContent>
           </Card>

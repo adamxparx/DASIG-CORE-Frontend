@@ -11,7 +11,6 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import React, { useMemo } from 'react';
 import type { DashboardCommitteeOption, DashboardKpiItem } from '../types/dashboard.types';
-import { computeKpiStatus } from '../utils/kpiStatusUtils';
 
 interface CommitteeDashboardCardProps {
   committee: DashboardCommitteeOption;
@@ -37,20 +36,11 @@ const CommitteeDashboardCard: React.FC<CommitteeDashboardCardProps> = ({
   const stats = useMemo(() => {
     const total = committeeKpis.length;
 
-    const completed = committeeKpis.filter((kpi) => {
-      const overallTarget = kpi.overallTargetValue ?? kpi.targetValue;
-      return computeKpiStatus(kpi.submittedValue, overallTarget, kpi.deadline) === 'COMPLETED';
-    }).length;
+    const completed = committeeKpis.filter((kpi) => kpi.status === 'COMPLETED').length;
 
-    const overdue = committeeKpis.filter((kpi) => {
-      const overallTarget = kpi.overallTargetValue ?? kpi.targetValue;
-      return computeKpiStatus(kpi.submittedValue, overallTarget, kpi.deadline) === 'OVERDUE';
-    }).length;
+    const overdue = committeeKpis.filter((kpi) => kpi.status === 'OVERDUE').length;
 
-    const atRisk = committeeKpis.filter((kpi) => {
-      const overallTarget = kpi.overallTargetValue ?? kpi.targetValue;
-      return computeKpiStatus(kpi.submittedValue, overallTarget, kpi.deadline) === 'AT_RISK';
-    }).length;
+    const atRisk = committeeKpis.filter((kpi) => kpi.status === 'AT_RISK').length;
 
     const onTrack = Math.max(0, total - completed - overdue - atRisk);
     const pending = total - completed;

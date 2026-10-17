@@ -28,7 +28,7 @@ export interface KpiFilterBarProps {
 
 const statusLabelMap: Record<DashboardStatus, string> = {
   COMPLETED: 'Completed',
-  ON_TRACK: 'In Progress',
+  ON_TRACK: 'On Track',
   AT_RISK: 'At Risk',
   OVERDUE: 'Overdue',
 };
@@ -127,7 +127,7 @@ const KpiFilterBar = ({
         >
           <MenuItem value="ALL">All Statuses</MenuItem>
           <MenuItem value="COMPLETED">Completed</MenuItem>
-          <MenuItem value="ON_TRACK">In Progress</MenuItem>
+          <MenuItem value="ON_TRACK">On Track</MenuItem>
           <MenuItem value="AT_RISK">At Risk</MenuItem>
           <MenuItem value="OVERDUE">Overdue</MenuItem>
         </TextField>

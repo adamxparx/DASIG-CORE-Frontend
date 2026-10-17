@@ -14,7 +14,6 @@ import DashboardHeader from '../../shared/components/DashboardHeader';
 import DashboardLayout from '../../shared/components/DashboardLayout';
 import KpiFilterBar from '../../shared/components/KpiFilterBar';
 import KpisList from '../../shared/components/KpisList';
-import { computeKpiStatus } from '../../shared/utils/kpiStatusUtils';
 import { routes } from '../../../../routes';
 import { DashboardSkeleton } from '../../../../features/shared/components';
 
@@ -107,9 +106,7 @@ const AdminKpiManagementPage = () => {
       }
 
       if (statusFilter !== 'ALL') {
-        const overallTarget = item.overallTargetValue ?? item.targetValue;
-        const computedStatus = computeKpiStatus(item.submittedValue, overallTarget, item.deadline);
-        if (computedStatus !== statusFilter) {
+        if (item.status !== statusFilter) {
           return false;
         }
       }

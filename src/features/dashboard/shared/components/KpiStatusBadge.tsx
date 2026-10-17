@@ -3,7 +3,7 @@ import type { DashboardStatus } from '../types/dashboard.types';
 
 const statusLabelMap: Record<DashboardStatus, string> = {
   COMPLETED: 'Completed',
-  ON_TRACK: 'In Progress',
+  ON_TRACK: 'On Track',
   AT_RISK: 'At Risk',
   OVERDUE: 'Overdue',
 };
