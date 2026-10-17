@@ -78,14 +78,16 @@ export default function AdminAlertsPage() {
     setIsModalOpen(true);
   };
 
-  const handleAcknowledge = async (id: number) => {
+  const handleAcknowledge = async (id: number, remark: string): Promise<boolean> => {
     try {
-      await alertsService.acknowledge(id);
-      showToast('Alert acknowledged successfully.');
+      await alertsService.acknowledge(id, remark);
+      showToast('Alert acknowledged. The committee has been notified.');
       // Refresh list to update state
       await loadAlerts(true);
+      return true;
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : 'Failed to acknowledge alert.');
+      return false;
     }
   };
 
@@ -269,6 +271,7 @@ export default function AdminAlertsPage() {
                 <MenuItem value="all">All Statuses</MenuItem>
                 <MenuItem value="UNACKNOWLEDGED">Unacknowledged</MenuItem>
                 <MenuItem value="ACKNOWLEDGED">Acknowledged</MenuItem>
+                <MenuItem value="RESOLVED">Resolved</MenuItem>
               </Select>
             </FormControl>
 
@@ -464,6 +467,11 @@ export default function AdminAlertsPage() {
                           >
                             {ackBadge.label}
                           </Box>
+                          {alert.explanationStatus && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                              {alert.explanationStatus}
+                            </Typography>
+                          )}
                         </TableCell>
                       </TableRow>
                     );
@@ -479,6 +487,7 @@ export default function AdminAlertsPage() {
 
       {/* Alert Details Modal */}
       <AlertDetailModal
+        key={selectedAlert?.id ?? 'none'} // fresh remark field for each alert
         alert={selectedAlert}
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}

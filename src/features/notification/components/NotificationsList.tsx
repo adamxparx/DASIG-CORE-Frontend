@@ -1,24 +1,47 @@
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
+import ErrorRoundedIcon from '@mui/icons-material/ErrorRounded';
 import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
+import WarningRoundedIcon from '@mui/icons-material/WarningRounded';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import type { NotificationResponse } from '../types/notification.types';
+import type { ReactNode } from 'react';
+import type { CommitteeOverdueAlert } from '../../alerts/types/alerts.types';
+import type { NotificationResponse, NotificationType } from '../types/notification.types';
 import {
   formatNotificationDate,
   formatNotificationDateTime,
   formatNotificationTypeLabel,
+  getNotificationTypeColor,
   isUnreadNotification,
 } from '../utils/notificationDisplay';
+
+/** Accent for At Risk and Overdue notifications (same colors as the Admin's alert badges). */
+const ALERT_HIGHLIGHT: Partial<Record<NotificationType, { accent: string; iconBg: string; icon: ReactNode }>> = {
+  OVERDUE: {
+    accent: '#C5221F',
+    iconBg: '#FCE8E6',
+    icon: <ErrorRoundedIcon sx={{ fontSize: 18, color: '#C5221F' }} />,
+  },
+  AT_RISK: {
+    accent: '#F9AB00',
+    iconBg: '#FEF7E0',
+    icon: <WarningRoundedIcon sx={{ fontSize: 18, color: '#F9AB00' }} />,
+  },
+};
 
 interface NotificationsListProps {
   notifications: NotificationResponse[];
   isLoading: boolean;
   markingReadId: number | null;
   onSelect: (notification: NotificationResponse) => void;
+  /** Committee Lead only: Overdue alerts by ID, used to show "Add explanation" on Overdue notifications. */
+  overdueByAlertId?: Record<number, CommitteeOverdueAlert>;
+  onExplain?: (alert: CommitteeOverdueAlert) => void;
 }
 
 const NotificationsList = ({
@@ -26,6 +49,8 @@ const NotificationsList = ({
   isLoading,
   markingReadId,
   onSelect,
+  overdueByAlertId,
+  onExplain,
 }: NotificationsListProps) => {
   if (isLoading) {
     return (
@@ -69,7 +94,7 @@ const NotificationsList = ({
           You have no notifications yet.
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          Deadline alerts for your organization will appear here.
+          Deadline reminders and KPI alerts for your organization will appear here.
         </Typography>
       </Paper>
     );
@@ -80,6 +105,11 @@ const NotificationsList = ({
       {notifications.map((notification) => {
         const unread = isUnreadNotification(notification.status);
         const isMarking = markingReadId === notification.id;
+        const overdueAlert =
+          notification.notificationType === 'OVERDUE' && notification.alertId != null
+            ? overdueByAlertId?.[notification.alertId]
+            : undefined;
+        const highlight = ALERT_HIGHLIGHT[notification.notificationType];
 
         return (
           <Paper
@@ -93,6 +123,7 @@ const NotificationsList = ({
             sx={{
               border: 1,
               borderColor: unread ? 'primary.light' : 'divider',
+              borderLeft: highlight ? `4px solid ${highlight.accent}` : undefined,
               borderRadius: 2,
               p: 2.5,
               cursor: unread && !isMarking ? 'pointer' : 'default',
@@ -102,6 +133,7 @@ const NotificationsList = ({
               '&:hover': unread && !isMarking
                 ? {
                     borderColor: 'primary.main',
+                    borderLeftColor: highlight?.accent,
                     bgcolor: 'action.hover',
                   }
                 : undefined,
@@ -115,6 +147,22 @@ const NotificationsList = ({
               >
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.5, flexWrap: 'wrap' }}>
+                    {highlight && (
+                      <Box
+                        sx={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: '50%',
+                          bgcolor: highlight.iconBg,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {highlight.icon}
+                      </Box>
+                    )}
                     <Typography
                       variant="subtitle1"
                       sx={{
@@ -136,7 +184,7 @@ const NotificationsList = ({
                 <Chip
                   label={formatNotificationTypeLabel(notification.notificationType)}
                   size="small"
-                  color={notification.notificationType === 'TWO_DAYS_BEFORE' ? 'warning' : 'info'}
+                  color={getNotificationTypeColor(notification.notificationType)}
                   variant="outlined"
                   sx={{ fontWeight: 600, flexShrink: 0 }}
                 />
@@ -157,6 +205,38 @@ const NotificationsList = ({
                   Received: {formatNotificationDateTime(notification.createdAt)}
                 </Typography>
               </Stack>
+
+              {/* Committee Lead: explain the Overdue KPI right here (UC-4.4) */}
+              {overdueAlert && (
+                <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 1.5 }}>
+                  {overdueAlert.explanationStatus === 'Explained' ? (
+                    <Stack spacing={0.75}>
+                      <Chip
+                        label="Explained"
+                        size="small"
+                        color="success"
+                        variant="outlined"
+                        sx={{ fontWeight: 600, alignSelf: 'flex-start' }}
+                      />
+                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.primary' }}>
+                        {overdueAlert.explanation}
+                      </Typography>
+                    </Stack>
+                  ) : (
+                    <Button
+                      onClick={(event) => {
+                        event.stopPropagation(); // don't also mark the notification as read
+                        onExplain?.(overdueAlert);
+                      }}
+                      variant="contained"
+                      size="small"
+                      sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2, boxShadow: 'none' }}
+                    >
+                      Add explanation
+                    </Button>
+                  )}
+                </Box>
+              )}
             </Stack>
           </Paper>
         );

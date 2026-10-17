@@ -74,8 +74,31 @@ export function formatNotificationTypeLabel(type: NotificationType): string {
       return '7 days before deadline';
     case 'TWO_DAYS_BEFORE':
       return '2 days before deadline';
+    case 'AT_RISK':
+      return 'At risk';
+    case 'OVERDUE':
+      return 'Overdue';
+    case 'ALERT_ACKNOWLEDGED':
+      return 'Alert acknowledged';
+    case 'DEADLINE_UPDATED':
+      return 'Deadline updated';
     default:
       return 'Deadline alert';
+  }
+}
+
+/** Chip color for each notification type. */
+export function getNotificationTypeColor(type: NotificationType): 'info' | 'warning' | 'error' | 'success' {
+  switch (type) {
+    case 'OVERDUE':
+      return 'error';
+    case 'AT_RISK':
+    case 'TWO_DAYS_BEFORE':
+      return 'warning';
+    case 'ALERT_ACKNOWLEDGED':
+      return 'success';
+    default:
+      return 'info';
   }
 }
 

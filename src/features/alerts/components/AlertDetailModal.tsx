@@ -8,32 +8,49 @@ import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { AlertDetailResponse } from '../types/alerts.types';
 import { formatValue, getAcknowledgmentBadgeInfo, getPerformanceBadgeInfo } from './AlertCard';
+
+const REMARK_MAX_LENGTH = 500;
 
 interface AlertDetailModalProps {
   alert: AlertDetailResponse | null;
   open: boolean;
   onClose: () => void;
-  onAcknowledge: (id: number) => Promise<void>;
+  /** Returns true when the alert was acknowledged, so the drawer can close. */
+  onAcknowledge: (id: number, remark: string) => Promise<boolean>;
+}
+
+function formatDate(value?: string | null) {
+  return value ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
 }
 
 export default function AlertDetailModal({ alert, open, onClose, onAcknowledge }: AlertDetailModalProps) {
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [remark, setRemark] = useState('');
 
   const handleAcknowledgeClick = async () => {
-    if (!alert) return;
+    if (!alert || remark.trim() === '') return;
     setIsSubmitting(true);
     try {
-      await onAcknowledge(alert.id);
-      onClose();
-    } catch (e) {
-      console.error(e);
+      const acknowledged = await onAcknowledge(alert.id, remark.trim());
+      if (acknowledged) {
+        setRemark('');
+        onClose();
+      }
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleViewKpi = () => {
+    if (!alert) return;
+    navigate(`/dashboard/admin/kpis/${alert.kpiDefinitionId}`);
   };
 
   const perfBadge = alert ? getPerformanceBadgeInfo(alert) : null;
@@ -132,7 +149,7 @@ export default function AlertDetailModal({ alert, open, onClose, onAcknowledge }
                 )}
                 {alert.alertType === 'AT_RISK' && (
                   <Typography variant="body2" sx={{ color: '#B45309', fontWeight: 600, bgcolor: '#FEF3C7', p: 1.5, borderRadius: 2 }}>
-                    This KPI is within 60 days of its deadline and overall progress is significantly below target pace.
+                    Progress is below half of what was expected by now, based on the time passed since the KPI was created.
                   </Typography>
                 )}
 
@@ -226,6 +243,17 @@ export default function AlertDetailModal({ alert, open, onClose, onAcknowledge }
                     </Typography>
                   </Stack>
 
+                  {alert.expectedByNow != null && (
+                    <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        Expected by Now:
+                      </Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                        {formatValue(Math.round(alert.expectedByNow * 100) / 100, alert.unit)}
+                      </Typography>
+                    </Stack>
+                  )}
+
                   <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
                       Achievement Rate:
@@ -236,6 +264,52 @@ export default function AlertDetailModal({ alert, open, onClose, onAcknowledge }
                   </Stack>
                 </Stack>
               </Stack>
+
+              {/* Admin remark (UC-4.2) */}
+              {alert.adminRemark && (
+                <InfoSection title="Admin Remark">
+                  <Typography variant="body2" sx={{ color: 'text.primary', whiteSpace: 'pre-wrap' }}>
+                    {alert.adminRemark}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {[alert.remarkedByName, formatDate(alert.remarkedAt)].filter(Boolean).join(' • ')}
+                  </Typography>
+                </InfoSection>
+              )}
+
+              {/* Committee Lead explanation (Overdue only, UC-4.4) */}
+              {alert.alertType === 'OVERDUE' && (
+                <InfoSection title="Committee Lead Explanation">
+                  {alert.explanation ? (
+                    <>
+                      <Typography variant="body2" sx={{ color: 'text.primary', whiteSpace: 'pre-wrap' }}>
+                        {alert.explanation}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {[alert.explainedByName, formatDate(alert.explainedAt)].filter(Boolean).join(' • ')}
+                      </Typography>
+                    </>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      Awaiting explanation from the Committee Lead.
+                    </Typography>
+                  )}
+                </InfoSection>
+              )}
+
+              {/* Automatic resolution */}
+              {alert.status === 'RESOLVED' && (
+                <InfoSection title="Resolved">
+                  <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                    {alert.resolutionReason ?? 'Resolved'}
+                  </Typography>
+                  {alert.resolvedAt && (
+                    <Typography variant="caption" color="text.secondary">
+                      {formatDate(alert.resolvedAt)}
+                    </Typography>
+                  )}
+                </InfoSection>
+              )}
 
               <Stack spacing={0.25}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
@@ -248,14 +322,40 @@ export default function AlertDetailModal({ alert, open, onClose, onAcknowledge }
             </Stack>
           </Box>
 
-          {/* Footer */}
-          {alert.status === 'UNACKNOWLEDGED' && (
-            <>
-              <Divider />
-              <Box sx={{ p: 2.5 }}>
+          {/* Footer: remark + quick action */}
+          <Divider />
+          <Stack spacing={1.5} sx={{ p: 2.5 }}>
+            {alert.status === 'UNACKNOWLEDGED' && (
+              <TextField
+                label="Remark"
+                placeholder="What will you do about this alert?"
+                value={remark}
+                onChange={(event) => setRemark(event.target.value)}
+                required
+                multiline
+                minRows={3}
+                fullWidth
+                disabled={isSubmitting}
+                slotProps={{ htmlInput: { maxLength: REMARK_MAX_LENGTH } }}
+                helperText={`Shared with the committee. ${remark.length}/${REMARK_MAX_LENGTH}`}
+              />
+            )}
+
+            <Stack direction="row" spacing={1.5}>
+              <Button
+                onClick={handleViewKpi}
+                disabled={isSubmitting}
+                variant="outlined"
+                fullWidth
+                sx={{ fontWeight: 700, borderRadius: 2.5, py: 1.25, textTransform: 'none', fontSize: '0.9rem' }}
+              >
+                View KPI
+              </Button>
+
+              {alert.status === 'UNACKNOWLEDGED' && (
                 <Button
                   onClick={handleAcknowledgeClick}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || remark.trim() === ''}
                   variant="contained"
                   disableElevation
                   fullWidth
@@ -275,11 +375,24 @@ export default function AlertDetailModal({ alert, open, onClose, onAcknowledge }
                 >
                   {isSubmitting ? <CircularProgress size={20} color="inherit" /> : 'Acknowledge'}
                 </Button>
-              </Box>
-            </>
-          )}
+              )}
+            </Stack>
+          </Stack>
         </Stack>
       )}
     </Drawer>
+  );
+}
+
+function InfoSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <Stack spacing={1.25}>
+      <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        {title}
+      </Typography>
+      <Stack spacing={0.75} sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
+        {children}
+      </Stack>
+    </Stack>
   );
 }
