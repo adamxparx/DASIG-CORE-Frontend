@@ -87,6 +87,8 @@ export interface KpiPeriodHistoryResponse {
   targetValue: number;
   unit: string;
   deadline: string;
+  /** KPI creation date: start of the timeline used for the expected-pace line. */
+  startDate?: string | null;
   reportingFrequency: ReportingFrequency;
   currentPeriod: string | null;
   organization: string;

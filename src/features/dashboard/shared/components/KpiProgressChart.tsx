@@ -13,13 +13,14 @@ import type { KpiPeriodHistoryResponse, UserRole } from '../types/dashboard.type
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type ChartSeriesKey = 'INTERNAL' | 'FINAL';
-type ChartViewFrequency = 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'ANNUAL' | 'ONE_TIME';
+type ChartViewFrequency = 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'ANNUAL';
 
 interface ChartPoint {
   label: string;
   current: boolean;
   isDeadline: boolean;
-  expectedValue: number;
+  /** Progress expected by the end of this period (pace rule); null when the KPI has no start date. */
+  expectedValue: number | null;
   internalValue: number | null;
   finalValue: number | null;
 }
@@ -46,7 +47,6 @@ const VIEW_OPTIONS: ChartViewOption[] = [
   { value: 'MONTHLY', label: 'Monthly', axisLegend: 'Monthly Timeline' },
   { value: 'QUARTERLY', label: 'Quarterly', axisLegend: 'Quarterly Timeline' },
   { value: 'ANNUAL', label: 'Annual', axisLegend: 'Annual Timeline' },
-  { value: 'ONE_TIME', label: 'One-Time (Total)', axisLegend: 'Overall Timeline' },
 ];
 
 const chartSeriesConfig: Record<ChartSeriesKey, { label: string; color: string; dotColor?: string }> = {
@@ -91,8 +91,6 @@ const getBucketLabel = (dateStr: string, freq: ChartViewFrequency): string => {
       return `Q${Math.floor(month / 3) + 1} ${year}`;
     case 'ANNUAL':
       return String(year);
-    case 'ONE_TIME':
-      return 'Overall';
   }
 };
 
@@ -103,10 +101,28 @@ const isCurrentBucket = (label: string, freq: ChartViewFrequency): boolean => {
   return label === currentLabel;
 };
 
-const generateFullTimeline = (startDate: Date, deadlineDate: Date, freq: ChartViewFrequency): string[] => {
-  if (freq === 'ONE_TIME') return ['Overall'];
+/** Last day of the period that starts at {@code bucketStart}. */
+const getBucketEndDate = (bucketStart: Date, freq: ChartViewFrequency): Date => {
+  const y = bucketStart.getFullYear();
+  const m = bucketStart.getMonth();
+  switch (freq) {
+    case 'WEEKLY':
+      return new Date(y, m, bucketStart.getDate() + 6);
+    case 'MONTHLY':
+      return new Date(y, m + 1, 0);
+    case 'QUARTERLY':
+      return new Date(y, m + 3, 0);
+    case 'ANNUAL':
+      return new Date(y, 11, 31);
+  }
+};
 
-  const labels: string[] = [];
+const generateFullTimeline = (
+  startDate: Date,
+  deadlineDate: Date,
+  freq: ChartViewFrequency
+): Array<{ label: string; end: Date }> => {
+  const buckets: Array<{ label: string; end: Date }> = [];
   const cursor = new Date(startDate);
 
   if (freq === 'WEEKLY') {
@@ -122,8 +138,8 @@ const generateFullTimeline = (startDate: Date, deadlineDate: Date, freq: ChartVi
 
   while (cursor <= deadlineDate) {
     const label = getBucketLabel(cursor.toISOString(), freq);
-    if (!labels.includes(label)) {
-      labels.push(label);
+    if (!buckets.some((b) => b.label === label)) {
+      buckets.push({ label, end: getBucketEndDate(cursor, freq) });
     }
     if (freq === 'WEEKLY') {
       cursor.setDate(cursor.getDate() + 7);
@@ -137,14 +153,24 @@ const generateFullTimeline = (startDate: Date, deadlineDate: Date, freq: ChartVi
   }
 
   const deadlineLabel = getBucketLabel(deadlineDate.toISOString(), freq);
-  if (!labels.includes(deadlineLabel)) labels.push(deadlineLabel);
+  if (!buckets.some((b) => b.label === deadlineLabel)) buckets.push({ label: deadlineLabel, end: deadlineDate });
 
-  return labels;
+  return buckets;
+};
+
+/**
+ * Expected cumulative progress by {@code date}: the target spread evenly from the KPI's
+ * creation date to its deadline (the same pace rule used for KPI status and alerts).
+ */
+const getExpectedValue = (target: number, start: Date | null, deadline: Date, date: Date): number | null => {
+  if (!start || deadline <= start) return null;
+  const ratio = (Math.min(date.getTime(), deadline.getTime()) - start.getTime()) / (deadline.getTime() - start.getTime());
+  return target * Math.min(1, Math.max(0, ratio));
 };
 
 /**
  * Re-groups all submissions by submission date into chosen frequency buckets.
- * - Expected target ramps across the FULL timeline (start date to deadline).
+ * - Expected pace ramps from the KPI's creation date to its deadline (see getExpectedValue).
  * - Actual submissions ONLY populate the specific buckets that contain submissions.
  *   They do NOT project flat into future, unsubmitted periods.
  */
@@ -212,13 +238,12 @@ const buildChartPointsByFrequency = (
         // Show at least 2 years prior (3 years total)
         d.setFullYear(d.getFullYear() - 2);
         return d;
-      case 'ONE_TIME':
-        return d;
     }
   };
 
-  const minWindowStart = getMinContextStartDate(maxTimelineDate, freq);
-  let startDate = minWindowStart;
+  // Timeline starts at the KPI's creation date when known; otherwise use the minimum context window
+  const kpiStartDate = history.startDate ? new Date(history.startDate + 'T00:00:00') : null;
+  let startDate = kpiStartDate ?? getMinContextStartDate(maxTimelineDate, freq);
 
   if (allSubmissions.length > 0) {
     const earliest = allSubmissions.reduce((min, s) =>
@@ -233,14 +258,13 @@ const buildChartPointsByFrequency = (
   }
 
   // Generate full timeline buckets from start to deadline (or latest submission / today)
-  const allLabels = generateFullTimeline(startDate, maxTimelineDate, freq);
+  const buckets = generateFullTimeline(startDate, maxTimelineDate, freq);
   const deadlineLabel = getBucketLabel(deadlineDate.toISOString(), freq);
-  const totalBuckets = allLabels.length;
 
   let internalCumulative = 0;
   let finalCumulative = 0;
 
-  return allLabels.map((label, index) => {
+  return buckets.map(({ label, end }) => {
     const bucket = bucketMap.get(label);
     if (bucket?.hasInternal) {
       internalCumulative += bucket.internal;
@@ -253,7 +277,7 @@ const buildChartPointsByFrequency = (
       label,
       current: isCurrentBucket(label, freq),
       isDeadline: label === deadlineLabel,
-      expectedValue: history.targetValue * ((index + 1) / totalBuckets),
+      expectedValue: getExpectedValue(history.targetValue, kpiStartDate, deadlineDate, end),
       // Crucial: Only assign a value if this bucket actually had a submission.
       // Do NOT project flat lines into future periods where no submissions exist!
       internalValue: bucket?.hasInternal ? internalCumulative : null,
@@ -318,9 +342,9 @@ const KpiProgressChart = ({ history, role }: { history: KpiPeriodHistoryResponse
     // Center horizontally on point and clamp within chart width (compact 190px width)
     tooltipLeft = Math.max(12, Math.min(chartWidth - 210, x - 95));
 
-    // Position above point if space permits, otherwise below (compact ~70px height)
-    if (focusY > 90) {
-      tooltipTop = focusY - 82;
+    // Position above point if space permits, otherwise below (~95px tall with the expected row)
+    if (focusY > 110) {
+      tooltipTop = focusY - 104;
     } else {
       tooltipTop = focusY + 16;
     }
@@ -346,6 +370,9 @@ const KpiProgressChart = ({ history, role }: { history: KpiPeriodHistoryResponse
       })
       .filter(Boolean)
       .join(' ');
+
+  // Dashed "expected pace" line across every period
+  const expectedPath = buildPath(points.map((p) => p.expectedValue));
 
   const seriesPaths = visibleSeries.map((series) => ({
     series,
@@ -447,6 +474,24 @@ const KpiProgressChart = ({ history, role }: { history: KpiPeriodHistoryResponse
                 }}
               />
             ))}
+            {expectedPath && (
+              <Chip
+                icon={
+                  <Box
+                    component="span"
+                    sx={{
+                      width: 12,
+                      borderTop: '2px dashed #94A3B8',
+                      display: 'inline-block',
+                      ml: 1,
+                    }}
+                  />
+                }
+                label="Expected pace"
+                size="small"
+                sx={{ bgcolor: '#F1F5F9', color: '#475569', fontWeight: 600 }}
+              />
+            )}
             <Chip
               icon={
                 <Box
@@ -594,6 +639,18 @@ const KpiProgressChart = ({ history, role }: { history: KpiPeriodHistoryResponse
                 strokeDasharray="4 4"
                 opacity="0.85"
                 pointerEvents="none"
+              />
+            )}
+
+            {/* ── Expected pace (trend) line ── */}
+            {expectedPath && (
+              <path
+                d={expectedPath}
+                fill="none"
+                stroke="#94A3B8"
+                strokeWidth="2"
+                strokeDasharray="6 5"
+                strokeLinecap="round"
               />
             )}
 
@@ -877,6 +934,18 @@ const KpiProgressChart = ({ history, role }: { history: KpiPeriodHistoryResponse
                 </Stack>
               </Stack>
               <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.12)', mb: 0.75 }} />
+
+              {/* Expected pace by the end of this period */}
+              {hoveredPoint.expectedValue !== null && (
+                <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'baseline', mb: 0.75 }}>
+                  <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 600, fontSize: '0.72rem' }}>
+                    Expected by then
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#E2E8F0', fontWeight: 700, fontSize: '0.75rem' }}>
+                    {formatMetricValue(hoveredPoint.expectedValue)} {history.unit}
+                  </Typography>
+                </Stack>
+              )}
 
               {/* Official final progress */}
               {hoveredPoint.finalValue !== null && (

@@ -1,6 +1,7 @@
 import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
-import PendingActionsOutlinedIcon from '@mui/icons-material/PendingActionsOutlined';
+import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
+import TrendingUpOutlinedIcon from '@mui/icons-material/TrendingUpOutlined';
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -9,7 +10,6 @@ import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import React, { useMemo } from 'react';
 import type { DashboardKpiItem } from '../../shared/types/dashboard.types';
-import { computeKpiStatus } from '../../shared/utils/kpiStatusUtils';
 
 interface AdminKpiSummaryCardsProps {
   kpis: DashboardKpiItem[];
@@ -19,39 +19,19 @@ const AdminKpiSummaryCards: React.FC<AdminKpiSummaryCardsProps> = ({ kpis }) => 
   const stats = useMemo(() => {
     const total = kpis.length;
 
-    const completed = kpis.filter((kpi) => {
-      const overallTarget = kpi.overallTargetValue ?? kpi.targetValue;
-      return computeKpiStatus(kpi.submittedValue, overallTarget, kpi.deadline) === 'COMPLETED';
-    }).length;
+    const completed = kpis.filter((kpi) => kpi.status === 'COMPLETED').length;
 
-    const overdue = kpis.filter((kpi) => {
-      const overallTarget = kpi.overallTargetValue ?? kpi.targetValue;
-      return computeKpiStatus(kpi.submittedValue, overallTarget, kpi.deadline) === 'OVERDUE';
-    }).length;
+    const overdue = kpis.filter((kpi) => kpi.status === 'OVERDUE').length;
 
-    const atRisk = kpis.filter((kpi) => {
-      const overallTarget = kpi.overallTargetValue ?? kpi.targetValue;
-      return computeKpiStatus(kpi.submittedValue, overallTarget, kpi.deadline) === 'AT_RISK';
-    }).length;
+    const atRisk = kpis.filter((kpi) => kpi.status === 'AT_RISK').length;
 
-    // In progress: all active ongoing KPIs (includes ON_TRACK and AT_RISK)
-    const inProgress = Math.max(0, total - completed - overdue);
+    const onTrack = kpis.filter((kpi) => kpi.status === 'ON_TRACK').length;
 
-    const completedPercentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-    const inProgressPercentage = total > 0 ? Math.round((inProgress / total) * 100) : 0;
-    const overduePercentage = total > 0 ? Math.round((overdue / total) * 100) : 0;
-
-    return {
-      total,
-      completed,
-      inProgress,
-      overdue,
-      atRisk,
-      completedPercentage,
-      inProgressPercentage,
-      overduePercentage,
-    };
+    return { total, completed, onTrack, atRisk, overdue };
   }, [kpis]);
+
+  const percentOfTotal = (count: number) =>
+    stats.total > 0 ? `${Math.round((count / stats.total) * 100)}% of total (${count}/${stats.total})` : '';
 
   const cards = [
     {
@@ -60,45 +40,46 @@ const AdminKpiSummaryCards: React.FC<AdminKpiSummaryCardsProps> = ({ kpis }) => 
       subtitle: stats.total === 1 ? '1 active' : `${stats.total} active`,
       accentColor: '#3F6DF6',
       iconBg: '#EFF4FE',
-      iconColor: '#3F6DF6',
       icon: <AssignmentOutlinedIcon sx={{ fontSize: 22, color: '#3F6DF6' }} />,
     },
     {
       title: 'COMPLETED KPIS',
       value: stats.completed,
-      subtitle: stats.total > 0 ? `${stats.completedPercentage}% of total (${stats.completed}/${stats.total})` : 'Target achieved',
+      subtitle: percentOfTotal(stats.completed) || 'Target achieved',
       accentColor: '#10B981',
       iconBg: '#ECFDF5',
-      iconColor: '#10B981',
       icon: <CheckCircleOutlinedIcon sx={{ fontSize: 22, color: '#10B981' }} />,
     },
     {
-      title: 'IN PROGRESS KPIS',
-      value: stats.inProgress,
-      subtitle:
-        stats.total > 0
-          ? `${stats.inProgressPercentage}% of total (${stats.inProgress}/${stats.total}${stats.atRisk > 0 ? ` • ${stats.atRisk} at risk` : ''})`
-          : 'Ongoing submissions',
+      title: 'ON TRACK KPIS',
+      value: stats.onTrack,
+      subtitle: percentOfTotal(stats.onTrack) || 'Keeping pace',
+      accentColor: '#2563EB',
+      iconBg: '#EFF6FF',
+      icon: <TrendingUpOutlinedIcon sx={{ fontSize: 22, color: '#2563EB' }} />,
+    },
+    {
+      title: 'AT RISK KPIS',
+      value: stats.atRisk,
+      subtitle: percentOfTotal(stats.atRisk) || 'Behind pace',
       accentColor: '#F59E0B',
       iconBg: '#FFFBEB',
-      iconColor: '#F59E0B',
-      icon: <PendingActionsOutlinedIcon sx={{ fontSize: 22, color: '#F59E0B' }} />,
+      icon: <WarningAmberOutlinedIcon sx={{ fontSize: 22, color: '#F59E0B' }} />,
     },
     {
       title: 'OVERDUE KPIS',
       value: stats.overdue,
-      subtitle: stats.total > 0 ? `${stats.overduePercentage}% of total (${stats.overdue}/${stats.total})` : 'Past deadline',
+      subtitle: percentOfTotal(stats.overdue) || 'Past deadline',
       accentColor: '#EF4444',
       iconBg: '#FEF2F2',
-      iconColor: '#EF4444',
-      icon: <WarningAmberOutlinedIcon sx={{ fontSize: 22, color: '#EF4444' }} />,
+      icon: <ErrorOutlineOutlinedIcon sx={{ fontSize: 22, color: '#EF4444' }} />,
     },
   ];
 
   return (
     <Grid container spacing={2.5} sx={{ mb: 1 }}>
       {cards.map((card) => (
-        <Grid key={card.title} size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid key={card.title} size={{ xs: 12, sm: 6, md: 'grow' }}>
           <Card
             elevation={0}
             sx={{

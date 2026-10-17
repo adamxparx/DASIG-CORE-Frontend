@@ -14,7 +14,6 @@ import FilterAltOffOutlinedIcon from '@mui/icons-material/FilterAltOffOutlined';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import { useState } from 'react';
 import type { DashboardKpiItem } from '../types/dashboard.types';
-import { computeKpiStatus } from '../utils/kpiStatusUtils';
 import KpiStatusBadge from './KpiStatusBadge';
 import TablePaginationBar, { TABLE_PAGE_SIZE } from './TablePaginationBar';
 
@@ -143,7 +142,7 @@ const KpisList = ({
                 const isSelected = selectedId === kpi.id;
                 const overallTargetValue = kpi.overallTargetValue ?? kpi.targetValue;
                 const progressPercent = overallTargetValue > 0 ? (kpi.submittedValue / overallTargetValue) * 100 : 0;
-                const status = computeKpiStatus(kpi.submittedValue, overallTargetValue, kpi.deadline);
+                const status = kpi.status;
                 const committeeName = kpi.committeeName || kpi.organization || '—';
 
                 return (

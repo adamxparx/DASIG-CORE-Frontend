@@ -13,7 +13,6 @@ import Typography from '@mui/material/Typography';
 import type { MouseEvent } from 'react';
 import KpiAdminActions from '../../admin/components/KpiAdminActions';
 import type { DashboardKpiItem, UserRole } from '../types/dashboard.types';
-import { computeKpiStatus } from '../utils/kpiStatusUtils';
 import { getDaysLeftLabel } from '../../../notification/utils/notificationDisplay';
 import KpiProgressBar from './KpiProgressBar';
 import KpiStatusBadge from './KpiStatusBadge';
@@ -39,7 +38,7 @@ const KpiDashboardCard = ({ item, role, onEdit, onDelete, onViewHistory }: KpiDa
   const periodTargetValue = item.periodTargetValue ?? item.targetValue;
   const progressPercent = overallTargetValue > 0 ? (item.submittedValue / overallTargetValue) * 100 : 0;
   // Override backend status with goal & deadline-based frontend computation
-  const status = computeKpiStatus(item.submittedValue, overallTargetValue, item.deadline);
+  const status = item.status; // computed by the backend (same rule as KPI alerts)
 
   const handleCardClick = () => {
     onViewHistory?.(item);
