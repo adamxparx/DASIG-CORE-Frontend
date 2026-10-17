@@ -299,7 +299,8 @@ const KpiDetailPage = () => {
 
   const isArchived = Boolean(kpi.archived || kpi.kpiStatus === 'ARCHIVED');
   const isCommitteeLeadDetail = userRole === 'tbi_manager';
-  const showOrganizationAudit = isAdmin || isCommitteeLeadDetail;
+  const canViewOrganizationBreakdown = isCommitteeLeadDetail || userRole === 'staff';
+  const showOrganizationAudit = isAdmin || canViewOrganizationBreakdown;
   const submissionRows =
     history?.periods.flatMap((period) =>
       period.submissions.map((submission) => ({
@@ -321,7 +322,7 @@ const KpiDetailPage = () => {
       return map;
     }, new Map<string, { organizationName: string; submittedValue: number; achievementRate: number }>());
   const organizationBreakdowns =
-    isCommitteeLeadDetail && kpi.organizationBreakdowns && kpi.organizationBreakdowns.length > 0
+    canViewOrganizationBreakdown && kpi.organizationBreakdowns && kpi.organizationBreakdowns.length > 0
       ? kpi.organizationBreakdowns
       : [...derivedBreakdownMap.values()];
   const filteredSubmissionRows = selectedOrganizationName
@@ -609,7 +610,7 @@ const KpiDetailPage = () => {
                     rows={officialFinalRows}
                     unit={history.unit}
                     emptyMessage="No official final records found for this selection."
-                    showReview={isCommitteeLeadDetail}
+                    showReview={canViewOrganizationBreakdown}
                   />
                 </Box>
 

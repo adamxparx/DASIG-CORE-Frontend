@@ -17,15 +17,15 @@ import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEventHandler } from 'react';
 import { kpiSubmissionService } from '../../api/kpiSubmissionService';
+import { dashboardService } from '../../../dashboard/shared/api/dashboardService';
+import type { DashboardKpiItem } from '../../../dashboard/shared/types/dashboard.types';
 import {
   getCurrentPeriod,
-  getExpectedPeriodValue,
   getPeriodOptions,
   isFuturePeriod,
-  sumPreviousPeriodValues,
 } from '../utils/reportingPeriodUtils';
 import { getKpiSubmissionSuccessMessage } from '../utils/submissionMessages';
 import type {
@@ -132,6 +132,9 @@ const getSubmitErrorMessage = (err: unknown) => {
   return message;
 };
 
+const dedupeSubmissions = (items: KpiSubmissionResponse[]) =>
+  Array.from(new Map(items.map((item) => [item.id, item])).values());
+
 const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Use local date (not UTC) to avoid timezone mismatch with the server (+08:00).
@@ -141,6 +144,7 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
 
   const [assignableKpis, setAssignableKpis] = useState<AssignableKpi[]>([]);
   const [submissions, setSubmissions] = useState<KpiSubmissionResponse[]>([]);
+  const [dashboardKpis, setDashboardKpis] = useState<DashboardKpiItem[]>([]);
   const [isLoadingKpis, setIsLoadingKpis] = useState(true);
   const [selectedKpiId, setSelectedKpiId] = useState<number | ''>('');
   const [period, setPeriod] = useState('');
@@ -165,19 +169,17 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
     const loadKpis = async () => {
       setIsLoadingKpis(true);
       try {
-        const [data, submissionData] = await Promise.all([
+        const [data, submissionData, dashboardData] = await Promise.all([
           kpiSubmissionService.getAssignableKpis(),
           kpiSubmissionService.getSubmissions(),
+          dashboardService.getDashboard(),
         ]);
-        const finalSubmissionData =
-          role === 'STAFF'
-            ? await kpiSubmissionService.getSubmissions({ submissionType: 'FINAL' })
-            : [];
 
         if (!active) return;
 
         setAssignableKpis(data);
-        setSubmissions([...submissionData, ...finalSubmissionData]);
+        setDashboardKpis(dashboardData.kpis ?? []);
+        setSubmissions(dedupeSubmissions(submissionData));
         setSelectedKpiId((prev) => {
           if (prev === '') return '';
           return data.some((kpi) => kpi.id === prev) ? prev : '';
@@ -201,14 +203,6 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
 
   const selectedKpi = assignableKpis.find((kpi) => kpi.id === selectedKpiId) ?? null;
   const submissionDateMin = selectedKpi ? getKpiCreationDate(selectedKpi, today) : today;
-  const periodOptions = useMemo(() => {
-    if (!selectedKpi) {
-      return [];
-    }
-    return getPeriodOptions(selectedKpi.reportingFrequency ?? 'QUARTERLY', selectedKpi.deadline);
-  }, [selectedKpi]);
-  const submissionType = role === 'STAFF' ? 'INTERNAL' : 'FINAL';
-
   const applyTbiPrefill = (kpi: AssignableKpi | null, nextPeriod: string, nextSubmissionDate: string) => {
     if (role !== 'TBI_MANAGER' || !kpi || !nextPeriod) {
       return;
@@ -263,42 +257,24 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
     applyTbiPrefill(nextKpi, nextPeriod, nextSubmissionDate);
   };
 
-  const handlePeriodChange = (nextPeriod: string) => {
-    setPeriod(nextPeriod);
-    if (selectedKpi && role === 'TBI_MANAGER') {
-      applyTbiPrefill(
-        selectedKpi,
-        nextPeriod,
-        getDefaultSubmissionDateForKpi(selectedKpi, today)
-      );
-    }
-  };
-
   const numericSubmittedValue = Number(submittedValue) || 0;
-  const relatedSubmissions = selectedKpi
-    ? submissions.filter((submission) =>
-        submission.kpiDefinitionId === selectedKpi.id && submission.submissionType === submissionType
-      )
-    : [];
-  const previousSubmittedValue = selectedKpi?.reportingFrequency === 'ONE_TIME'
-    ? relatedSubmissions.reduce((sum, s) => sum + s.submittedValue, 0)
-    : sumPreviousPeriodValues(relatedSubmissions, periodOptions, period);
-  const cumulativeSubmittedValue = previousSubmittedValue + numericSubmittedValue;
-  const expectedTargetValue = selectedKpi
-    ? getExpectedPeriodValue(selectedKpi.targetValue, periodOptions, period)
-    : 0;
-  const expectedThresholdValue = selectedKpi
-    ? getExpectedPeriodValue(selectedKpi.threshold, periodOptions, period)
-    : 0;
+  const selectedDashboardKpi = selectedKpi
+    ? dashboardKpis.find((item) => item.id === selectedKpi.id) ?? null
+    : null;
+  const officialSubmittedTotal = selectedDashboardKpi?.submittedValue ?? 0;
+  const overallTargetValue = selectedDashboardKpi?.overallTargetValue ?? selectedDashboardKpi?.targetValue ?? selectedKpi?.targetValue ?? 0;
+  const projectedSubmittedTotal = officialSubmittedTotal + numericSubmittedValue;
+  const remainingTargetValue = selectedKpi ? Math.max(overallTargetValue - projectedSubmittedTotal, 0) : 0;
   const achievementRate =
-    selectedKpi && expectedTargetValue > 0
-      ? (cumulativeSubmittedValue / expectedTargetValue) * 100
+    selectedKpi && overallTargetValue > 0
+      ? (projectedSubmittedTotal / overallTargetValue) * 100
       : 0;
 
-  const helperMessage =
-    selectedKpi?.reportingFrequency !== 'ONE_TIME' && cumulativeSubmittedValue < expectedThresholdValue
-      ? `Cumulative progress is below the expected threshold for ${period}.`
-      : `Cumulative progress is on track for ${period || 'the selected period'}.`;
+  const helperMessage = selectedKpi
+    ? role === 'STAFF'
+      ? 'Projected progress if this submission is approved by the Committee Lead.'
+      : 'Projected official progress after this final submission is saved.'
+    : 'Select a KPI to preview overall achievement.';
 
   const handlePickFiles = () => {
     fileInputRef.current?.click();
@@ -343,7 +319,7 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
     }
 
     if (!period) {
-      showToast('Please select a reporting period.', 'error');
+      showToast('Unable to determine the KPI deadline. Please reselect the KPI.', 'error');
       return;
     }
 
@@ -379,7 +355,16 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
     setIsSubmitting(true);
     try {
       const response: KpiSubmissionResponse = await kpiSubmissionService.createSubmission(payload, files);
-      setSubmissions((current) => [response, ...current]);
+      setSubmissions((current) => dedupeSubmissions([response, ...current]));
+      if (response.submissionType === 'FINAL') {
+        setDashboardKpis((current) =>
+          current.map((item) =>
+            item.id === response.kpiDefinitionId
+              ? { ...item, submittedValue: item.submittedValue + response.submittedValue }
+              : item
+          )
+        );
+      }
       showToast(getKpiSubmissionSuccessMessage(role, response), 'success');
       setSubmittedValue('');
       setNotes('');
@@ -489,66 +474,67 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                   </TextField>
 
                   <TextField
-                    select
                     fullWidth
-                    label="Period"
-                    value={period}
-                    onChange={(event) => handlePeriodChange(event.target.value)}
-                    disabled={!selectedKpi || periodOptions.length === 0}
+                    label="Deadline"
+                    value={selectedKpi ? formatDeadline(selectedKpi.deadline) : ''}
+                    disabled
                     helperText={
                       selectedKpi
-                        ? selectedKpi.reportingFrequency === 'ONE_TIME'
-                          ? 'Submit anytime before the deadline'
-                          : `${selectedKpi.reportingFrequency.replace('_', ' ').toLowerCase()} reporting`
+                        ? 'Submit anytime before this deadline.'
                         : undefined
                     }
-                  >
-                    {periodOptions.map((option) => {
-                      const disabled = isFuturePeriod(selectedKpi?.reportingFrequency ?? 'QUARTERLY', option);
-                      return (
-                      <MenuItem key={option} value={option} disabled={disabled}>
-                        {disabled ? `${option} (future period)` : option}
-                      </MenuItem>
-                      );
-                    })}
-                  </TextField>
+                    slotProps={{ inputLabel: { shrink: true } }}
+                  />
                 </Stack>
 
-                <Paper elevation={0} sx={{ bgcolor: '#F6F7FA', border: '1px solid #ECEEF3', borderRadius: 2.5, p: 2 }}>
-                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ justifyContent: 'space-between' }}>
-                    <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-                      <FlagOutlinedIcon sx={{ color: '#5B61D9' }} />
-                      <Box>
-                        <Typography variant="body2" sx={{ color: '#5F6672', fontWeight: 600 }}>
-                          Target Overview
+                <Box>
+                  <Typography variant="body2" sx={{ color: '#5F6672', fontWeight: 600, mb: 1 }}>
+                    Target Overview
+                  </Typography>
+                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                    <Paper elevation={0} sx={{ flex: 1, border: '1px solid #ECEEF3', borderRadius: 2, p: 2, bgcolor: '#fff' }}>
+                      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.75 }}>
+                        <FlagOutlinedIcon sx={{ color: '#5B61D9', fontSize: 18 }} />
+                        <Typography variant="caption" sx={{ color: '#7A8090', fontWeight: 700 }}>
+                          Target Value
                         </Typography>
-                        <Typography variant="h5" sx={{ fontWeight: 700, color: '#1F2329' }}>
-                          {formatMetricValue(selectedKpi?.targetValue ?? 0)} <Typography component="span">{selectedKpi?.unit ?? '-'}</Typography>
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: '#7A8090', display: 'block', mt: 0.25 }}>
-                          Period target: {formatMetricValue(expectedTargetValue)} {selectedKpi?.unit ?? '-'}
-                        </Typography>
-                      </Box>
-                    </Stack>
+                      </Stack>
+                      <Typography variant="h5" sx={{ fontWeight: 700, color: '#1F2329' }}>
+                        {formatMetricValue(overallTargetValue)} <Typography component="span">{selectedKpi?.unit ?? '-'}</Typography>
+                      </Typography>
+                    </Paper>
 
-                    <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
-                      <Typography variant="caption" sx={{ color: '#7A8090', letterSpacing: 1 }}>
-                        DEADLINE
+                    <Paper elevation={0} sx={{ flex: 1, border: '1px solid #ECEEF3', borderRadius: 2, p: 2, bgcolor: '#fff' }}>
+                      <Typography variant="caption" sx={{ color: '#7A8090', fontWeight: 700 }}>
+                        Current Submitted Total
                       </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 600, color: '#1F2329' }}>
-                        {selectedKpi ? formatDeadline(selectedKpi.deadline) : '--'}
+                      <Typography variant="h5" sx={{ fontWeight: 700, color: '#1F2329', mt: 0.75 }}>
+                        {formatMetricValue(officialSubmittedTotal)} <Typography component="span">{selectedKpi?.unit ?? '-'}</Typography>
                       </Typography>
-                    </Box>
+                    </Paper>
+
+                    <Paper elevation={0} sx={{ flex: 1, border: '1px solid #ECEEF3', borderRadius: 2, p: 2, bgcolor: '#fff' }}>
+                      <Typography variant="caption" sx={{ color: '#7A8090', fontWeight: 700 }}>
+                        Remaining Target
+                      </Typography>
+                      <Typography variant="h5" sx={{ fontWeight: 700, color: '#1F2329', mt: 0.75 }}>
+                        {formatMetricValue(remainingTargetValue)} <Typography component="span">{selectedKpi?.unit ?? '-'}</Typography>
+                      </Typography>
+                    </Paper>
                   </Stack>
-                </Paper>
+
+                  <Typography variant="caption" sx={{ color: '#7A8090', display: 'block', mt: 1 }}>
+                    Deadline: {selectedKpi ? formatDeadline(selectedKpi.deadline) : '--'}
+                  </Typography>
+                </Box>
 
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                   <TextField
                     fullWidth
-                    label="Value Achieved This Period"
+                    label="Value Achieved This Submission"
                     value={submittedValue}
                     onChange={(event) => setSubmittedValue(event.target.value)}
-                    helperText="Enter only the value achieved during the selected reporting period."
+                    helperText="Enter only the new value achieved for this KPI submission."
                     slotProps={{ input: { endAdornment: <Typography sx={{ color: '#8A91A1' }}>{selectedKpi?.unit ?? ''}</Typography> } }}
                   />
                   <TextField
