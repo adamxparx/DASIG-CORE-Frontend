@@ -34,11 +34,12 @@ export const alertsService = {
   },
 
   /**
-   * Acknowledges an alert by its ID and merges KPI definition fields.
+   * Acknowledges an alert with the Admin's remark (required, max 500 characters) and merges KPI definition fields.
    */
-  acknowledge: async (id: number): Promise<AlertDetailResponse> => {
+  acknowledge: async (id: number, remark: string): Promise<AlertDetailResponse> => {
     const alert = await apiClient<AlertDetailResponse>(`/api/alerts/${id}/acknowledge`, {
       method: 'PATCH',
+      body: { remark },
     });
     window.dispatchEvent(new Event(ALERTS_CHANGED_EVENT));
     try {

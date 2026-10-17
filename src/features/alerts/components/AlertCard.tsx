@@ -58,6 +58,14 @@ export function getPerformanceBadgeInfo(alert: AlertDetailResponse) {
  * Returns acknowledgment status styling based on the status field.
  */
 export function getAcknowledgmentBadgeInfo(alert: AlertDetailResponse) {
+  if (alert.status === 'RESOLVED') {
+    return {
+      label: 'Resolved',
+      bgColor: '#E8F0FE', // soft blue
+      textColor: '#1A73E8', // dark blue
+    };
+  }
+
   if (alert.status === 'ACKNOWLEDGED') {
     return {
       label: 'Acknowledged',
