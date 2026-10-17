@@ -24,9 +24,9 @@ const AdminKpiSummaryCards: React.FC<AdminKpiSummaryCardsProps> = ({ kpis }) => 
       return computeKpiStatus(kpi.submittedValue, overallTarget, kpi.deadline) === 'COMPLETED';
     }).length;
 
-    const delayed = kpis.filter((kpi) => {
+    const overdue = kpis.filter((kpi) => {
       const overallTarget = kpi.overallTargetValue ?? kpi.targetValue;
-      return computeKpiStatus(kpi.submittedValue, overallTarget, kpi.deadline) === 'DELAYED';
+      return computeKpiStatus(kpi.submittedValue, overallTarget, kpi.deadline) === 'OVERDUE';
     }).length;
 
     const atRisk = kpis.filter((kpi) => {
@@ -35,21 +35,21 @@ const AdminKpiSummaryCards: React.FC<AdminKpiSummaryCardsProps> = ({ kpis }) => 
     }).length;
 
     // In progress: all active ongoing KPIs (includes ON_TRACK and AT_RISK)
-    const inProgress = Math.max(0, total - completed - delayed);
+    const inProgress = Math.max(0, total - completed - overdue);
 
     const completedPercentage = total > 0 ? Math.round((completed / total) * 100) : 0;
     const inProgressPercentage = total > 0 ? Math.round((inProgress / total) * 100) : 0;
-    const delayedPercentage = total > 0 ? Math.round((delayed / total) * 100) : 0;
+    const overduePercentage = total > 0 ? Math.round((overdue / total) * 100) : 0;
 
     return {
       total,
       completed,
       inProgress,
-      delayed,
+      overdue,
       atRisk,
       completedPercentage,
       inProgressPercentage,
-      delayedPercentage,
+      overduePercentage,
     };
   }, [kpis]);
 
@@ -85,9 +85,9 @@ const AdminKpiSummaryCards: React.FC<AdminKpiSummaryCardsProps> = ({ kpis }) => 
       icon: <PendingActionsOutlinedIcon sx={{ fontSize: 22, color: '#F59E0B' }} />,
     },
     {
-      title: 'DELAYED KPIS',
-      value: stats.delayed,
-      subtitle: stats.total > 0 ? `${stats.delayedPercentage}% of total (${stats.delayed}/${stats.total})` : 'Behind schedule',
+      title: 'OVERDUE KPIS',
+      value: stats.overdue,
+      subtitle: stats.total > 0 ? `${stats.overduePercentage}% of total (${stats.overdue}/${stats.total})` : 'Past deadline',
       accentColor: '#EF4444',
       iconBg: '#FEF2F2',
       iconColor: '#EF4444',

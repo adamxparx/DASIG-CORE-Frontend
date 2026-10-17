@@ -32,7 +32,7 @@ export const mockKpis: DashboardKpiItem[] = [
     unit: 'prototypes',
     deadline: '2026-05-31',
     organization: 'Organization B',
-    status: 'DELAYED',
+    status: 'OVERDUE',
   },
   {
     id: 4,

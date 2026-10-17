@@ -21,7 +21,7 @@ export interface AlertDetailResponse {
   scaledPeriodTarget: number;
   submissionDate?: string;
   achievementRate: number;
-  performanceStatus: 'RED' | 'YELLOW' | 'GREEN';
+  performanceStatus: 'OVERDUE' | 'AT_RISK' | 'ON_TRACK' | 'COMPLETED';
   submissionType?: string;
   // Resolved on frontend from KPI definition
   targetValue?: number;

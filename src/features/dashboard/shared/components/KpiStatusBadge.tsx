@@ -5,14 +5,14 @@ const statusLabelMap: Record<DashboardStatus, string> = {
   COMPLETED: 'Completed',
   ON_TRACK: 'In Progress',
   AT_RISK: 'At Risk',
-  DELAYED: 'Overdue',
+  OVERDUE: 'Overdue',
 };
 
 const statusStyleMap: Record<DashboardStatus, { bg: string; color: string }> = {
   COMPLETED: { bg: '#DDF4E8', color: '#14945F' },
   ON_TRACK: { bg: '#EFF6FF', color: '#1D4ED8' },
   AT_RISK: { bg: '#FFF1D6', color: '#B06000' },
-  DELAYED: { bg: '#FFE2E2', color: '#C62828' },
+  OVERDUE: { bg: '#FFE2E2', color: '#C62828' },
 };
 
 interface KpiStatusBadgeProps {

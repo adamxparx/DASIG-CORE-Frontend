@@ -67,11 +67,11 @@ export default function AlertDetailModal({ alert, open, onClose, onAcknowledge }
                   alignItems: 'center',
                   justifyContent: 'center',
                   bgcolor: perfBadge.bgColor,
-                  color: alert.performanceStatus === 'RED' ? '#C5221F' : '#FBBC04',
+                  color: alert.performanceStatus === 'OVERDUE' ? '#C5221F' : '#FBBC04',
                   flexShrink: 0,
                 }}
               >
-                {alert.performanceStatus === 'RED' ? (
+                {alert.performanceStatus === 'OVERDUE' ? (
                   <ErrorRoundedIcon sx={{ fontSize: 32 }} />
                 ) : (
                   <WarningRoundedIcon sx={{ fontSize: 30 }} />
