@@ -149,13 +149,16 @@ const compareBySubmissionDateTimeDesc = (a: KpiSubmissionResponse, b: KpiSubmiss
 };
 
 const mapStatus = (status: string) => {
-  if (status === 'GREEN') {
+  if (status === 'COMPLETED') {
+    return { label: 'Completed', bg: '#DDF4E8', color: '#14945F', achievementColor: '#14945F' };
+  }
+  if (status === 'ON_TRACK') {
     return { label: 'On Track', bg: '#DDF4E8', color: '#14945F', achievementColor: '#14945F' };
   }
-  if (status === 'YELLOW') {
+  if (status === 'AT_RISK') {
     return { label: 'At Risk', bg: '#FFF1D6', color: '#B06000', achievementColor: '#D97706' };
   }
-  return { label: 'Delayed', bg: '#FFE2E2', color: '#C62828', achievementColor: '#DC2626' };
+  return { label: 'Overdue', bg: '#FFE2E2', color: '#C62828', achievementColor: '#DC2626' };
 };
 
 const StaffSubmissionHistoryPage = () => {
@@ -430,7 +433,7 @@ const StaffSubmissionHistoryPage = () => {
                   onChange={(event) => setSelectedStatus(event.target.value)}
                   sx={{ minWidth: { xs: '100%', lg: 140 }, ...inputFieldSx }}
                 >
-                  {['ALL', 'On Track', 'At Risk', 'Delayed'].map((status) => (
+                  {['ALL', 'On Track', 'At Risk', 'Overdue'].map((status) => (
                     <MenuItem key={status} value={status}>
                       {status === 'ALL' ? 'All Status' : status}
                     </MenuItem>

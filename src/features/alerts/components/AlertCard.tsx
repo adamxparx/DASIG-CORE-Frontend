@@ -36,7 +36,7 @@ export function formatValue(value: number | undefined | null, unit: string | und
  * Returns performance/severity styling strictly based on OVERDUE and AT_RISK alert types.
  */
 export function getPerformanceBadgeInfo(alert: AlertDetailResponse) {
-  if (alert.alertType === 'OVERDUE' || alert.performanceStatus === 'RED') {
+  if (alert.alertType === 'OVERDUE' || alert.performanceStatus === 'OVERDUE') {
     return {
       label: 'Overdue',
       bgColor: '#FCE8E6', // soft red

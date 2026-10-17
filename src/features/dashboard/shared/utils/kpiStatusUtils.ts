@@ -6,7 +6,7 @@ import type { DashboardStatus } from '../types/dashboard.types';
  *
  * Rules (Option 1 — Goal & Deadline-Based):
  *  - COMPLETED  → submittedValue >= targetValue (goal fully reached)
- *  - DELAYED    → deadline has passed AND target not yet reached
+ *  - OVERDUE    → deadline has passed AND target not yet reached
  *  - AT_RISK    → deadline is within `atRiskDays` AND progress < `atRiskProgressRatio`
  *  - ON_TRACK   → everything else (actively progressing with time remaining)
  *
@@ -35,9 +35,9 @@ export const computeKpiStatus = (
   const msPerDay = 1000 * 60 * 60 * 24;
   const daysUntilDeadline = Math.ceil((deadlineDate.getTime() - today.getTime()) / msPerDay);
 
-  // DELAYED: deadline has passed and target not reached
+  // OVERDUE: deadline has passed and target not reached
   if (daysUntilDeadline < 0) {
-    return 'DELAYED';
+    return 'OVERDUE';
   }
 
   // AT_RISK: deadline is approaching AND progress is significantly below half the target

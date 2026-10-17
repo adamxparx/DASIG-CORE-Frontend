@@ -42,9 +42,9 @@ const CommitteeDashboardCard: React.FC<CommitteeDashboardCardProps> = ({
       return computeKpiStatus(kpi.submittedValue, overallTarget, kpi.deadline) === 'COMPLETED';
     }).length;
 
-    const delayed = committeeKpis.filter((kpi) => {
+    const overdue = committeeKpis.filter((kpi) => {
       const overallTarget = kpi.overallTargetValue ?? kpi.targetValue;
-      return computeKpiStatus(kpi.submittedValue, overallTarget, kpi.deadline) === 'DELAYED';
+      return computeKpiStatus(kpi.submittedValue, overallTarget, kpi.deadline) === 'OVERDUE';
     }).length;
 
     const atRisk = committeeKpis.filter((kpi) => {
@@ -52,14 +52,14 @@ const CommitteeDashboardCard: React.FC<CommitteeDashboardCardProps> = ({
       return computeKpiStatus(kpi.submittedValue, overallTarget, kpi.deadline) === 'AT_RISK';
     }).length;
 
-    const onTrack = Math.max(0, total - completed - delayed - atRisk);
+    const onTrack = Math.max(0, total - completed - overdue - atRisk);
     const pending = total - completed;
 
     return {
       total,
       completed,
       pending,
-      delayed,
+      overdue,
       atRisk,
       onTrack,
     };
@@ -312,9 +312,9 @@ const CommitteeDashboardCard: React.FC<CommitteeDashboardCardProps> = ({
                 }}
               />
             )}
-            {stats.delayed > 0 && (
+            {stats.overdue > 0 && (
               <Chip
-                label={`${stats.delayed} Delayed`}
+                label={`${stats.overdue} Overdue`}
                 size="small"
                 sx={{
                   height: 22,

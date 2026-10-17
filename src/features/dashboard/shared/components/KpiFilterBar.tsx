@@ -30,7 +30,7 @@ const statusLabelMap: Record<DashboardStatus, string> = {
   COMPLETED: 'Completed',
   ON_TRACK: 'In Progress',
   AT_RISK: 'At Risk',
-  DELAYED: 'Overdue',
+  OVERDUE: 'Overdue',
 };
 
 const KpiFilterBar = ({
@@ -129,7 +129,7 @@ const KpiFilterBar = ({
           <MenuItem value="COMPLETED">Completed</MenuItem>
           <MenuItem value="ON_TRACK">In Progress</MenuItem>
           <MenuItem value="AT_RISK">At Risk</MenuItem>
-          <MenuItem value="DELAYED">Overdue</MenuItem>
+          <MenuItem value="OVERDUE">Overdue</MenuItem>
         </TextField>
 
         {onResetFilters && (
