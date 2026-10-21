@@ -81,6 +81,12 @@ const CommitteeManagementPage = () => {
     showToast('Committee deactivated successfully.');
   };
 
+  const handleActivated = () => {
+    setSelectedCommittee(null);
+    void loadPageData(true);
+    showToast('Committee activated successfully.');
+  };
+
   if (isLoading) {
     return (
       <AdminPageLayout>
@@ -114,6 +120,7 @@ const CommitteeManagementPage = () => {
             users={users}
             onUpdated={handleUpdated}
             onDeactivated={handleDeactivated}
+            onActivated={handleActivated}
             onCancel={handleEditCancel}
           />
         ) : (

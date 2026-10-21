@@ -31,4 +31,10 @@ export const committeeService = {
       method: 'PATCH',
     });
   },
+
+  activate(id: number): Promise<void> {
+    return apiClient<void>(`${COMMITTEES_ENDPOINT}/${id}/activate`, {
+      method: 'PATCH',
+    });
+  },
 };
