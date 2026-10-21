@@ -132,7 +132,7 @@ const NotificationsPage = ({ canExplainOverdue = false }: NotificationsPageProps
         <Box>
           <DashboardHeader
             title="Notifications"
-            subtitle="KPI deadline reminders and alerts for your organization"
+            subtitle="KPI alerts and updates for your organization"
           />
           {!isLoading && unreadCount > 0 && (
             <Chip

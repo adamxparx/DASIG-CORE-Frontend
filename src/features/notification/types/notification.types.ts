@@ -1,6 +1,4 @@
 export type NotificationType =
-  | 'SEVEN_DAYS_BEFORE'
-  | 'TWO_DAYS_BEFORE'
   | 'AT_RISK'
   | 'OVERDUE'
   | 'ALERT_ACKNOWLEDGED'
@@ -14,8 +12,6 @@ export interface NotificationResponse {
   kpiName: string;
   organizationId: number;
   notificationType: NotificationType;
-  /** Only set for deadline reminders; null for alert-related notification types. */
-  daysBeforeDeadline: number | null;
   deadline: string;
   status: NotificationStatus | string;
   message: string;

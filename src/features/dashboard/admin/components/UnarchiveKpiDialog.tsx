@@ -222,10 +222,10 @@ const UnarchiveKpiDialog = ({ open, onClose, onSubmitSuccess, kpiId, kpiName }: 
               <NotificationsActiveOutlinedIcon sx={{ fontSize: 18, color: '#D97706', mt: 0.2, flexShrink: 0 }} />
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 600, color: '#1E293B', fontSize: '0.85rem', lineHeight: 1.3 }}>
-                  Deadline tracking resumes
+                  Alert tracking resumes
                 </Typography>
                 <Typography variant="caption" sx={{ color: '#475569', display: 'block', mt: 0.25, lineHeight: 1.35 }}>
-                  Automated deadline reminders and warning notifications will be re-evaluated.
+                  At Risk and Overdue alerts will be re-evaluated.
                 </Typography>
               </Box>
             </Box>

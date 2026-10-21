@@ -450,7 +450,7 @@ const KpiDetailPage = () => {
               '& .MuiAlert-icon': { color: '#64748B' },
             }}
           >
-            This KPI is currently archived. Member submissions and deadline alerts are paused. Click <strong>Restore KPI</strong> above to reactivate active monitoring.
+            This KPI is currently archived. Member submissions and KPI alerts are paused. Click <strong>Restore KPI</strong> above to reactivate active monitoring.
           </Alert>
         )}
 

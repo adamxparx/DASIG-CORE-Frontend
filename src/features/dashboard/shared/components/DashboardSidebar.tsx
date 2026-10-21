@@ -172,7 +172,7 @@ const tutorialStepsByRole: Record<UserRole, TutorialStep[]> = {
       label: 'Notifications',
       title: 'Stay on Top of Deadlines',
       points: [
-        "Open Notifications for deadline reminders and updates on your committee's assigned KPIs.",
+        "Open Notifications for KPI alerts and updates on your committee's assigned KPIs.",
       ],
     },
     {
@@ -223,7 +223,7 @@ const tutorialStepsByRole: Record<UserRole, TutorialStep[]> = {
       label: 'Notifications',
       title: 'Stay on Top of Deadlines',
       points: [
-        "Open Notifications for deadline reminders and updates on your assigned KPIs.",
+        "Open Notifications for KPI alerts and updates on your assigned KPIs.",
       ],
     },
     {

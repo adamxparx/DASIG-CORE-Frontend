@@ -34,29 +34,6 @@ export function getDaysLeftLabel(deadline: string): string {
   return `${diffInDays} days left`;
 }
 
-/** Matches backend: alerts when KPI deadline equals today+7 or today+2 (calendar days, not time of day). */
-export function getDeadlineAlertLeadDays(deadline: string): 7 | 2 | null {
-  const diffDays = getCalendarDaysUntilDeadline(deadline);
-  if (diffDays === 7) {
-    return 7;
-  }
-  if (diffDays === 2) {
-    return 2;
-  }
-  return null;
-}
-
-export function getDeadlineFieldHelperText(deadline: string): string | undefined {
-  const leadDays = getDeadlineAlertLeadDays(deadline);
-  if (leadDays === 7) {
-    return 'Member/Committee Lead will get a 7-day deadline alert when you save.';
-  }
-  if (leadDays === 2) {
-    return 'Member/Committee Lead will get a 2-day deadline alert when you save.';
-  }
-  return undefined;
-}
-
 export function sortNotifications<T extends { status: string; createdAt: string }>(items: T[]): T[] {
   return [...items].sort((a, b) => {
     const aUnread = isUnreadNotification(a.status);
@@ -70,10 +47,6 @@ export function sortNotifications<T extends { status: string; createdAt: string 
 
 export function formatNotificationTypeLabel(type: NotificationType): string {
   switch (type) {
-    case 'SEVEN_DAYS_BEFORE':
-      return '7 days before deadline';
-    case 'TWO_DAYS_BEFORE':
-      return '2 days before deadline';
     case 'AT_RISK':
       return 'At risk';
     case 'OVERDUE':
@@ -83,7 +56,7 @@ export function formatNotificationTypeLabel(type: NotificationType): string {
     case 'DEADLINE_UPDATED':
       return 'Deadline updated';
     default:
-      return 'Deadline alert';
+      return 'Notification';
   }
 }
 
@@ -93,7 +66,6 @@ export function getNotificationTypeColor(type: NotificationType): 'info' | 'warn
     case 'OVERDUE':
       return 'error';
     case 'AT_RISK':
-    case 'TWO_DAYS_BEFORE':
       return 'warning';
     case 'ALERT_ACKNOWLEDGED':
       return 'success';

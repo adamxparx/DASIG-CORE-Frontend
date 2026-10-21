@@ -30,7 +30,6 @@ import type {
   ReportingFrequency,
   UpdateKpiDefinitionRequest,
 } from '../../shared/types/kpi.types';
-import { getDeadlineFieldHelperText } from '../../../notification/utils/notificationDisplay';
 import { routes } from '../../../../routes';
 import { FormSkeleton } from '../../../shared/components';
 
@@ -433,7 +432,7 @@ const CreateKpiPage = () => {
                 if (errors.deadline) setErrors((prev) => ({ ...prev, deadline: '' }));
               }}
               error={!!errors.deadline}
-              helperText={errors.deadline ?? getDeadlineFieldHelperText(deadline)}
+              helperText={errors.deadline}
               disabled={isSubmitting}
               hiddenLabel
               slotProps={{ htmlInput: { min: getTodayDateString() } }}
