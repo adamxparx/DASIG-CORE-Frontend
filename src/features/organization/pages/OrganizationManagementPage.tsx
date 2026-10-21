@@ -73,6 +73,12 @@ const OrganizationManagementPage = () => {
     showToast('Organization deactivated successfully.');
   };
 
+  const handleActivated = () => {
+    setSelectedOrganization(null);
+    void loadOrganizations(true);
+    showToast('Organization activated successfully.');
+  };
+
   if (isLoading) {
     return (
       <AdminPageLayout>
@@ -104,6 +110,7 @@ const OrganizationManagementPage = () => {
             organization={selectedOrganization}
             onUpdated={handleUpdated}
             onDeactivated={handleDeactivated}
+            onActivated={handleActivated}
             onCancel={handleEditCancel}
           />
         ) : (

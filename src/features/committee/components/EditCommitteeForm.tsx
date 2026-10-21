@@ -21,6 +21,7 @@ import {
 } from '../utils/committeeForm';
 import CommitteeFormFields from './CommitteeFormFields';
 import DeactivateCommitteeDialog from './DeactivateCommitteeDialog';
+import ActivateCommitteeDialog from './ActivateCommitteeDialog';
 
 interface EditCommitteeFormProps {
   committee: CommitteeResponse;
@@ -28,6 +29,7 @@ interface EditCommitteeFormProps {
   users: UserResponse[];
   onUpdated: () => void;
   onDeactivated: () => void;
+  onActivated: () => void;
   onCancel: () => void;
 }
 
@@ -37,6 +39,7 @@ const EditCommitteeForm = ({
   users,
   onUpdated,
   onDeactivated,
+  onActivated,
   onCancel,
 }: EditCommitteeFormProps) => {
   const [form, setForm] = useState<CommitteeFormValues>(() => committeeToFormValues(committee));
@@ -44,6 +47,7 @@ const EditCommitteeForm = ({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
+  const [activateDialogOpen, setActivateDialogOpen] = useState(false);
 
   const isInactive = !isActiveCommittee(committee.status);
 
@@ -160,27 +164,43 @@ const EditCommitteeForm = ({
             spacing={1.5}
             sx={{ justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, mt: 3 }}
           >
-            <Button
-              type="button"
-              variant="contained"
-              onClick={() => setDeactivateDialogOpen(true)}
-              disabled={isSubmitting || isInactive}
-              sx={{
-                textTransform: 'none',
-                fontWeight: 600,
-                borderRadius: 2,
-                px: 2.5,
-                bgcolor: 'error.main',
-                boxShadow: 'none',
-                '&:hover': { bgcolor: 'error.dark', boxShadow: 'none' },
-                '&.Mui-disabled': {
-                  bgcolor: 'action.disabledBackground',
-                  color: 'action.disabled',
-                },
-              }}
-            >
-              Deactivate
-            </Button>
+            {isInactive ? (
+              <Button
+                type="button"
+                variant="contained"
+                onClick={() => setActivateDialogOpen(true)}
+                disabled={isSubmitting}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  px: 2.5,
+                  bgcolor: 'success.main',
+                  boxShadow: 'none',
+                  '&:hover': { bgcolor: 'success.dark', boxShadow: 'none' },
+                }}
+              >
+                Activate
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="contained"
+                onClick={() => setDeactivateDialogOpen(true)}
+                disabled={isSubmitting}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  px: 2.5,
+                  bgcolor: 'error.main',
+                  boxShadow: 'none',
+                  '&:hover': { bgcolor: 'error.dark', boxShadow: 'none' },
+                }}
+              >
+                Deactivate
+              </Button>
+            )}
 
             <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end' }}>
               <Button
@@ -224,6 +244,13 @@ const EditCommitteeForm = ({
         committeeId={committee.id}
         onClose={() => setDeactivateDialogOpen(false)}
         onDeactivated={onDeactivated}
+      />
+
+      <ActivateCommitteeDialog
+        open={activateDialogOpen}
+        committeeId={committee.id}
+        onClose={() => setActivateDialogOpen(false)}
+        onActivated={onActivated}
       />
     </>
   );

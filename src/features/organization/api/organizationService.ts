@@ -31,4 +31,10 @@ export const organizationService = {
       method: 'PATCH',
     });
   },
+
+  activate(id: number): Promise<void> {
+    return apiClient<void>(`${ORGANIZATIONS_ENDPOINT}/${id}/activate`, {
+      method: 'PATCH',
+    });
+  },
 };
