@@ -20,6 +20,7 @@ import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ApiError } from '../../../lib/api/client';
 import AdminPageLayout from '../../dashboard/shared/components/AdminPageLayout';
 import TablePaginationBar, { TABLE_PAGE_SIZE } from '../../dashboard/shared/components/TablePaginationBar';
@@ -30,6 +31,7 @@ import type { AlertDetailResponse } from '../types/alerts.types';
 import { AlertsSkeleton } from '../../../features/shared/components';
 
 export default function AdminAlertsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [alerts, setAlerts] = useState<AlertDetailResponse[]>([]);
   const [selectedAlert, setSelectedAlert] = useState<AlertDetailResponse | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,6 +69,29 @@ export default function AdminAlertsPage() {
   useEffect(() => {
     void loadAlerts();
   }, [loadAlerts]);
+
+  // Deep link coming from the alert email: /dashboard/admin/alerts?alertId=123
+  useEffect(() => {
+    if (isLoading || alerts.length === 0) {
+      return;
+    }
+
+    const alertId = searchParams.get('alertId');
+    if (!alertId) {
+      return;
+    }
+
+    const targetAlert = alerts.find((a) => a.id === Number(alertId));
+    if (targetAlert) {
+      setSelectedAlert(targetAlert);
+      setIsModalOpen(true);
+    }
+
+    // Drop the query param so a later manual refresh does not re-open the drawer
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('alertId');
+    setSearchParams(nextParams, { replace: true });
+  }, [alerts, isLoading, searchParams, setSearchParams]);
 
   const showToast = (message: string) => {
     setToastMessage(message);
