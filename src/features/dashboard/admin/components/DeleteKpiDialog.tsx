@@ -211,7 +211,7 @@ const DeleteKpiDialog = ({ open, onClose, onSubmitSuccess, kpiId, kpiName }: Del
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
               <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: '#DC2626', mt: 0.85, flexShrink: 0 }} />
               <Typography variant="body2" sx={{ color: '#7F1D1D', fontSize: '0.825rem', lineHeight: 1.4 }}>
-                Active deadline alert badges and unread notifications
+                Active KPI alerts and notifications
               </Typography>
             </Box>
           </Stack>

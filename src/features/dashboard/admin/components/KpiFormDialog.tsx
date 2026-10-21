@@ -29,7 +29,6 @@ import type { OrganizationResponse } from '../../../organization/types/organizat
 import { kpiService } from '../../shared/api/kpiService';
 import type { DashboardKpiItem } from '../../shared/types/dashboard.types';
 import type { CreateKpiDefinitionRequest, UpdateKpiDefinitionRequest } from '../../shared/types/kpi.types';
-import { getDeadlineFieldHelperText } from '../../../notification/utils/notificationDisplay';
 
 export interface KpiSubmitSuccessContext {
   deadline: string;
@@ -431,7 +430,7 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
                   if (errors.deadline) setErrors((prev) => ({ ...prev, deadline: '' }));
                 }}
                 error={!!errors.deadline}
-                helperText={errors.deadline ?? getDeadlineFieldHelperText(deadline)}
+                helperText={errors.deadline}
                 disabled={isSubmitting}
                 hiddenLabel
                 slotProps={{

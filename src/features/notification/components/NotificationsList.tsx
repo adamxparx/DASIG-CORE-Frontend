@@ -94,7 +94,7 @@ const NotificationsList = ({
           You have no notifications yet.
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          Deadline reminders and KPI alerts for your organization will appear here.
+          KPI alerts and updates for your organization will appear here.
         </Typography>
       </Paper>
     );
