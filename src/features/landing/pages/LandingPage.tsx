@@ -1,5 +1,5 @@
 import { type FormEvent, useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -20,6 +20,7 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import dasig_logo from '../../../assets/dasig_logo.svg';
 import { useLogin } from '../../auth/hooks/useLogin';
 import { loginRequest, apiRequest } from '../../../lib/config/authConfig';
+import { routes } from '../../../routes';
 import Divider from '@mui/material/Divider';
 import MicrosoftIcon from '@mui/icons-material/Window';
 import { tokenStorage } from '../../auth/utils/tokenStorage';
@@ -29,6 +30,7 @@ import type { TokenClaims } from '@azure/msal-common';
 
 const LandingPage = () => {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { instance, inProgress } = useMsal();
   const isAuthenticated = useIsAuthenticated();
 
@@ -66,6 +68,16 @@ const LandingPage = () => {
             console.log("Token acquired successfully, syncing to session");
             // Use idToken for session storage
             tokenStorage.set(response.idToken);
+
+            // Post-login deep-link priority: if a deep link was saved (e.g. from an email),
+            // navigate there instead of the default dashboard root.
+            const postLoginRedirect = sessionStorage.getItem('postLoginRedirect');
+            if (postLoginRedirect) {
+              sessionStorage.removeItem('postLoginRedirect');
+              navigate(postLoginRedirect, { replace: true });
+              return;
+            }
+
             window.location.href = '/'; // Forces App.tsx to run getSession() again
           }).catch((e) => {
             console.error("Silent token acquisition failed:", e);
@@ -85,12 +97,58 @@ const LandingPage = () => {
           // Token exists but we're still on landing page - navigate to dashboard
           const session = getSession();
           if (session) {
-            navigate(session.dashboardPath, { replace: true });
+            // Post-login deep-link priority takes precedence over default dashboard path
+            const postLoginRedirect = sessionStorage.getItem('postLoginRedirect');
+            if (postLoginRedirect) {
+              sessionStorage.removeItem('postLoginRedirect');
+              navigate(postLoginRedirect, { replace: true });
+            } else {
+              navigate(session.dashboardPath, { replace: true });
+            }
           }
         }
       }
     }
   }, [isAuthenticated, inProgress, instance, navigate]);
+
+  // Auto-trigger MSAL login when deep-link query params are present on /auth
+  // (e.g. /auth?alertId=123&loginHint=admin%40dasig-core.site)
+  useEffect(() => {
+    const alertIdParam = searchParams.get('alertId');
+    const loginHintParam = searchParams.get('loginHint');
+
+    // No deep-link params — nothing to do here
+    if (!alertIdParam && !loginHintParam) {
+      return;
+    }
+
+    // Already authenticated: go straight to the target dashboard page
+    if (isAuthenticated && inProgress === 'none') {
+      const targetPath = alertIdParam
+        ? `${routes.adminAlerts}?alertId=${alertIdParam}`
+        : routes.adminAlerts;
+      navigate(targetPath, { replace: true });
+      return;
+    }
+
+    // Not authenticated: save target deep link to sessionStorage for post-login navigation,
+    // then trigger MSAL redirect login with a STATIC redirectUri (window.location.origin).
+    // Microsoft Entra ID requires exact redirect_uri match — query params must NOT be appended here.
+    if (alertIdParam) {
+      sessionStorage.setItem(
+        'postLoginRedirect',
+        `${routes.adminAlerts}?alertId=${alertIdParam}`,
+      );
+    }
+
+    instance.loginRedirect({
+      ...loginRequest,
+      redirectUri: window.location.origin,
+      ...(loginHintParam ? { loginHint: loginHintParam } : {}),
+    }).catch((error) => {
+      console.error("Microsoft Login Error:", error);
+    });
+  }, [searchParams, isAuthenticated, inProgress, instance, navigate]);
 
   const { login, error, isLoading } = useLogin();
 
@@ -131,7 +189,15 @@ const LandingPage = () => {
   };
 
   const handleMicrosoftLogin = () => {
-    instance.loginRedirect(loginRequest).catch((error) => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const loginHintParam = searchParams.get('loginHint');
+
+    const dynamicLoginRequest = {
+      ...loginRequest,
+      ...(loginHintParam ? { loginHint: loginHintParam } : {}),
+    };
+
+    instance.loginRedirect(dynamicLoginRequest).catch((error) => {
       console.error("Microsoft Login Error:", error);
     });
   };

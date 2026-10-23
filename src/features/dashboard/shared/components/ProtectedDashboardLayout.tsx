@@ -14,7 +14,10 @@ const ProtectedDashboardLayout = ({ requiredRole, dashboardRole }: ProtectedDash
   const session = getSession();
 
   if (!session) {
-    return <Navigate to={getAuthRedirectPath()} replace />;
+    // Preserve the incoming deep-link query params (e.g. ?alertId=123&loginHint=...)
+    // so they survive the redirect to the auth page and MSAL can consume loginHint.
+    const search = window.location.search;
+    return <Navigate to={`${getAuthRedirectPath()}${search}`} replace />;
   }
 
   if (session.mustChangePassword) {

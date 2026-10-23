@@ -28,12 +28,27 @@ function LandingRoute() {
     return <LandingPage />;
   }
 
+  // Post-login deep-link priority: if a deep link was saved (e.g. from an email),
+  // navigate there instead of the default dashboard root.
+  const postLoginRedirect = sessionStorage.getItem('postLoginRedirect');
+  if (postLoginRedirect) {
+    sessionStorage.removeItem('postLoginRedirect');
+    return <Navigate to={postLoginRedirect} replace />;
+  }
+
   return <Navigate to={session.dashboardPath} replace />;
 }
 
 function AuthRoute() {
   const session = getSession();
   if (session) {
+    // Post-login deep-link priority takes precedence over default dashboard path
+    const postLoginRedirect = sessionStorage.getItem('postLoginRedirect');
+    if (postLoginRedirect) {
+      sessionStorage.removeItem('postLoginRedirect');
+      return <Navigate to={postLoginRedirect} replace />;
+    }
+
     return <Navigate to={session.dashboardPath} replace />;
   }
 

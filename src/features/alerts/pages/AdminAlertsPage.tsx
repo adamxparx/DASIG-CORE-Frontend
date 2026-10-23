@@ -87,9 +87,10 @@ export default function AdminAlertsPage() {
       setIsModalOpen(true);
     }
 
-    // Drop the query param so a later manual refresh does not re-open the drawer
+    // Drop the query params so a later manual refresh does not re-open the drawer
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('alertId');
+    nextParams.delete('loginHint');
     setSearchParams(nextParams, { replace: true });
   }, [alerts, isLoading, searchParams, setSearchParams]);
 
