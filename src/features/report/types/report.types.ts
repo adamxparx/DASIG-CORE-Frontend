@@ -33,13 +33,8 @@ export interface ReportResponse {
 
 export interface GenerateCommitteeReportRequest {
   committeeId: number;
-  periodFrom: string; // Format: YYYY-MM-DD
-  periodTo: string; // Format: YYYY-MM-DD
 }
 
 export interface GenerateKpiReportRequest {
   kpiDefinitionId: number;
-  periodFrom: string; // Format: YYYY-MM-DD
-  periodTo: string; // Format: YYYY-MM-DD
 }
-

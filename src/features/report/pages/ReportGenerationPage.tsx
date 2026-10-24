@@ -43,23 +43,11 @@ import type { ReportResponse } from '../types/report.types';
 import { SkeletonLoader, ReportGenerationSkeleton } from '../../shared/components';
 import dasig_logo from '../../../assets/dasig_logo.svg';
 
-
-const getTodayDateString = () => {
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, '0');
-  const dd = String(today.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-};
-
 export default function ReportGenerationPage() {
   const [activeTab, setActiveTab] = useState<'generate' | 'history'>('generate');
   const [committees, setCommittees] = useState<CommitteeResponse[]>([]);
   const [selectedCommitteeId, setSelectedCommitteeId] = useState<string>('');
 
-  // Date states
-  const [periodFrom, setPeriodFrom] = useState<string>('');
-  const [periodTo, setPeriodTo] = useState<string>('');
 
   // Active Report & loading states
   const [activeReport, setActiveReport] = useState<ReportResponse | null>(null);
@@ -175,9 +163,7 @@ export default function ReportGenerationPage() {
     setActiveReport(null);
   };
 
-  // Opens a history row: syncs the AI Generator Options panel (scope, committee/KPI) to match
-  // the report being viewed. Dates are cleared rather than copied from the report, so hitting
-  // 'Generate' isn't a one-click way to silently create a duplicate report for the same period.
+  // Opens a history row: syncs the AI Generator Options panel (scope, committee/KPI) to match the report being viewed.
   const handleViewReport = (report: ReportResponse) => {
     setActiveReport(report);
     setReportScope(report.reportType);
@@ -186,62 +172,46 @@ export default function ReportGenerationPage() {
     } else if (report.kpiDefinitionId != null) {
       setSelectedKpiId(String(report.kpiDefinitionId));
     }
-    setPeriodFrom('');
-    setPeriodTo('');
     // The narrative viewer lives on the Generate tab, so jump there to actually show it.
     setActiveTab('generate');
   };
 
   // Generate new report
   const handleGenerate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!reportScope || !periodFrom || !periodTo || (reportScope === 'COMMITTEE' && !selectedCommitteeId) || (reportScope === 'KPI' && !selectedKpiId)) {
-      showToast('Please select all filter parameters.', 'error');
-      return;
-    }
-
-    if (periodFrom > periodTo) {
-      showToast('Period From date must not be after Period To date.', 'error');
-      return;
-    }
-
-    if (periodTo > getTodayDateString()) {
-      showToast('Period To date must not be later than today.', 'error');
-      return;
-    }
-
-    setIsGenerating(true);
-    setActiveReport(null);
-
-    try {
-      let report: ReportResponse;
-
-      if (reportScope === 'COMMITTEE') {
-        report = await reportService.generateCommitteeReport({
-          committeeId: parseInt(selectedCommitteeId, 10),
-          periodFrom,
-          periodTo,
-        });
-      } else {
-        report = await reportService.generateKpiReport({
-          kpiDefinitionId: parseInt(selectedKpiId, 10),
-          periodFrom,
-          periodTo,
-        });
+      e.preventDefault();
+      if (!reportScope || (reportScope === 'COMMITTEE' && !selectedCommitteeId) || (reportScope === 'KPI' && !selectedKpiId)) {
+        showToast('Please select all filter parameters.', 'error');
+        return;
       }
 
-      if (report.status === 'FAILED') {
-        throw new Error(report.narrativeText || 'Failed to generate AI performance narrative.');
-      }
+      setIsGenerating(true);
+      setActiveReport(null);
 
-      setActiveReport(report);
-      showToast('AI Narrative Report generated successfully.', 'success');
-      void loadHistory(); // Refresh history log
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Unable to generate performance report.', 'error');
-    } finally {
-      setIsGenerating(false);
-    }
+      try {
+        let report: ReportResponse;
+
+        if (reportScope === 'COMMITTEE') {
+          report = await reportService.generateCommitteeReport({
+            committeeId: parseInt(selectedCommitteeId, 10),
+          });
+        } else {
+          report = await reportService.generateKpiReport({
+            kpiDefinitionId: parseInt(selectedKpiId, 10),
+          });
+        }
+
+        if (report.status === 'FAILED') {
+          throw new Error(report.narrativeText || 'Failed to generate AI performance narrative.');
+        }
+
+        setActiveReport(report);
+        showToast('AI Narrative Report generated successfully.', 'success');
+        void loadHistory(); // Refresh history log
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'Unable to generate performance report.', 'error');
+      } finally {
+        setIsGenerating(false);
+      }
   };
 
   // Trigger authenticated PDF export blob downloader
@@ -355,8 +325,6 @@ export default function ReportGenerationPage() {
                   onChange={(e) => {
                     setReportScope(e.target.value as 'COMMITTEE' | 'KPI');
                     setActiveReport(null);
-                    setPeriodFrom('');
-                    setPeriodTo('');
                   }}
                   sx={{ gap: 1 }}
                 >
@@ -446,49 +414,10 @@ export default function ReportGenerationPage() {
                 </FormControl>
               )}
 
-              {/* Start Date */}
-              <TextField
-                id="date-from"
-                label="Period From"
-                type="date"
-                size="small"
-                fullWidth
-                slotProps={{
-                  inputLabel: { shrink: true },
-                  htmlInput: { max: periodTo || getTodayDateString() },
-                }}
-                value={periodFrom}
-                onChange={(e) => {
-                  setPeriodFrom(e.target.value);
-                  // A changed date range no longer matches the report on screen, so re-enable generation.
-                  setActiveReport(null);
-                }}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-              />
-
-              {/* End Date */}
-              <TextField
-                id="date-to"
-                label="Period To"
-                type="date"
-                size="small"
-                fullWidth
-                slotProps={{
-                  inputLabel: { shrink: true },
-                  htmlInput: { min: periodFrom || undefined, max: getTodayDateString() },
-                }}
-                value={periodTo}
-                onChange={(e) => {
-                  setPeriodTo(e.target.value);
-                  setActiveReport(null);
-                }}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-              />
-
               {/* Trigger Button */}
               <Button
                 type="submit"
-                disabled={isGenerating || !reportScope || !periodFrom || !periodTo || (reportScope === 'COMMITTEE' && !selectedCommitteeId) || (reportScope === 'KPI' && !selectedKpiId)}
+                disabled={isGenerating || !reportScope || (reportScope === 'COMMITTEE' && !selectedCommitteeId) || (reportScope === 'KPI' && !selectedKpiId)}                
                 variant="contained"
                 disableElevation
                 sx={{
@@ -615,7 +544,7 @@ export default function ReportGenerationPage() {
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360 }}>
                   {reportScope
-                    ? "Configure a date range on the left and trigger 'Generate AI Narrative' to generate a report, or open one from the Historical Reports Log tab."
+                    ? "Select a committee or KPI on the left and trigger 'Generate AI Narrative' to generate a report, or open one from the Reports History tab."
                     : 'Choose a Report Scope on the left — Committee Report or KPI Performance Report — to get started.'}
                 </Typography>
               </Stack>
