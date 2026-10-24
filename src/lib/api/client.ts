@@ -1,5 +1,6 @@
 import { getApiUrl } from '../../config/api';
 import { tokenStorage } from '../../features/auth/utils/tokenStorage';
+import { routes } from '../../routes';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -64,6 +65,11 @@ export async function apiClient<T>(path: string, options: ApiClientOptions = {})
   const bodyText = await response.text();
 
   if (!response.ok) {
+    // Auto-logout on session expiration (401): clear the stored JWT and redirect to /auth
+    if (response.status === 401 && !path.includes('/auth/login')) {
+      tokenStorage.clear();
+      window.location.href = routes.auth;
+    }
     throw new ApiError(parseErrorMessage(response.status, bodyText, path), response.status);
   }
 
