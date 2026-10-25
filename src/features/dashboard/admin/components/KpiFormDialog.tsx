@@ -435,7 +435,10 @@ const KpiFormDialog = ({ open, onClose, onSubmitSuccess, kpi }: KpiFormDialogPro
                 hiddenLabel
                 slotProps={{
                   htmlInput: {
-                    min: getTodayDateString(),
+                    // Allow an Overdue KPI's saved (past) deadline so the form can be saved without changing it
+                    min: kpi && formatDateForInput(kpi.deadline) < getTodayDateString()
+                      ? formatDateForInput(kpi.deadline)
+                      : getTodayDateString(),
                   },
                 }}
                 sx={{
