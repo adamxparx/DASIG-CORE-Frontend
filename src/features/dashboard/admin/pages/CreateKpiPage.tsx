@@ -98,6 +98,10 @@ const CreateKpiPage = () => {
   const [deadline, setDeadline] = useState(
     preloadedKpi ? formatDateForInput(preloadedKpi.deadline) : ''
   );
+  // Saved deadline of the KPI being edited; an unchanged past deadline may be kept (SRS UC-2.2 AF-2)
+  const [originalDeadline, setOriginalDeadline] = useState(
+    preloadedKpi ? formatDateForInput(preloadedKpi.deadline) : ''
+  );
   const [committeeId, setCommitteeId] = useState<number | ''>('');
   const [reportingFrequency, setReportingFrequency] = useState<ReportingFrequency>(
     preloadedKpi?.reportingFrequency ?? 'ONE_TIME'
@@ -151,6 +155,7 @@ const CreateKpiPage = () => {
           setTargetValue(String(kpiDef.targetValue));
           setUnit(kpiDef.unit);
           setDeadline(formatDateForInput(kpiDef.deadline));
+          setOriginalDeadline(formatDateForInput(kpiDef.deadline));
           if (kpiDef.reportingFrequency) {
             setReportingFrequency(kpiDef.reportingFrequency);
           }
@@ -250,7 +255,8 @@ const CreateKpiPage = () => {
       today.setHours(0, 0, 0, 0);
       const selected = new Date(deadline);
       selected.setHours(0, 0, 0, 0);
-      if (selected < today) newErrors.deadline = 'Deadline cannot be a past date';
+      const isUnchangedOnEdit = isEdit && deadline === originalDeadline;
+      if (selected < today && !isUnchangedOnEdit) newErrors.deadline = 'Deadline cannot be a past date';
     }
     if (committeeId === '') newErrors.committeeId = 'Assigned Committee is required';
 
@@ -435,7 +441,8 @@ const CreateKpiPage = () => {
               helperText={errors.deadline}
               disabled={isSubmitting}
               hiddenLabel
-              slotProps={{ htmlInput: { min: getTodayDateString() } }}
+              // Allow an Overdue KPI's saved (past) deadline so the form can be saved without changing it
+              slotProps={{ htmlInput: { min: isEdit && originalDeadline && originalDeadline < getTodayDateString() ? originalDeadline : getTodayDateString() } }}
               sx={inputSx}
             />
           </Grid>
