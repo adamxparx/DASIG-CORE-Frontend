@@ -28,6 +28,7 @@ interface EditUserAccountFormProps {
   user: UserListItem;
   organizations: OrganizationResponse[];
   committees: CommitteeResponse[];
+  isSelf?: boolean;
   onUpdated: () => void;
   onDeactivated: () => void;
   onActivated: () => void;
@@ -51,7 +52,16 @@ function getOrganizationOptions(
   return [currentOrg, ...active];
 }
 
-const EditUserAccountForm = ({ user, organizations, committees, onUpdated, onDeactivated, onActivated, onCancel }: EditUserAccountFormProps) => {
+const EditUserAccountForm = ({
+  user,
+  organizations,
+  committees,
+  isSelf = false,
+  onUpdated,
+  onDeactivated,
+  onActivated,
+  onCancel,
+}: EditUserAccountFormProps) => {
   const [form, setForm] = useState<CreateUserFormValues>(() => userToFormValues(user));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -137,7 +147,7 @@ const EditUserAccountForm = ({ user, organizations, committees, onUpdated, onDea
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
 
-    if (isInactive) {
+    if (isInactive || isSelf) {
       return;
     }
 
@@ -182,7 +192,7 @@ const EditUserAccountForm = ({ user, organizations, committees, onUpdated, onDea
           form={form}
           errors={errors}
           isSubmitting={isSubmitting}
-          readOnly={isInactive}
+          readOnly={isInactive || isSelf}
           organizationOptions={organizationOptions}
           committeeOptions={committees}
           onFieldChange={setField}
@@ -200,7 +210,7 @@ const EditUserAccountForm = ({ user, organizations, committees, onUpdated, onDea
               type="button"
               variant="contained"
               onClick={() => setActivateDialogOpen(true)}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isSelf}
               sx={{
                 textTransform: 'none',
                 fontWeight: 600,
@@ -218,7 +228,7 @@ const EditUserAccountForm = ({ user, organizations, committees, onUpdated, onDea
               type="button"
               variant="contained"
               onClick={() => setDeactivateDialogOpen(true)}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isSelf}
               sx={{
                 textTransform: 'none',
                 fontWeight: 600,
@@ -253,7 +263,7 @@ const EditUserAccountForm = ({ user, organizations, committees, onUpdated, onDea
             <Button
               type="submit"
               variant="contained"
-              disabled={isSubmitting || isInactive}
+              disabled={isSubmitting || isInactive || isSelf}
               sx={{
                 textTransform: 'none',
                 fontWeight: 600,
@@ -267,6 +277,19 @@ const EditUserAccountForm = ({ user, organizations, committees, onUpdated, onDea
             </Button>
           </Stack>
         </Stack>
+
+        {isSelf && (
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+              fontStyle: 'italic',
+              mt: 2,
+            }}
+          >
+            Self deactivation and account update is disabled.
+          </Typography>
+        )}
       </Paper>
     </Box>
 
