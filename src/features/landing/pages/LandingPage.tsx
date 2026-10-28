@@ -50,6 +50,12 @@ const LandingPage = () => {
       const activeAccount = instance.getAllAccounts()[0];
       
       if (activeAccount) {
+        // If session timed out, prevent automatic re-authentication loop
+        if (sessionStorage.getItem('sessionTimedOut')) {
+          sessionStorage.removeItem('sessionTimedOut');
+          instance.logoutRedirect({ postLogoutRedirectUri: window.location.origin + routes.auth });
+          return;
+        }
         // 1. SAFETY CHECK: Does the Entra ID account actually have your custom roles?
         const msalRoles = (activeAccount.idTokenClaims as TokenClaims)?.roles;
         
@@ -189,6 +195,7 @@ const LandingPage = () => {
   };
 
   const handleMicrosoftLogin = () => {
+    sessionStorage.removeItem('sessionTimedOut');
     const searchParams = new URLSearchParams(window.location.search);
     const loginHintParam = searchParams.get('loginHint');
 

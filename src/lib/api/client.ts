@@ -68,6 +68,7 @@ export async function apiClient<T>(path: string, options: ApiClientOptions = {})
     // Auto-logout on session expiration (401): clear the stored JWT and redirect to /auth
     if (response.status === 401 && !path.includes('/auth/login')) {
       tokenStorage.clear();
+      sessionStorage.setItem('sessionTimedOut', 'true');
       window.location.href = routes.auth;
     }
     throw new ApiError(parseErrorMessage(response.status, bodyText, path), response.status);
