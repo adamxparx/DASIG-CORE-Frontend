@@ -40,6 +40,7 @@ const UserManagementPage = () => {
   const [organizations, setOrganizations] = useState<OrganizationResponse[]>([]);
   const [committees, setCommittees] = useState<CommitteeResponse[]>([]);
   const [users, setUsers] = useState<UserListItem[]>([]);
+  const [currentUser, setCurrentUser] = useState<UserResponse | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserListItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingUser, setIsLoadingUser] = useState(false);
@@ -52,14 +53,16 @@ const UserManagementPage = () => {
       setIsLoading(true);
     }
     try {
-      const [orgData, committeeData, userData] = await Promise.all([
+      const [orgData, committeeData, userData, currentUserData] = await Promise.all([
         organizationService.getAll(),
         committeeService.getAll(),
         userService.getAll(),
+        userService.getCurrentUser(),
       ]);
       setOrganizations(orgData);
       setCommittees(committeeData);
       setUsers(mapUsersToListItems(userData, orgData, committeeData));
+      setCurrentUser(currentUserData);
       setError(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to load user management data.');
@@ -138,6 +141,10 @@ const UserManagementPage = () => {
     );
   }
 
+  const isSelf = currentUser && selectedUser
+    ? currentUser.id === selectedUser.id || currentUser.email.toLowerCase() === selectedUser.email.toLowerCase()
+    : false;
+
   return (
     <AdminPageLayout>
       <Stack spacing={3}>
@@ -163,6 +170,7 @@ const UserManagementPage = () => {
             user={selectedUser}
             organizations={organizations}
             committees={committees}
+            isSelf={isSelf}
             onUpdated={handleUpdated}
             onDeactivated={handleDeactivated}
             onActivated={handleActivated}
