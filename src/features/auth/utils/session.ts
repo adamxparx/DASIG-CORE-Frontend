@@ -8,6 +8,7 @@ export interface AppSession {
   dashboardPath: string;
   mustChangePassword: boolean;
   payload: JwtPayload;
+  expiresAt: number | null;
 }
 
 export function getSession(): AppSession | null {
@@ -24,11 +25,18 @@ export function getSession(): AppSession | null {
       return null;
     }
 
+    const expiresAt = tokenStorage.getExpiresAt();
+    if (expiresAt !== null && expiresAt <= Date.now()) {
+      tokenStorage.clear();
+      return null;
+    }
+
     return {
       role: payload.role as UserRole,
       dashboardPath,
       mustChangePassword: payload.mustChangePassword === true,
       payload,
+      expiresAt,
     };
   } catch {
     tokenStorage.clear();
