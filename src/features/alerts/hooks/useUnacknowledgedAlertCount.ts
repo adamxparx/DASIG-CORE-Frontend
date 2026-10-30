@@ -13,8 +13,7 @@ export function useUnacknowledgedAlertCount(enabled: boolean) {
     }
 
     try {
-      const data = await alertsService.getAllSummaries();
-      setUnacknowledgedCount(data.filter((item) => item.status === 'UNACKNOWLEDGED').length);
+      setUnacknowledgedCount(await alertsService.getUnacknowledgedCount());
     } catch {
       setUnacknowledgedCount(0);
     }

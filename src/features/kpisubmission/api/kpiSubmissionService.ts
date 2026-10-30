@@ -1,5 +1,5 @@
 import { getApiUrl } from '../../../config/api';
-import { ApiError, apiClient } from '../../../lib/api/client';
+import { ApiError, apiClient, apiGetCached, clearApiCache } from '../../../lib/api/client';
 import { tokenStorage } from '../../auth/utils/tokenStorage';
 import type {
   AssignableKpi,
@@ -60,8 +60,9 @@ export const kpiSubmissionService = {
     return response;
   },
 
+  // Cached briefly so both sidebars (desktop and mobile) share one request
   getBadgeCounts(): Promise<KpiSubmissionBadgeCountsResponse> {
-    return apiClient<KpiSubmissionBadgeCountsResponse>(`${SUBMISSION_ENDPOINT}/badge-counts`);
+    return apiGetCached<KpiSubmissionBadgeCountsResponse>(`${SUBMISSION_ENDPOINT}/badge-counts`, 5_000);
   },
 
   getSubmissionById(submissionId: number): Promise<KpiSubmissionResponse> {
@@ -132,6 +133,7 @@ export const kpiSubmissionService = {
     });
  
     const bodyText = await response.text();
+    clearApiCache();
     if (!response.ok) {
       throw new ApiError(bodyText || 'Failed to submit KPI entry.', response.status);
     }
@@ -144,4 +146,4 @@ export const kpiSubmissionService = {
       throw new ApiError('Invalid response from KPI submission endpoint.', response.status);
     }
   },
-};
+};

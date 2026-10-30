@@ -12,6 +12,31 @@ import { MsalProvider } from '@azure/msal-react';
 import { msalConfig } from './lib/config/authConfig';
 import { tokenStorage } from './features/auth/utils/tokenStorage';
 
+// After a new deployment, an open tab may ask for page files that no longer exist.
+// Reload once so the tab picks up the new version instead of showing an error.
+window.addEventListener('vite:preloadError', (event) => {
+  if (sessionStorage.getItem('reloadedForNewVersion')) {
+    return;
+  }
+  sessionStorage.setItem('reloadedForNewVersion', 'true');
+  event.preventDefault();
+  window.location.reload();
+});
+
+// True when the stored token is missing or expires within 5 minutes
+const tokenNeedsRefresh = (): boolean => {
+  const token = tokenStorage.get();
+  if (!token) {
+    return true;
+  }
+  try {
+    const { exp } = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return typeof exp !== 'number' || exp * 1000 - Date.now() < 5 * 60 * 1000;
+  } catch {
+    return true;
+  }
+};
+
 // Create the MSAL instance
 const msalInstance = new PublicClientApplication(msalConfig);
 
@@ -23,14 +48,17 @@ msalInstance.initialize().then(async () => {
   // so that getSession() can authenticate the user on subsequent page loads.
   const activeAccount = msalInstance.getAllAccounts()[0];
   if (activeAccount) {
-    try {
-      const tokenResponse = await msalInstance.acquireTokenSilent({
-        account: activeAccount,
-        scopes: ["User.Read"],
+    const syncToken = msalInstance
+      .acquireTokenSilent({ account: activeAccount, scopes: ["User.Read"] })
+      .then((tokenResponse) => tokenStorage.set(tokenResponse.idToken))
+      .catch(() => {
+        // Silent token acquisition failed; tokenStorage keeps its current value
       });
-      tokenStorage.set(tokenResponse.idToken);
-    } catch {
-      // Silent token acquisition failed; tokenStorage will remain empty
+
+    // Only wait when the stored token is missing or about to expire;
+    // otherwise show the app now and let the token refresh in the background.
+    if (tokenNeedsRefresh()) {
+      await syncToken;
     }
   }
 

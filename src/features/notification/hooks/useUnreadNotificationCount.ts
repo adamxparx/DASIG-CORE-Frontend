@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { notificationService } from '../api/notificationService';
-import { isUnreadNotification } from '../utils/notificationDisplay';
 
 export function useUnreadNotificationCount(enabled: boolean) {
   const { pathname } = useLocation();
@@ -14,8 +13,7 @@ export function useUnreadNotificationCount(enabled: boolean) {
     }
 
     try {
-      const data = await notificationService.getAll();
-      setUnreadCount(data.filter((item) => isUnreadNotification(item.status)).length);
+      setUnreadCount(await notificationService.getUnreadCount());
     } catch {
       setUnreadCount(0);
     }

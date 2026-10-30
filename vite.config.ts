@@ -19,4 +19,18 @@ export default defineConfig({
       '/api': apiProxy,
     },
   },
+  build: {
+    rolldownOptions: {
+      output: {
+        // Libraries change rarely, so they get their own files that stay cached between deployments
+        codeSplitting: {
+          groups: [
+            { name: 'react', test: /node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/ },
+            { name: 'mui', test: /node_modules[\\/](@mui|@emotion)[\\/]/ },
+            { name: 'msal', test: /node_modules[\\/]@azure[\\/]/ },
+          ],
+        },
+      },
+    },
+  },
 })
