@@ -12,6 +12,10 @@ export const organizationService = {
     return apiClient<OrganizationResponse[]>(ORGANIZATIONS_ENDPOINT);
   },
 
+  getById(id: number): Promise<OrganizationResponse> {
+    return apiClient<OrganizationResponse>(`${ORGANIZATIONS_ENDPOINT}/${id}`);
+  },
+
   create(request: CreateOrganizationRequest): Promise<OrganizationResponse> {
     return apiClient<OrganizationResponse>(ORGANIZATIONS_ENDPOINT, {
       method: 'POST',
