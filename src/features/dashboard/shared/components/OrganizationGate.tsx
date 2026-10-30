@@ -3,6 +3,7 @@ import { useMsal } from '@azure/msal-react';
 import { tokenStorage } from '../../../auth/utils/tokenStorage';
 import { routes } from '../../../../routes';
 import { userService } from '../../../user/api/userService';
+import { organizationService } from '../../../organization/api/organizationService';
 import type { UserRole } from '../types/dashboard.types';
 import OrganizationAssignmentDialog from './OrganizationAssignmentDialog';
 import InvalidAccountDialog from './InvalidAccountDialog';
@@ -29,6 +30,7 @@ const OrganizationGate = ({ role }: OrganizationGateProps) => {
   const { instance, accounts } = useMsal();
   const [organizationId, setOrganizationId] = useState<number | null>(null);
   const [isInactive, setIsInactive] = useState(false);
+  const [isOrgInactive, setIsOrgInactive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -68,6 +70,25 @@ const OrganizationGate = ({ role }: OrganizationGateProps) => {
     checkOrganizationAndStatus();
   }, [accounts, instance]);
 
+  useEffect(() => {
+    const checkOrganizationStatus = async () => {
+      if (role === 'DASIG_ADMIN' || organizationId === null || isInactive) {
+        return;
+      }
+
+      try {
+        const org = await organizationService.getById ? await organizationService.getById(organizationId) : await organizationService.getAll().then(orgs => orgs.find(o => o.id === organizationId));
+        if (org && org.status && org.status.toLowerCase() !== 'active') {
+          setIsOrgInactive(true);
+        }
+      } catch (error) {
+        console.error('Failed to check organization status:', error);
+      }
+    };
+
+    checkOrganizationStatus();
+  }, [organizationId, role, isInactive]);
+
   const handleLogout = () => {
     tokenStorage.clear();
     if (accounts.length > 0 || instance.getAllAccounts().length > 0) {
@@ -91,6 +112,18 @@ const OrganizationGate = ({ role }: OrganizationGateProps) => {
       <InvalidAccountDialog
         open={true}
         onLogout={handleLogout}
+      />
+    );
+  }
+
+  // Block if organization is inactive (for non-admin users)
+  if (isOrgInactive) {
+    return (
+      <InvalidAccountDialog
+        open={true}
+        onLogout={handleLogout}
+        title="Organization Inactive"
+        message="Your organization's account is currently inactive. Please contact your administrator."
       />
     );
   }

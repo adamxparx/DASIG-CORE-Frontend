@@ -10,9 +10,11 @@ import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
 interface InvalidAccountDialogProps {
   open: boolean;
   onLogout: () => void;
+  title?: string;
+  message?: string;
 }
 
-const InvalidAccountDialog = ({ open, onLogout }: InvalidAccountDialogProps) => {
+const InvalidAccountDialog = ({ open, onLogout, title = 'Account Invalid', message = 'Account is invalid. Please login with a valid account.' }: InvalidAccountDialogProps) => {
   if (!open) {
     return null;
   }
@@ -32,14 +34,14 @@ const InvalidAccountDialog = ({ open, onLogout }: InvalidAccountDialogProps) => 
       <DialogTitle sx={{ p: 3, pb: 1, bgcolor: 'error.light', color: 'error.dark' }}>
         <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
           <Alert icon={<LogoutOutlinedIcon />} severity="error" sx={{ variant: 'filled', p: 0 }}>
-            Account Invalid
+            {title}
           </Alert>
         </Typography>
       </DialogTitle>
 
       <DialogContent sx={{ p: 3, pb: 2 }}>
         <Typography variant="body1" sx={{ color: 'text.primary', lineHeight: 1.6, mb: 2 }}>
-          Account is invalid. Please login with a valid account.
+          {message}
         </Typography>
       </DialogContent>
 
