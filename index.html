@@ -9,8 +9,37 @@
 </head>
 
 <body>
+  <style>
+    /* Shown right away while the app loads; React replaces it on first render */
+    .boot-shell { min-height: 100vh; background: #f9fafb; }
+    .boot-sidebar { position: fixed; top: 0; left: 0; width: 280px; height: 100vh; }
+    .boot-main { margin-left: 280px; padding: 24px; }
+    .boot-bar { height: 32px; width: 280px; max-width: 100%; border-radius: 8px; background: #eceef1; }
+    .boot-panel { height: 240px; margin-top: 24px; border-radius: 8px; background: #eceef1; }
+    @media (max-width: 899px) {
+      .boot-sidebar { display: none; }
+      .boot-main { margin-left: 0; }
+    }
+  </style>
   <div id="root"></div>
+  <script>
+    // Dashboard pages get a placeholder in the same shape as the dashboard (sidebar in the role's colour),
+    // so a refresh does not flash an empty screen. Other pages (landing, login) stay blank until they load.
+    (function () {
+      var colors = { admin: '#426ef0', tbi_manager: '#7C3AED', staff: '#059669' };
+      var match = window.location.pathname.match(/^\/dashboard\/(admin|tbi_manager|staff)/);
+      var root = document.getElementById('root');
+      if (!match) {
+        return;
+      }
+      root.innerHTML =
+        '<div class="boot-shell">' +
+        '<div class="boot-sidebar" style="background:' + colors[match[1]] + '"></div>' +
+        '<div class="boot-main"><div class="boot-bar"></div><div class="boot-panel"></div></div>' +
+        '</div>';
+    })();
+  </script>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 
-</html>
+</html>

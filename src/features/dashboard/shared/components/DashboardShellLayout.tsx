@@ -1,6 +1,8 @@
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
+import { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
+import AdminPageSkeleton from '../../../shared/components/skeletons/AdminPageSkeleton';
 import type { UserRole } from '../types/dashboard.types';
 import { DashboardShellProvider, useDashboardShell } from './DashboardShellContext';
 import DashboardSidebar from './DashboardSidebar';
@@ -73,7 +75,10 @@ const DashboardShellContent = ({ role }: DashboardShellLayoutProps) => {
         }}
       >
         <DashboardUserHeader />
-        <Outlet />
+        {/* Keeps the sidebar and header visible while a page's code is downloading */}
+        <Suspense fallback={<AdminPageSkeleton showForm={false} />}>
+          <Outlet />
+        </Suspense>
       </Box>
     </Box>
   );

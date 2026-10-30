@@ -47,6 +47,28 @@ function parseErrorMessage(status: number, bodyText: string, path: string): stri
   return 'Something went wrong. Please try again.';
 }
 
+// Short-lived cache for reads that several components need at the same time
+// (for example, the KPI detail page and its header both need the dashboard).
+// Keyed by token so users never share entries. Any change (POST/PUT/PATCH/DELETE) clears it.
+const readCache = new Map<string, { expiresAt: number; promise: Promise<unknown> }>();
+
+export function clearApiCache(): void {
+  readCache.clear();
+}
+
+export function apiGetCached<T>(path: string, ttlMs = 30_000): Promise<T> {
+  const key = `${tokenStorage.get() ?? ''}|${path}`;
+  const cached = readCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.promise as Promise<T>;
+  }
+
+  const promise = apiClient<T>(path);
+  readCache.set(key, { expiresAt: Date.now() + ttlMs, promise });
+  promise.catch(() => readCache.delete(key));
+  return promise;
+}
+
 export async function apiClient<T>(path: string, options: ApiClientOptions = {}): Promise<T> {
   const { method = 'GET', body } = options;
   const token = tokenStorage.get();
@@ -63,6 +85,10 @@ export async function apiClient<T>(path: string, options: ApiClientOptions = {})
   });
 
   const bodyText = await response.text();
+
+  if (method !== 'GET') {
+    clearApiCache();
+  }
 
   if (!response.ok) {
     // Auto-logout on session expiration (401): clear the stored JWT and redirect to /auth
