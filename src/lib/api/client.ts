@@ -15,6 +15,7 @@ export class ApiError extends Error {
 type ApiClientOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
+  signal?: AbortSignal;
 };
 
 function parseErrorMessage(status: number, bodyText: string, path: string): string {
@@ -70,11 +71,12 @@ export function apiGetCached<T>(path: string, ttlMs = 30_000): Promise<T> {
 }
 
 export async function apiClient<T>(path: string, options: ApiClientOptions = {}): Promise<T> {
-  const { method = 'GET', body } = options;
+  const { method = 'GET', body, signal } = options;
   const token = tokenStorage.get();
 
   const response = await fetch(getApiUrl(path), {
     method,
+    signal,
     credentials: 'omit',
     headers: {
       Accept: 'application/json',

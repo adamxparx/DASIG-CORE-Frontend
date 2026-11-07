@@ -231,14 +231,24 @@ export default function ReportGenerationPage() {
       }
 
       if (report.status === 'FAILED') {
-        throw new Error(report.narrativeText || 'Failed to generate AI performance narrative.');
+        void loadHistory();
+        throw new Error(report.failureMessage || 'Failed to generate AI performance narrative.');
       }
 
       setActiveReport(report);
       showToast('AI Narrative Report generated successfully.', 'success');
       void loadHistory(); // Refresh history log
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Unable to generate performance report.', 'error');
+      const timedOut = err instanceof DOMException && err.name === 'TimeoutError';
+      if (timedOut) {
+        void loadHistory();
+        showToast(
+          'Generation is taking longer than expected. Check Reports History before trying again.',
+          'error'
+        );
+      } else {
+        showToast(err instanceof Error ? err.message : 'Unable to generate performance report.', 'error');
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -602,7 +612,7 @@ export default function ReportGenerationPage() {
                   {activeReport.sections && activeReport.sections.length > 0 ? (
                     <StructuredReportView key={activeReport.id} sections={activeReport.sections} />
                   ) : (
-                    <NarrativeReportParser key={activeReport.id} text={activeReport.narrativeText} />
+                    <NarrativeReportParser key={activeReport.id} text={activeReport.narrativeText ?? ''} />
                   )}
                 </Box>
               </Stack>
@@ -764,27 +774,34 @@ export default function ReportGenerationPage() {
                           </Box>
                         </TableCell>
                         <TableCell align="right" sx={{ pr: 3 }}>
-                          <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
-                            <Button
-                              size="small"
-                              onClick={() => handleViewReport(report)}
-                              variant="text"
-                              sx={{ fontWeight: 700, textTransform: 'none' }}
-                            >
-                              View Narrative
-                            </Button>
-
-                            <IconButton
-                              size="small"
-                              onClick={() => void handleExportPdf(report.id)}
-                              title="Download PDF"
-                              sx={{
-                                color: 'text.secondary',
-                                '&:hover': { color: 'primary.main', bgcolor: 'rgba(66, 110, 240, 0.04)' },
-                              }}
-                            >
-                              <DownloadIcon sx={{ fontSize: 20 }} />
-                            </IconButton>
+                          <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end', alignItems: 'center' }}>
+                            {report.status === 'FAILED' ? (
+                              <Typography variant="caption" color="text.secondary">
+                                {report.failureMessage ?? 'Generation failed'}
+                              </Typography>
+                            ) : (
+                              <>
+                                <Button
+                                  size="small"
+                                  onClick={() => handleViewReport(report)}
+                                  variant="text"
+                                  sx={{ fontWeight: 700, textTransform: 'none' }}
+                                >
+                                  View Narrative
+                                </Button>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => void handleExportPdf(report.id)}
+                                  title="Download PDF"
+                                  sx={{
+                                    color: 'text.secondary',
+                                    '&:hover': { color: 'primary.main', bgcolor: 'rgba(66, 110, 240, 0.04)' },
+                                  }}
+                                >
+                                  <DownloadIcon sx={{ fontSize: 20 }} />
+                                </IconButton>
+                              </>
+                            )}
                           </Stack>
                         </TableCell>
                       </TableRow>

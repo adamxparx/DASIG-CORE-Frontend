@@ -2,27 +2,28 @@ import { getApiUrl } from '../../../config/api';
 import { apiClient } from '../../../lib/api/client';
 import { tokenStorage } from '../../auth/utils/tokenStorage';
 import type { GenerateCommitteeReportRequest, GenerateKpiReportRequest, ReportResponse } from '../types/report.types';
+const GENERATE_TIMEOUT_MS = 180_000;
 
 export const reportService = {
-  /**
+    /**
    * Triggers the generation of an AI-powered Committee Performance Report narrative.
    */
-  generateCommitteeReport: (request: GenerateCommitteeReportRequest): Promise<ReportResponse> => {
-    return apiClient<ReportResponse>('/api/reports/generate/committee', {
+  generateCommitteeReport: (request: GenerateCommitteeReportRequest): Promise<ReportResponse> =>
+    apiClient<ReportResponse>('/api/reports/generate/committee', {
       method: 'POST',
       body: request,
-    });
-  },
+      signal: AbortSignal.timeout(GENERATE_TIMEOUT_MS),
+    }),
 
   /**
    * Triggers the generation of an AI-powered KPI Performance Report narrative.
    */
-  generateKpiReport: (request: GenerateKpiReportRequest): Promise<ReportResponse> => {
-    return apiClient<ReportResponse>('/api/reports/generate/kpi', {
+  generateKpiReport: (request: GenerateKpiReportRequest): Promise<ReportResponse> =>
+    apiClient<ReportResponse>('/api/reports/generate/kpi', {
       method: 'POST',
       body: request,
-    });
-  },
+      signal: AbortSignal.timeout(GENERATE_TIMEOUT_MS),
+    }),
 
   /**
    * Retrieves a previously generated report by its ID.
