@@ -23,7 +23,8 @@ export interface ReportResponse {
   kpiName: string | null;
   periodFrom: string; // ISO date format YYYY-MM-DD
   periodTo: string; // ISO date format YYYY-MM-DD
-  narrativeText: string;
+  narrativeText: string | null;   // null for FAILED reports
+  failureMessage?: string | null; // set only for FAILED reports
   status: 'GENERATED' | 'FAILED';
   generatedAt: string; // ISO date time
   // Null/empty for reports generated before per-section citations were introduced —
