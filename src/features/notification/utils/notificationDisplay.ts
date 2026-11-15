@@ -4,6 +4,11 @@ export function isUnreadNotification(status: string): boolean {
   return status.toUpperCase() === 'UNREAD';
 }
 
+/** At Risk and Overdue notifications are KPI alerts. */
+export function isAlertNotification(type: string): boolean {
+  return type === 'AT_RISK' || type === 'OVERDUE';
+}
+
 /** Whole calendar days from reference date to deadline (matches backend LocalDate day diff). */
 export function getCalendarDaysUntilDeadline(
   deadline: string,
@@ -34,15 +39,17 @@ export function getDaysLeftLabel(deadline: string): string {
   return `${diffInDays} days left`;
 }
 
-export function sortNotifications<T extends { status: string; createdAt: string }>(items: T[]): T[] {
-  return [...items].sort((a, b) => {
-    const aUnread = isUnreadNotification(a.status);
-    const bUnread = isUnreadNotification(b.status);
-    if (aUnread !== bUnread) {
-      return aUnread ? -1 : 1;
-    }
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
+/** Unread alerts first, then other unread notifications, then read ones; newest first within each group. */
+export function sortNotifications<T extends { status: string; createdAt: string; notificationType: string }>(
+  items: T[],
+): T[] {
+  const rank = (item: T) => {
+    if (!isUnreadNotification(item.status)) return 2;
+    return isAlertNotification(item.notificationType) ? 0 : 1;
+  };
+  return [...items].sort(
+    (a, b) => rank(a) - rank(b) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
 }
 
 export function formatNotificationTypeLabel(type: NotificationType): string {

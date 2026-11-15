@@ -78,7 +78,7 @@ const KpiStatusBanner = ({ status, submittedValue, targetValue, unit }: KpiStatu
           </Typography>
         </Box>
         <Box sx={{ textAlign: { sm: 'right' } }}>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: 'text.primary', lineHeight: 1.2 }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, color: display.color, lineHeight: 1.2 }}>
             {percent}%
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
