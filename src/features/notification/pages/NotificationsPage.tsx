@@ -17,7 +17,7 @@ import DashboardHeader from '../../dashboard/shared/components/DashboardHeader';
 import { notificationService } from '../api/notificationService';
 import NotificationsList from '../components/NotificationsList';
 import type { NotificationResponse } from '../types/notification.types';
-import { isUnreadNotification, sortNotifications } from '../utils/notificationDisplay';
+import { isAlertNotification, isUnreadNotification, sortNotifications } from '../utils/notificationDisplay';
 
 interface NotificationsPageProps {
   /** Committee Lead only: show "Add explanation" on Overdue notifications (UC-4.4). */
@@ -92,6 +92,14 @@ const NotificationsPage = ({ canExplainOverdue = false }: NotificationsPageProps
     [notifications],
   );
 
+  const unreadAlertCount = useMemo(
+    () =>
+      notifications.filter(
+        (item) => isUnreadNotification(item.status) && isAlertNotification(item.notificationType),
+      ).length,
+    [notifications],
+  );
+
   const handleSelect = async (notification: NotificationResponse) => {
     if (!isUnreadNotification(notification.status)) {
       return;
@@ -135,12 +143,17 @@ const NotificationsPage = ({ canExplainOverdue = false }: NotificationsPageProps
             subtitle="KPI alerts and updates for your organization"
           />
           {!isLoading && unreadCount > 0 && (
-            <Chip
-              label={`${unreadCount} unread`}
-              size="small"
-              color="primary"
-              sx={{ mt: 1.5, fontWeight: 600 }}
-            />
+            <Stack direction="row" sx={{ mt: 1.5, flexWrap: 'wrap', gap: 1 }}>
+              <Chip label={`${unreadCount} unread`} size="small" color="primary" sx={{ fontWeight: 600 }} />
+              {unreadAlertCount > 0 && (
+                <Chip
+                  label={`${unreadAlertCount} ${unreadAlertCount === 1 ? 'alert needs' : 'alerts need'} attention`}
+                  size="small"
+                  color="error"
+                  sx={{ fontWeight: 600 }}
+                />
+              )}
+            </Stack>
           )}
         </Box>
 

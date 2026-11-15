@@ -20,17 +20,23 @@ import {
   isUnreadNotification,
 } from '../utils/notificationDisplay';
 
-/** Accent for At Risk and Overdue notifications (same colors as the Admin's alert badges). */
-const ALERT_HIGHLIGHT: Partial<Record<NotificationType, { accent: string; iconBg: string; icon: ReactNode }>> = {
+/** Look of At Risk and Overdue notifications (same colors as the Admin's alert badges). */
+const ALERT_HIGHLIGHT: Partial<
+  Record<NotificationType, { accent: string; iconBg: string; icon: ReactNode; label: string; chipBg: string }>
+> = {
   OVERDUE: {
     accent: '#C5221F',
     iconBg: '#FCE8E6',
     icon: <ErrorRoundedIcon sx={{ fontSize: 18, color: '#C5221F' }} />,
+    label: 'OVERDUE ALERT',
+    chipBg: '#C5221F',
   },
   AT_RISK: {
     accent: '#F9AB00',
     iconBg: '#FEF7E0',
     icon: <WarningRoundedIcon sx={{ fontSize: 18, color: '#F9AB00' }} />,
+    label: 'AT RISK ALERT',
+    chipBg: '#B06000',
   },
 };
 
@@ -122,19 +128,19 @@ const NotificationsList = ({
             }}
             sx={{
               border: 1,
-              borderColor: unread ? 'primary.light' : 'divider',
+              // Unread alerts use their alert color; other unread notifications use blue
+              borderColor: unread ? (highlight?.accent ?? 'primary.light') : 'divider',
               borderLeft: highlight ? `4px solid ${highlight.accent}` : undefined,
               borderRadius: 2,
               p: 2.5,
               cursor: unread && !isMarking ? 'pointer' : 'default',
-              bgcolor: unread ? 'rgba(66, 110, 240, 0.06)' : 'background.paper',
+              bgcolor: unread ? (highlight?.iconBg ?? 'rgba(66, 110, 240, 0.06)') : 'background.paper',
               opacity: isMarking ? 0.7 : 1,
               transition: 'border-color 0.2s, background-color 0.2s',
               '&:hover': unread && !isMarking
                 ? {
-                    borderColor: 'primary.main',
-                    borderLeftColor: highlight?.accent,
-                    bgcolor: 'action.hover',
+                    borderColor: highlight?.accent ?? 'primary.main',
+                    bgcolor: highlight?.iconBg ?? 'action.hover',
                   }
                 : undefined,
             }}
@@ -172,6 +178,13 @@ const NotificationsList = ({
                     >
                       {notification.kpiName}
                     </Typography>
+                    {highlight && (
+                      <Chip
+                        label={highlight.label}
+                        size="small"
+                        sx={{ bgcolor: highlight.chipBg, color: '#FFFFFF', fontWeight: 700, height: 22, letterSpacing: 0.3 }}
+                      />
+                    )}
                     {unread && (
                       <Chip label="New" size="small" color="primary" sx={{ fontWeight: 600, height: 22 }} />
                     )}
@@ -181,13 +194,16 @@ const NotificationsList = ({
                   </Typography>
                 </Box>
 
-                <Chip
-                  label={formatNotificationTypeLabel(notification.notificationType)}
-                  size="small"
-                  color={getNotificationTypeColor(notification.notificationType)}
-                  variant="outlined"
-                  sx={{ fontWeight: 600, flexShrink: 0 }}
-                />
+                {/* Alerts already show their filled chip next to the KPI name */}
+                {!highlight && (
+                  <Chip
+                    label={formatNotificationTypeLabel(notification.notificationType)}
+                    size="small"
+                    color={getNotificationTypeColor(notification.notificationType)}
+                    variant="outlined"
+                    sx={{ fontWeight: 600, flexShrink: 0 }}
+                  />
+                )}
               </Stack>
 
               <Stack

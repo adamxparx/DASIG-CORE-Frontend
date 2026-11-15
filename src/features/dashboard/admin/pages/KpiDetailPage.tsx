@@ -34,13 +34,35 @@ import ArchiveKpiDialog from '../../admin/components/ArchiveKpiDialog';
 import UnarchiveKpiDialog from '../../admin/components/UnarchiveKpiDialog';
 import SubmissionReviewBadge from '../../../kpisubmission/shared/components/SubmissionReviewBadge';
 import { KpiDetailSkeleton } from '../../../shared/components';
-import { getDaysLeftLabel } from '../../../notification/utils/notificationDisplay';
+import { getCalendarDaysUntilDeadline, getDaysLeftLabel } from '../../../notification/utils/notificationDisplay';
 
 const formatDate = (date: string) =>
   new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 
 const formatMetricValue = (value: number) =>
   value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/** Color for amounts (targets and submitted values). */
+const VALUE_COLOR = '#4F46E5';
+
+/** Achievement rate colors: green = target reached, blue = 50% or more, orange = below 50%. */
+const RATE_STYLES = {
+  reached: { color: '#14945F', bg: '#DDF4E8' },
+  half: { color: '#1D4ED8', bg: '#EFF6FF' },
+  low: { color: '#B06000', bg: '#FFF1D6' },
+};
+
+const getRateStyle = (rate: number) =>
+  rate >= 100 ? RATE_STYLES.reached : rate >= 50 ? RATE_STYLES.half : RATE_STYLES.low;
+
+/** Days-left color: red when overdue, orange when 7 days or less remain. */
+const getDeadlineColor = (deadline: string, status: string) => {
+  const days = getCalendarDaysUntilDeadline(deadline);
+  if (status === 'COMPLETED' || days === null) return 'text.secondary';
+  if (days < 0) return '#C62828';
+  if (days <= 7) return '#B06000';
+  return 'text.secondary';
+};
 
 const simpleChipSx = {
   bgcolor: '#F8FAFC',
@@ -75,14 +97,12 @@ const SubmissionRecordsTable = ({
       size="small"
       sx={{
         minWidth: showReview ? 780 : 700,
+        // Same header style as the other tables (Users, Organizations, KPIs)
         '& th': {
-          bgcolor: '#F8FAFC',
-          color: '#64748B',
-          fontSize: 12,
-          fontWeight: 800,
-          letterSpacing: 0.4,
-          textTransform: 'uppercase',
-          borderBottom: '1px solid #E5E7EB',
+          fontWeight: 600,
+          color: 'text.secondary',
+          borderBottom: 1,
+          borderColor: 'divider',
         },
         '& td': {
           borderBottom: '1px solid #EEF2F7',
@@ -158,7 +178,7 @@ const SubmissionRecordsTable = ({
                 </Stack>
               </TableCell>
               <TableCell>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#111827' }}>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: VALUE_COLOR }}>
                   {formatMetricValue(submission.submittedValue)}
                 </Typography>
                 <Typography variant="caption" sx={{ color: '#64748B' }}>
@@ -166,7 +186,7 @@ const SubmissionRecordsTable = ({
                 </Typography>
               </TableCell>
               <TableCell>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#111827' }}>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: getRateStyle(submission.achievementRate).color }}>
                   {formatMetricValue(submission.achievementRate)}%
                 </Typography>
               </TableCell>
@@ -471,7 +491,7 @@ const KpiDetailPage = () => {
                   Overall Target
                 </Typography>
               </Stack>
-              <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1.1 }}>
+              <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1.1, color: VALUE_COLOR }}>
                 {formatMetricValue(kpi.targetValue)}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -493,7 +513,7 @@ const KpiDetailPage = () => {
               <Typography variant="h4" sx={{ fontWeight: 700, fontSize: '1.5rem', lineHeight: 1.15 }}>
                 {formatDate(kpi.deadline)}
               </Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              <Typography variant="body2" sx={{ color: getDeadlineColor(kpi.deadline, kpi.status), fontWeight: 600 }}>
                 {getDaysLeftLabel(kpi.deadline)}
               </Typography>
             </CardContent>
@@ -544,6 +564,15 @@ const KpiDetailPage = () => {
                     <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                       Click an organization to filter the records below.
                     </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      Achievement rate:{' '}
+                      <Box component="span" sx={{ color: RATE_STYLES.reached.color, fontWeight: 700 }}>green</Box>
+                      {' '}= target reached ·{' '}
+                      <Box component="span" sx={{ color: RATE_STYLES.half.color, fontWeight: 700 }}>blue</Box>
+                      {' '}= 50% or more ·{' '}
+                      <Box component="span" sx={{ color: RATE_STYLES.low.color, fontWeight: 700 }}>orange</Box>
+                      {' '}= below 50%
+                    </Typography>
                   </Stack>
 
                   {organizationBreakdowns.length === 0 ? (
@@ -573,35 +602,42 @@ const KpiDetailPage = () => {
                         </Typography>
                         <Chip label="Showing all records" size="small" sx={simpleChipSx} />
                       </Stack>
-                      {organizationBreakdowns.map((breakdown) => (
-                        <Stack
-                          key={breakdown.organizationName}
-                          direction={{ xs: 'column', sm: 'row' }}
-                          spacing={1}
-                          onClick={() => setSelectedOrganizationName(breakdown.organizationName)}
-                          sx={{
-                            justifyContent: 'space-between',
-                            alignItems: { sm: 'center' },
-                            cursor: 'pointer',
-                            borderRadius: 2,
-                            p: 1,
-                            bgcolor: selectedOrganizationName === breakdown.organizationName ? '#F8FAFC' : 'transparent',
-                            '&:hover': { bgcolor: '#F8FAFC' },
-                          }}
-                        >
-                          <Typography variant="body2" sx={{ color: '#111827', fontWeight: 700 }}>
-                            {breakdown.organizationName}
-                          </Typography>
-                          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                            <Typography variant="body2" sx={{ color: '#374151', fontWeight: 600 }}>
-                              {formatMetricValue(breakdown.submittedValue)} {history.unit}
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: '#111827', fontWeight: 700 }}>
-                              Achievement rate: {formatMetricValue(breakdown.achievementRate)}%
-                            </Typography>
-                          </Stack>
-                        </Stack>
-                      ))}
+                      {organizationBreakdowns.map((breakdown) => {
+                        const rateStyle = getRateStyle(breakdown.achievementRate);
+                        return (
+                          <Box
+                            key={breakdown.organizationName}
+                            onClick={() => setSelectedOrganizationName(breakdown.organizationName)}
+                            sx={{
+                              cursor: 'pointer',
+                              borderRadius: 2,
+                              p: 1,
+                              bgcolor: selectedOrganizationName === breakdown.organizationName ? '#F8FAFC' : 'transparent',
+                              '&:hover': { bgcolor: '#F8FAFC' },
+                            }}
+                          >
+                            <Stack
+                              direction={{ xs: 'column', sm: 'row' }}
+                              spacing={1}
+                              sx={{ justifyContent: 'space-between', alignItems: { sm: 'center' } }}
+                            >
+                              <Typography variant="body2" sx={{ color: '#111827', fontWeight: 700 }}>
+                                {breakdown.organizationName}
+                              </Typography>
+                              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                                <Typography variant="body2" sx={{ color: VALUE_COLOR, fontWeight: 700 }}>
+                                  {formatMetricValue(breakdown.submittedValue)} {history.unit}
+                                </Typography>
+                                <Chip
+                                  label={`Achievement rate: ${formatMetricValue(breakdown.achievementRate)}%`}
+                                  size="small"
+                                  sx={{ bgcolor: rateStyle.bg, color: rateStyle.color, fontWeight: 700 }}
+                                />
+                              </Stack>
+                            </Stack>
+                          </Box>
+                        );
+                      })}
                     </Stack>
                   )}
                 </Box>

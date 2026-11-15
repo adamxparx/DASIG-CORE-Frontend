@@ -26,6 +26,18 @@ import KpiPeriodHistoryDrawer from './KpiPeriodHistoryDrawer';
 import type { KpiSubmitSuccessContext } from '../../admin/components/KpiFormDialog';
 import { DashboardSkeleton } from '../../../../features/shared/components';
 
+/** Committee Lead: the committee last opened in this browser tab, kept when leaving the dashboard. */
+const SELECTED_COMMITTEE_KEY = 'lead_selected_committee_id';
+
+const readSavedCommitteeId = (): number | null => {
+  try {
+    const saved = sessionStorage.getItem(SELECTED_COMMITTEE_KEY);
+    return saved ? Number(saved) : null;
+  } catch {
+    return null;
+  }
+};
+
 interface RoleBasedDashboardPageProps {
   role: UserRole;
   title: string;
@@ -46,7 +58,9 @@ const RoleBasedDashboardPage = ({
   const [status, setStatus] = useState<DashboardStatus | 'ALL'>('ALL');
   const [organization, setOrganization] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<DashboardViewMode>('grid');
-  const [selectedCommitteeId, setSelectedCommitteeId] = useState<number | null>(null);
+  const [selectedCommitteeId, setSelectedCommitteeId] = useState<number | null>(() =>
+    role === 'TBI_MANAGER' ? readSavedCommitteeId() : null
+  );
 
   // Form Dialog States
   const [formDialogOpen, setFormDialogOpen] = useState(false);
@@ -89,6 +103,22 @@ const RoleBasedDashboardPage = ({
   const handleCommitteeChange = (id: number | null) => {
     setSelectedCommitteeId(id);
   };
+
+  // Remember the Committee Lead's committee so Back, breadcrumbs and the sidebar return to it
+  useEffect(() => {
+    if (role !== 'TBI_MANAGER') {
+      return;
+    }
+    try {
+      if (selectedCommitteeId === null) {
+        sessionStorage.removeItem(SELECTED_COMMITTEE_KEY);
+      } else {
+        sessionStorage.setItem(SELECTED_COMMITTEE_KEY, String(selectedCommitteeId));
+      }
+    } catch {
+      // Storage unavailable: the dashboard still works, it just starts at All Committees
+    }
+  }, [role, selectedCommitteeId]);
 
   useEffect(() => {
     if (
