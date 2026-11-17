@@ -2,6 +2,7 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import ArchiveOutlinedIcon from '@mui/icons-material/ArchiveOutlined';
 import UnarchiveOutlinedIcon from '@mui/icons-material/UnarchiveOutlined';
+import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -34,35 +35,14 @@ import ArchiveKpiDialog from '../../admin/components/ArchiveKpiDialog';
 import UnarchiveKpiDialog from '../../admin/components/UnarchiveKpiDialog';
 import SubmissionReviewBadge from '../../../kpisubmission/shared/components/SubmissionReviewBadge';
 import { KpiDetailSkeleton } from '../../../shared/components';
-import { getCalendarDaysUntilDeadline, getDaysLeftLabel } from '../../../notification/utils/notificationDisplay';
+import { getDaysLeftLabel } from '../../../notification/utils/notificationDisplay';
+import { RATE_STYLES, VALUE_COLOR, getDeadlineColor, getRateStyle } from '../../shared/utils/kpiColors';
 
 const formatDate = (date: string) =>
   new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 
 const formatMetricValue = (value: number) =>
   value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-/** Color for amounts (targets and submitted values). */
-const VALUE_COLOR = '#4F46E5';
-
-/** Achievement rate colors: green = target reached, blue = 50% or more, orange = below 50%. */
-const RATE_STYLES = {
-  reached: { color: '#14945F', bg: '#DDF4E8' },
-  half: { color: '#1D4ED8', bg: '#EFF6FF' },
-  low: { color: '#B06000', bg: '#FFF1D6' },
-};
-
-const getRateStyle = (rate: number) =>
-  rate >= 100 ? RATE_STYLES.reached : rate >= 50 ? RATE_STYLES.half : RATE_STYLES.low;
-
-/** Days-left color: red when overdue, orange when 7 days or less remain. */
-const getDeadlineColor = (deadline: string, status: string) => {
-  const days = getCalendarDaysUntilDeadline(deadline);
-  if (status === 'COMPLETED' || days === null) return 'text.secondary';
-  if (days < 0) return '#C62828';
-  if (days <= 7) return '#B06000';
-  return 'text.secondary';
-};
 
 const simpleChipSx = {
   bgcolor: '#F8FAFC',
@@ -377,6 +357,20 @@ const KpiDetailPage = () => {
           }
           subtitle={kpi.description}
         />
+
+        {/* Committee Lead and Member: go to Submit KPI with this KPI already selected */}
+        {!isAdmin && !isArchived && (
+          <Stack direction="row" sx={{ justifyContent: 'flex-end' }}>
+            <Button
+              variant="contained"
+              startIcon={<FileUploadOutlinedIcon />}
+              onClick={() => navigate(`/dashboard/${userRole}/submit-kpi?kpiId=${kpi.id}`)}
+              sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2, px: 2.5 }}
+            >
+              Submit KPI
+            </Button>
+          </Stack>
+        )}
 
         {isAdmin && (
           <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end' }}>

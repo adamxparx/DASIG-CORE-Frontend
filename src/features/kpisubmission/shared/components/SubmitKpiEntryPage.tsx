@@ -19,9 +19,12 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEventHandler } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { kpiSubmissionService } from '../../api/kpiSubmissionService';
 import { dashboardService } from '../../../dashboard/shared/api/dashboardService';
 import type { DashboardKpiItem } from '../../../dashboard/shared/types/dashboard.types';
+import { RATE_STYLES, VALUE_COLOR, getDeadlineColor, getRateStyle } from '../../../dashboard/shared/utils/kpiColors';
+import { getDaysLeftLabel } from '../../../notification/utils/notificationDisplay';
 import {
   getCurrentPeriod,
   getPeriodOptions,
@@ -147,6 +150,10 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
   const [dashboardKpis, setDashboardKpis] = useState<DashboardKpiItem[]>([]);
   const [isLoadingKpis, setIsLoadingKpis] = useState(true);
   const [selectedKpiId, setSelectedKpiId] = useState<number | ''>('');
+  // KPI opened from the KPI Details "Submit KPI" button (?kpiId=...)
+  const [searchParams] = useSearchParams();
+  const preselectedKpiId = Number(searchParams.get('kpiId')) || null;
+  const hasAppliedPreselect = useRef(false);
   const [period, setPeriod] = useState('');
   const [submittedValue, setSubmittedValue] = useState('');
   const [submissionDate, setSubmissionDate] = useState(today);
@@ -257,6 +264,17 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
     applyTbiPrefill(nextKpi, nextPeriod, nextSubmissionDate);
   };
 
+  // Select the KPI from the link once the assigned KPIs have loaded (only if it is assigned to the user)
+  useEffect(() => {
+    if (hasAppliedPreselect.current || isLoadingKpis || !preselectedKpiId) {
+      return;
+    }
+    hasAppliedPreselect.current = true;
+    if (assignableKpis.some((kpi) => kpi.id === preselectedKpiId)) {
+      handleKpiChange(preselectedKpiId);
+    }
+  }, [assignableKpis, isLoadingKpis, preselectedKpiId, handleKpiChange]);
+
   const numericSubmittedValue = Number(submittedValue) || 0;
   const selectedDashboardKpi = selectedKpi
     ? dashboardKpis.find((item) => item.id === selectedKpi.id) ?? null
@@ -269,6 +287,9 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
     selectedKpi && overallTargetValue > 0
       ? (projectedSubmittedTotal / overallTargetValue) * 100
       : 0;
+  // Colors: current total by its achievement rate, preview by the projected rate
+  const currentRateStyle = getRateStyle(overallTargetValue > 0 ? (officialSubmittedTotal / overallTargetValue) * 100 : 0);
+  const previewRateStyle = getRateStyle(achievementRate);
 
   const helperMessage = selectedKpi
     ? role === 'STAFF'
@@ -499,7 +520,7 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                           Target Value
                         </Typography>
                       </Stack>
-                      <Typography variant="h5" sx={{ fontWeight: 700, color: '#1F2329' }}>
+                      <Typography variant="h5" sx={{ fontWeight: 700, color: selectedKpi ? VALUE_COLOR : '#1F2329' }}>
                         {formatMetricValue(overallTargetValue)} <Typography component="span">{selectedKpi?.unit ?? '-'}</Typography>
                       </Typography>
                     </Paper>
@@ -508,7 +529,7 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                       <Typography variant="caption" sx={{ color: '#7A8090', fontWeight: 700 }}>
                         Current Submitted Total
                       </Typography>
-                      <Typography variant="h5" sx={{ fontWeight: 700, color: '#1F2329', mt: 0.75 }}>
+                      <Typography variant="h5" sx={{ fontWeight: 700, color: selectedKpi ? currentRateStyle.color : '#1F2329', mt: 0.75 }}>
                         {formatMetricValue(officialSubmittedTotal)} <Typography component="span">{selectedKpi?.unit ?? '-'}</Typography>
                       </Typography>
                     </Paper>
@@ -517,7 +538,15 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                       <Typography variant="caption" sx={{ color: '#7A8090', fontWeight: 700 }}>
                         Remaining Target
                       </Typography>
-                      <Typography variant="h5" sx={{ fontWeight: 700, color: '#1F2329', mt: 0.75 }}>
+                      {/* Green when the target is reached, dark red while some is still missing */}
+                      <Typography
+                        variant="h5"
+                        sx={{
+                          fontWeight: 700,
+                          mt: 0.75,
+                          color: !selectedKpi ? '#1F2329' : remainingTargetValue === 0 ? RATE_STYLES.reached.color : '#B3261E',
+                        }}
+                      >
                         {formatMetricValue(remainingTargetValue)} <Typography component="span">{selectedKpi?.unit ?? '-'}</Typography>
                       </Typography>
                     </Paper>
@@ -525,6 +554,14 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
 
                   <Typography variant="caption" sx={{ color: '#7A8090', display: 'block', mt: 1 }}>
                     Deadline: {selectedKpi ? formatDeadline(selectedKpi.deadline) : '--'}
+                    {selectedKpi && (
+                      <Box
+                        component="span"
+                        sx={{ color: getDeadlineColor(selectedKpi.deadline, selectedDashboardKpi?.status), fontWeight: 600 }}
+                      >
+                        {' '}({getDaysLeftLabel(selectedKpi.deadline)})
+                      </Box>
+                    )}
                   </Typography>
                 </Box>
 
@@ -562,18 +599,34 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
                 <Box>
                   <Stack direction="row" sx={{ mb: 0.75, justifyContent: 'space-between' }}>
                     <Typography sx={{ fontWeight: 600, color: '#414B5A' }}>Cumulative Achievement Preview</Typography>
-                    <Typography sx={{ fontWeight: 700, color: '#5B61D9' }}>
+                    <Typography sx={{ fontWeight: 700, color: selectedKpi ? previewRateStyle.color : '#5B61D9' }}>
                       {Math.max(0, Math.round(achievementRate * 10) / 10)}%
                     </Typography>
                   </Stack>
                   <LinearProgress
                     variant="determinate"
                     value={Math.min(100, Math.max(0, achievementRate))}
-                    sx={{ height: 8, borderRadius: 999, bgcolor: '#E8EBF2', '& .MuiLinearProgress-bar': { bgcolor: '#5B61D9' } }}
+                    sx={{
+                      height: 8,
+                      borderRadius: 999,
+                      bgcolor: '#E8EBF2',
+                      '& .MuiLinearProgress-bar': { bgcolor: selectedKpi ? previewRateStyle.color : '#5B61D9' },
+                    }}
                   />
                   <Typography variant="caption" sx={{ mt: 0.75, color: '#7D8594', display: 'block' }}>
                     {helperMessage}
                   </Typography>
+                  {selectedKpi && (
+                    <Typography variant="caption" sx={{ color: '#7D8594', display: 'block' }}>
+                      Achievement rate:{' '}
+                      <Box component="span" sx={{ color: RATE_STYLES.reached.color, fontWeight: 700 }}>green</Box>
+                      {' '}= target reached ·{' '}
+                      <Box component="span" sx={{ color: RATE_STYLES.half.color, fontWeight: 700 }}>blue</Box>
+                      {' '}= 50% or more ·{' '}
+                      <Box component="span" sx={{ color: RATE_STYLES.low.color, fontWeight: 700 }}>orange</Box>
+                      {' '}= below 50%
+                    </Typography>
+                  )}
                 </Box>
 
                 <Divider />
