@@ -315,7 +315,6 @@ const TbiManagerSubmissionHistoryPage = () => {
 
   const [search, setSearch] = useState('');
 
-  const [selectedStatus, setSelectedStatus] = useState<'ALL' | string>('ALL');
 
   const [selectedReviewStatus, setSelectedReviewStatus] = useState<'ALL' | SubmissionReviewStatus>('ALL');
 
@@ -420,7 +419,6 @@ const TbiManagerSubmissionHistoryPage = () => {
 
     return submissions.filter((submission) => {
 
-      if (selectedStatus !== 'ALL' && mapStatus(submission.performanceStatus).label !== selectedStatus) return false;
 
       if (selectedReviewStatus !== 'ALL' && submission.reviewStatus !== selectedReviewStatus) return false;
 
@@ -444,7 +442,7 @@ const TbiManagerSubmissionHistoryPage = () => {
 
     }).sort(compareBySubmissionDateTimeDesc);
 
-  }, [search, selectedStatus, selectedReviewStatus, selectedKpiName, submissions]);
+  }, [search, selectedReviewStatus, selectedKpiName, submissions]);
 
 
 
@@ -806,29 +804,6 @@ const TbiManagerSubmissionHistoryPage = () => {
                   ))}
                 </TextField>
 
-                <TextField
-
-                  select
-
-                  value={selectedStatus}
-
-                  onChange={(event) => setSelectedStatus(event.target.value)}
-
-                  sx={{ minWidth: { xs: '100%', lg: 140 }, ...inputFieldSx }}
-
-                >
-
-                  {['ALL', 'On Track', 'At Risk', 'Overdue'].map((status) => (
-
-                    <MenuItem key={status} value={status}>
-
-                      {status === 'ALL' ? 'All Status' : status}
-
-                    </MenuItem>
-
-                  ))}
-
-                </TextField>
 
                 <TextField
                   select
