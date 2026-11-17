@@ -48,7 +48,8 @@ const UserAccountFormFields = ({
   onCommitteeIdsChange,
 }: UserAccountFormFieldsProps) => {
   const fieldsDisabled = isSubmitting || readOnly;
-  const showOrganizationField = form.role !== 'DASIG_ADMIN';
+  const isAdmin = form.role === 'DASIG_ADMIN';
+  const organizationDisabled = fieldsDisabled || isAdmin || organizationOptions.length === 0;
   const showCommitteeField = form.role === 'TBI_MANAGER';
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -84,37 +85,38 @@ const UserAccountFormFields = ({
       </Grid>
 
       <Grid size={{ xs: 12, md: 6 }}>
-        {showOrganizationField ? (
-          <>
-            <FieldLabel label="Assigned Organization" required={requiresOrganization(form.role)} />
-            <FormControl
-              fullWidth
-              error={!!errors.organizationId}
-              disabled={fieldsDisabled || organizationOptions.length === 0}
-            >
-              <Select
-                value={form.organizationId}
-                onChange={(e) => onFieldChange('organizationId', e.target.value as number)}
-                displayEmpty
-                sx={userFieldSx}
-              >
-                <MenuItem value="" disabled>
-                  {organizationOptions.length === 0
-                    ? 'No organizations available'
-                    : 'Select Organization'}
-                </MenuItem>
-                {organizationOptions.map((org) => (
-                  <MenuItem key={org.id} value={org.id}>
-                    {org.name}
-                  </MenuItem>
-                ))}
-              </Select>
-              <FormHelperText error={!!errors.organizationId}>
-                {errors.organizationId ?? 'Select an organization to assign.'}
-              </FormHelperText>
-            </FormControl>
-          </>
-        ) : null}
+        <FieldLabel label="Assigned Organization" required={requiresOrganization(form.role)} />
+        <FormControl
+          fullWidth
+          error={!!errors.organizationId}
+          disabled={organizationDisabled}
+        >
+          <Select
+            value={isAdmin ? '' : form.organizationId}
+            onChange={(e) => onFieldChange('organizationId', e.target.value as number)}
+            displayEmpty
+            sx={userFieldSx}
+          >
+            <MenuItem value="" disabled>
+              {isAdmin
+                ? 'Not applicable for DASIG Admin'
+                : organizationOptions.length === 0
+                  ? 'No organizations available'
+                  : 'Select Organization'}
+            </MenuItem>
+            {organizationOptions.map((org) => (
+              <MenuItem key={org.id} value={org.id}>
+                {org.name}
+              </MenuItem>
+            ))}
+          </Select>
+          <FormHelperText error={!!errors.organizationId}>
+            {errors.organizationId ??
+              (isAdmin
+                ? 'DASIG Admins are not assigned to an organization.'
+                : 'Select an organization to assign.')}
+          </FormHelperText>
+        </FormControl>
       </Grid>
 
       <Grid size={{ xs: 12, md: 6 }}>
