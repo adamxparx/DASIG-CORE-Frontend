@@ -1,12 +1,13 @@
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined';
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
-import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { ApiError } from '../../../lib/api/client';
+import { routes } from '../../../routes';
+import AdminFormPageShell from '../../dashboard/shared/components/AdminFormPageShell';
 import type { OrganizationResponse } from '../../organization/types/organization.types';
 import type { CommitteeResponse } from '../../committee/types/committee.types';
 import { committeeService } from '../../committee/api/committeeService';
@@ -24,6 +25,8 @@ import ActivateUserDialog from './ActivateUserDialog';
 import UserAccountFormFields from './UserAccountFormFields';
 import type { UserListItem } from './UsersList';
 
+const FORM_ID = 'edit-user-account-form';
+
 interface EditUserAccountFormProps {
   user: UserListItem;
   organizations: OrganizationResponse[];
@@ -32,7 +35,6 @@ interface EditUserAccountFormProps {
   onUpdated: () => void;
   onDeactivated: () => void;
   onActivated: () => void;
-  onCancel: () => void;
 }
 
 function getOrganizationOptions(
@@ -60,7 +62,6 @@ const EditUserAccountForm = ({
   onUpdated,
   onDeactivated,
   onActivated,
-  onCancel,
 }: EditUserAccountFormProps) => {
   const [form, setForm] = useState<CreateUserFormValues>(() => userToFormValues(user));
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -175,36 +176,26 @@ const EditUserAccountForm = ({
   };
 
   return (
-    <>
-    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4 }}>
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
-        Update User Account
-      </Typography>
-
-      <Paper elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 3 }}>
-        {submitError && (
-          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
-            {submitError}
+    <AdminFormPageShell
+      title="Update User Account"
+      description="Modify the account details below and save your changes."
+      breadcrumbItems={[{ label: 'Users', href: routes.adminUsers }, { label: user.name }]}
+      banner={
+        isSelf ? (
+          <Alert
+            severity="error"
+            sx={{
+              borderRadius: 0,
+              py: 1,
+              '& .MuiAlert-message': { fontWeight: 500 },
+            }}
+          >
+            Self deactivation and account update is disabled for a user.
           </Alert>
-        )}
-
-        <UserAccountFormFields
-          form={form}
-          errors={errors}
-          isSubmitting={isSubmitting}
-          readOnly={isInactive || isSelf}
-          organizationOptions={organizationOptions}
-          committeeOptions={committees}
-          onFieldChange={setField}
-          onRoleChange={handleRoleChange}
-          onCommitteeIdsChange={handleCommitteeIdsChange}
-        />
-
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={1.5}
-          sx={{ justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, mt: 3 }}
-        >
+        ) : undefined
+      }
+      actions={
+        <>
           {isInactive ? (
             <Button
               type="button"
@@ -226,7 +217,9 @@ const EditUserAccountForm = ({
           ) : (
             <Button
               type="button"
-              variant="contained"
+              variant="outlined"
+              color="error"
+              startIcon={<BlockOutlinedIcon />}
               onClick={() => setDeactivateDialogOpen(true)}
               disabled={isSubmitting || isSelf}
               sx={{
@@ -234,78 +227,65 @@ const EditUserAccountForm = ({
                 fontWeight: 600,
                 borderRadius: 2,
                 px: 2.5,
-                bgcolor: 'error.main',
-                boxShadow: 'none',
-                '&:hover': { bgcolor: 'error.dark', boxShadow: 'none' },
               }}
             >
               Deactivate
             </Button>
           )}
 
-          <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end' }}>
-            <Button
-              type="button"
-              variant="outlined"
-              onClick={onCancel}
-              disabled={isSubmitting}
-              sx={{
-                textTransform: 'none',
-                fontWeight: 600,
-                borderRadius: 2,
-                px: 2.5,
-                borderColor: 'divider',
-                color: 'text.primary',
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={isSubmitting || isInactive || isSelf}
-              sx={{
-                textTransform: 'none',
-                fontWeight: 600,
-                borderRadius: 2,
-                px: 2.5,
-                boxShadow: 'none',
-                '&:hover': { boxShadow: 'none' },
-              }}
-            >
-              {isSubmitting ? <CircularProgress size={22} color="inherit" /> : 'Update & Save'}
-            </Button>
-          </Stack>
-        </Stack>
-
-        {isSelf && (
-          <Typography
-            variant="body2"
+          <Button
+            type="submit"
+            form={FORM_ID}
+            variant="contained"
+            startIcon={isSubmitting ? undefined : <SaveOutlinedIcon />}
+            disabled={isSubmitting || isInactive || isSelf}
             sx={{
-              color: 'text.secondary',
-              fontStyle: 'italic',
-              mt: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+              borderRadius: 2,
+              px: 2.5,
+              boxShadow: 'none',
+              '&:hover': { boxShadow: 'none' },
             }}
           >
-            Self deactivation and account update is disabled.
-          </Typography>
+            {isSubmitting ? <CircularProgress size={22} color="inherit" /> : 'Update'}
+          </Button>
+        </>
+      }
+    >
+      <Box component="form" id={FORM_ID} onSubmit={handleSubmit}>
+        {submitError && (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+            {submitError}
+          </Alert>
         )}
-      </Paper>
-    </Box>
 
-    <DeactivateUserDialog
-      open={deactivateDialogOpen}
-      userId={user.id}
-      onClose={() => setDeactivateDialogOpen(false)}
-      onDeactivated={onDeactivated}
-    />
-    <ActivateUserDialog
-      open={activateDialogOpen}
-      userId={user.id}
-      onClose={() => setActivateDialogOpen(false)}
-      onActivated={onActivated}
-    />
-    </>
+        <UserAccountFormFields
+          form={form}
+          errors={errors}
+          isSubmitting={isSubmitting}
+          readOnly={isInactive || isSelf}
+          organizationOptions={organizationOptions}
+          committeeOptions={committees}
+          onFieldChange={setField}
+          onRoleChange={handleRoleChange}
+          onCommitteeIdsChange={handleCommitteeIdsChange}
+        />
+      </Box>
+
+      <DeactivateUserDialog
+        open={deactivateDialogOpen}
+        userId={user.id}
+        onClose={() => setDeactivateDialogOpen(false)}
+        onDeactivated={onDeactivated}
+      />
+      <ActivateUserDialog
+        open={activateDialogOpen}
+        userId={user.id}
+        onClose={() => setActivateDialogOpen(false)}
+        onActivated={onActivated}
+      />
+    </AdminFormPageShell>
   );
 };
 

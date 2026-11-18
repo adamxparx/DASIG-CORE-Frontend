@@ -20,6 +20,9 @@ const StaffNotificationsPage = lazy(() => import('./features/notification/staff/
 const TbiManagerNotificationsPage = lazy(() => import('./features/notification/tbi_manager/pages/TbiManagerNotificationsPage'));
 const OrganizationManagementPage = lazy(() => import('./features/organization/pages/OrganizationManagementPage'));
 const UserManagementPage = lazy(() => import('./features/user/pages/UserManagementPage'));
+const UserFormPage = lazy(() => import('./features/user/pages/UserFormPage'));
+const OrganizationFormPage = lazy(() => import('./features/organization/pages/OrganizationFormPage'));
+const CommitteeFormPage = lazy(() => import('./features/committee/pages/CommitteeFormPage'));
 const AdminAlertsPage = lazy(() => import('./features/alerts/pages/AdminAlertsPage'));
 const ReportGenerationPage = lazy(() => import('./features/report/pages/ReportGenerationPage'));
 const CommitteeManagementPage = lazy(() => import('./features/committee/pages/CommitteeManagementPage'));
@@ -87,6 +90,12 @@ function App() {
             <Route path="organizations" element={<OrganizationManagementPage />} />
             <Route path="users" element={<UserManagementPage />} />
             <Route path="committees" element={<CommitteeManagementPage />} />
+            <Route path="organizations/new" element={<OrganizationFormPage mode="create" />} />
+            <Route path="organizations/:id/edit" element={<OrganizationFormPage mode="edit" />} />
+            <Route path="users/new" element={<UserFormPage mode="create" />} />
+            <Route path="users/:id/edit" element={<UserFormPage mode="edit" />} />
+            <Route path="committees/new" element={<CommitteeFormPage mode="create" />} />
+            <Route path="committees/:id/edit" element={<CommitteeFormPage mode="edit" />} />
             <Route path="alerts" element={<AdminAlertsPage />} />
             <Route path="reports" element={<ReportGenerationPage />} />
             <Route path="kpis/create" element={<CreateKpiPage />} />

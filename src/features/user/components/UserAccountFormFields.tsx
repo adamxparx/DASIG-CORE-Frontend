@@ -135,7 +135,7 @@ const UserAccountFormFields = ({
         />
       </Grid>
 
-      <Grid size={{ xs: 12, md: 6 }}>
+      <Grid size={{ xs: 12, md: 4 }}>
         <FieldLabel label="Role" required />
         <FormControl fullWidth error={!!errors.role} disabled={fieldsDisabled}>
           <Select
@@ -160,7 +160,7 @@ const UserAccountFormFields = ({
       </Grid>
 
       {showCommitteeField && (
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12 }}>
           <FieldLabel label="Committees" />
           <Button
             variant="outlined"

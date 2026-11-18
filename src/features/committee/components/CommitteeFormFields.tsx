@@ -170,7 +170,7 @@ const CommitteeFormFields = ({
           )}
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12 }}>
           <FieldLabel label="Description" />
           <TextField
             fullWidth

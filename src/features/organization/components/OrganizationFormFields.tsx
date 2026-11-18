@@ -1,8 +1,11 @@
 import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
+import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import { Link as RouterLink } from 'react-router-dom';
+import { routes } from '../../../routes';
 import type { OrganizationFormValues } from '../types/organization.types';
 
 export const organizationFieldSx = {
@@ -47,7 +50,7 @@ const OrganizationFormFields = ({
           />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12 }}>
           <FieldLabel label="Address" required />
           <TextField
             fullWidth
@@ -63,7 +66,7 @@ const OrganizationFormFields = ({
           />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <FieldLabel label="Contact Number" />
           <TextField
             fullWidth
@@ -96,7 +99,7 @@ const OrganizationFormFields = ({
           />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12 }}>
           <FieldLabel label="Committees" />
           {form.committeeNames.length > 0 ? (
             <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75 }}>
@@ -114,6 +117,13 @@ const OrganizationFormFields = ({
               None
             </Typography>
           )}
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+            Adding an organization to a committee is done in{' '}
+            <Link component={RouterLink} to={routes.adminCommittees} underline="hover" sx={{ fontWeight: 600, color: 'primary.main' }}>
+              Committees
+            </Link>
+            .
+          </Typography>
         </Grid>
 
         <Grid size={{ xs: 12 }}>
