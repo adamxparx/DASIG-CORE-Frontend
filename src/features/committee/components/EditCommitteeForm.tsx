@@ -1,12 +1,13 @@
-﻿import Alert from '@mui/material/Alert';
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined';
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
-import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 import { type FormEvent, useEffect, useState } from 'react';
 import { ApiError } from '../../../lib/api/client';
+import { routes } from '../../../routes';
+import AdminFormPageShell from '../../dashboard/shared/components/AdminFormPageShell';
 import type { OrganizationResponse } from '../../organization/types/organization.types';
 import type { UserResponse } from '../../user/types/user.types';
 import { userService } from '../../user/api/userService';
@@ -23,6 +24,8 @@ import CommitteeFormFields from './CommitteeFormFields';
 import DeactivateCommitteeDialog from './DeactivateCommitteeDialog';
 import ActivateCommitteeDialog from './ActivateCommitteeDialog';
 
+const FORM_ID = 'edit-committee-form';
+
 interface EditCommitteeFormProps {
   committee: CommitteeResponse;
   organizations: OrganizationResponse[];
@@ -30,7 +33,6 @@ interface EditCommitteeFormProps {
   onUpdated: () => void;
   onDeactivated: () => void;
   onActivated: () => void;
-  onCancel: () => void;
 }
 
 const EditCommitteeForm = ({
@@ -40,7 +42,6 @@ const EditCommitteeForm = ({
   onUpdated,
   onDeactivated,
   onActivated,
-  onCancel,
 }: EditCommitteeFormProps) => {
   const [form, setForm] = useState<CommitteeFormValues>(() => committeeToFormValues(committee));
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -136,107 +137,85 @@ const EditCommitteeForm = ({
   };
 
   return (
-    <>
-      <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
-          Edit Committee
-        </Typography>
-
-        <Paper elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 3 }}>
-          {submitError && (
-            <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
-              {submitError}
-            </Alert>
+    <AdminFormPageShell
+      title="Edit Committee"
+      description="Modify the committee details below and save your changes."
+      breadcrumbItems={[{ label: 'Committees', href: routes.adminCommittees }, { label: committee.name }]}
+      actions={
+        <>
+          {isInactive ? (
+            <Button
+              type="button"
+              variant="contained"
+              onClick={() => setActivateDialogOpen(true)}
+              disabled={isSubmitting}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                borderRadius: 2,
+                px: 2.5,
+                bgcolor: 'success.main',
+                boxShadow: 'none',
+                '&:hover': { bgcolor: 'success.dark', boxShadow: 'none' },
+              }}
+            >
+              Activate
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="outlined"
+              color="error"
+              startIcon={<BlockOutlinedIcon />}
+              onClick={() => setDeactivateDialogOpen(true)}
+              disabled={isSubmitting}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                borderRadius: 2,
+                px: 2.5,
+              }}
+            >
+              Deactivate
+            </Button>
           )}
 
-          <CommitteeFormFields
-            form={form}
-            errors={errors}
-            isSubmitting={isSubmitting}
-            readOnly={isInactive}
-            organizations={organizations}
-            users={users}
-            onFieldChange={setField}
-          />
-
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={1.5}
-            sx={{ justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, mt: 3 }}
+          <Button
+            type="submit"
+            form={FORM_ID}
+            variant="contained"
+            startIcon={isSubmitting ? undefined : <SaveOutlinedIcon />}
+            disabled={isSubmitting || isInactive}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              borderRadius: 2,
+              px: 2.5,
+              boxShadow: 'none',
+              '&:hover': { boxShadow: 'none' },
+            }}
           >
-            {isInactive ? (
-              <Button
-                type="button"
-                variant="contained"
-                onClick={() => setActivateDialogOpen(true)}
-                disabled={isSubmitting}
-                sx={{
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  borderRadius: 2,
-                  px: 2.5,
-                  bgcolor: 'success.main',
-                  boxShadow: 'none',
-                  '&:hover': { bgcolor: 'success.dark', boxShadow: 'none' },
-                }}
-              >
-                Activate
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                variant="contained"
-                onClick={() => setDeactivateDialogOpen(true)}
-                disabled={isSubmitting}
-                sx={{
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  borderRadius: 2,
-                  px: 2.5,
-                  bgcolor: 'error.main',
-                  boxShadow: 'none',
-                  '&:hover': { bgcolor: 'error.dark', boxShadow: 'none' },
-                }}
-              >
-                Deactivate
-              </Button>
-            )}
+            {isSubmitting ? <CircularProgress size={22} color="inherit" /> : 'Update'}
+          </Button>
+        </>
+      }
+    >
+      <Box component="form" id={FORM_ID} onSubmit={handleSubmit}>
+        {submitError && (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+            {submitError}
+          </Alert>
+        )}
 
-            <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end' }}>
-              <Button
-                type="button"
-                variant="outlined"
-                onClick={onCancel}
-                disabled={isSubmitting}
-                sx={{
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  borderRadius: 2,
-                  px: 2.5,
-                  borderColor: 'divider',
-                  color: 'text.primary',
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={isSubmitting || isInactive}
-                sx={{
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  borderRadius: 2,
-                  px: 2.5,
-                  boxShadow: 'none',
-                  '&:hover': { boxShadow: 'none' },
-                }}
-              >
-                {isSubmitting ? <CircularProgress size={22} color="inherit" /> : 'Update & Save'}
-              </Button>
-            </Stack>
-          </Stack>
-        </Paper>
+        <CommitteeFormFields
+          form={form}
+          errors={errors}
+          isSubmitting={isSubmitting}
+          readOnly={isInactive}
+          organizations={organizations}
+          users={users}
+          onFieldChange={setField}
+        />
       </Box>
 
       <DeactivateCommitteeDialog
@@ -252,7 +231,7 @@ const EditCommitteeForm = ({
         onClose={() => setActivateDialogOpen(false)}
         onActivated={onActivated}
       />
-    </>
+    </AdminFormPageShell>
   );
 };
 

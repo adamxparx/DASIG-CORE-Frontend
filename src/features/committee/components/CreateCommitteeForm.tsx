@@ -1,12 +1,12 @@
-﻿import Alert from '@mui/material/Alert';
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
-import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 import { type FormEvent, useState } from 'react';
 import { ApiError } from '../../../lib/api/client';
+import { routes } from '../../../routes';
+import AdminFormPageShell from '../../dashboard/shared/components/AdminFormPageShell';
 import type { OrganizationResponse } from '../../organization/types/organization.types';
 import type { UserResponse } from '../../user/types/user.types';
 import { userService } from '../../user/api/userService';
@@ -19,6 +19,8 @@ import {
   validateCommitteeForm,
 } from '../utils/committeeForm';
 import CommitteeFormFields from './CommitteeFormFields';
+
+const FORM_ID = 'create-committee-form';
 
 interface CreateCommitteeFormProps {
   organizations: OrganizationResponse[];
@@ -92,12 +94,31 @@ const CreateCommitteeForm = ({ organizations, users, onCreated }: CreateCommitte
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4 }}>
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
-        Create Committee
-      </Typography>
-
-      <Paper elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 3 }}>
+    <AdminFormPageShell
+      title="Create Committee"
+      description="Fill in the details below to set up a new committee."
+      breadcrumbItems={[{ label: 'Committees', href: routes.adminCommittees }, { label: 'Create Committee' }]}
+      actions={
+        <Button
+          type="submit"
+          form={FORM_ID}
+          variant="contained"
+          startIcon={isSubmitting ? undefined : <AddOutlinedIcon />}
+          disabled={isSubmitting}
+          sx={{
+            textTransform: 'none',
+            fontWeight: 600,
+            borderRadius: 2,
+            px: 2.5,
+            boxShadow: 'none',
+            '&:hover': { boxShadow: 'none' },
+          }}
+        >
+          {isSubmitting ? <CircularProgress size={22} color="inherit" /> : 'Create Committee'}
+        </Button>
+      }
+    >
+      <Box component="form" id={FORM_ID} onSubmit={handleSubmit}>
         {submitError && (
           <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
             {submitError}
@@ -112,42 +133,8 @@ const CreateCommitteeForm = ({ organizations, users, onCreated }: CreateCommitte
           users={users}
           onFieldChange={setField}
         />
-
-        <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end', mt: 3 }}>
-          <Button
-            type="button"
-            variant="outlined"
-            onClick={resetForm}
-            disabled={isSubmitting}
-            sx={{
-              textTransform: 'none',
-              fontWeight: 600,
-              borderRadius: 2,
-              px: 2.5,
-              borderColor: 'divider',
-              color: 'text.primary',
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={isSubmitting}
-            sx={{
-              textTransform: 'none',
-              fontWeight: 600,
-              borderRadius: 2,
-              px: 2.5,
-              boxShadow: 'none',
-              '&:hover': { boxShadow: 'none' },
-            }}
-          >
-            {isSubmitting ? <CircularProgress size={22} color="inherit" /> : 'Create Committee'}
-          </Button>
-        </Stack>
-      </Paper>
-    </Box>
+      </Box>
+    </AdminFormPageShell>
   );
 };
 

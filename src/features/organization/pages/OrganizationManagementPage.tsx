@@ -1,25 +1,19 @@
 import Alert from '@mui/material/Alert';
-import Divider from '@mui/material/Divider';
-import Snackbar from '@mui/material/Snackbar';
-import Stack from '@mui/material/Stack';
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../../../lib/api/client';
+import { routes } from '../../../routes';
 import AdminPageLayout from '../../dashboard/shared/components/AdminPageLayout';
-import DashboardHeader from '../../dashboard/shared/components/DashboardHeader';
+import LocationToast from '../../dashboard/shared/components/LocationToast';
 import { organizationService } from '../api/organizationService';
-import CreateOrganizationForm from '../components/CreateOrganizationForm';
-import EditOrganizationForm from '../components/EditOrganizationForm';
 import OrganizationsList from '../components/OrganizationsList';
 import type { OrganizationResponse } from '../types/organization.types';
-import { ManagementPageSkeleton } from '../../shared/components';
 
 const OrganizationManagementPage = () => {
+  const navigate = useNavigate();
   const [organizations, setOrganizations] = useState<OrganizationResponse[]>([]);
-  const [selectedOrganization, setSelectedOrganization] = useState<OrganizationResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [toastOpen, setToastOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
 
   const loadOrganizations = useCallback(async (silent = false) => {
     if (!silent) {
@@ -42,51 +36,6 @@ const OrganizationManagementPage = () => {
     void loadOrganizations();
   }, [loadOrganizations]);
 
-  const showToast = (message: string) => {
-    setToastMessage(message);
-    setToastOpen(true);
-  };
-
-  const handleCreated = () => {
-    setSelectedOrganization(null);
-    void loadOrganizations(true);
-    showToast('Organization created successfully.');
-  };
-
-  const handleSelect = (organization: OrganizationResponse) => {
-    setSelectedOrganization(organization);
-  };
-
-  const handleEditCancel = () => {
-    setSelectedOrganization(null);
-  };
-
-  const handleUpdated = () => {
-    setSelectedOrganization(null);
-    void loadOrganizations(true);
-    showToast('Organization updated successfully.');
-  };
-
-  const handleDeactivated = () => {
-    setSelectedOrganization(null);
-    void loadOrganizations(true);
-    showToast('Organization deactivated successfully.');
-  };
-
-  const handleActivated = () => {
-    setSelectedOrganization(null);
-    void loadOrganizations(true);
-    showToast('Organization activated successfully.');
-  };
-
-  if (isLoading) {
-    return (
-      <AdminPageLayout>
-        <ManagementPageSkeleton formFields={3} tableColumns={3} tableRows={5} />
-      </AdminPageLayout>
-    );
-  }
-
   if (error) {
     return (
       <AdminPageLayout>
@@ -97,45 +46,16 @@ const OrganizationManagementPage = () => {
 
   return (
     <AdminPageLayout>
-      <Stack spacing={3}>
-        <DashboardHeader
-          title="Organization Management"
-          subtitle="Create, Update, and Deactivate Organizations"
-        />
-        <Divider />
+      <OrganizationsList
+        organizations={organizations}
+        selectedId={null}
+        isLoading={isLoading}
+        onSelect={(organization) => navigate(`${routes.adminOrganizations}/${organization.id}/edit`)}
+        onRefresh={() => void loadOrganizations()}
+        onCreate={() => navigate(`${routes.adminOrganizations}/new`)}
+      />
 
-        {selectedOrganization ? (
-          <EditOrganizationForm
-            key={selectedOrganization.id}
-            organization={selectedOrganization}
-            onUpdated={handleUpdated}
-            onDeactivated={handleDeactivated}
-            onActivated={handleActivated}
-            onCancel={handleEditCancel}
-          />
-        ) : (
-          <CreateOrganizationForm onCreated={handleCreated} />
-        )}
-
-        <Divider />
-
-        <OrganizationsList
-          organizations={organizations}
-          selectedId={selectedOrganization?.id ?? null}
-          onSelect={handleSelect}
-        />
-      </Stack>
-
-      <Snackbar
-        open={toastOpen}
-        autoHideDuration={4000}
-        onClose={() => setToastOpen(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert severity="success" onClose={() => setToastOpen(false)} sx={{ borderRadius: 2, fontWeight: 600 }}>
-          {toastMessage}
-        </Alert>
-      </Snackbar>
+      <LocationToast />
     </AdminPageLayout>
   );
 };

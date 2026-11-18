@@ -1,12 +1,12 @@
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
-import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 import { type FormEvent, useState } from 'react';
 import { ApiError } from '../../../lib/api/client';
+import { routes } from '../../../routes';
+import AdminFormPageShell from '../../dashboard/shared/components/AdminFormPageShell';
 import { organizationService } from '../api/organizationService';
 import type { OrganizationFormValues } from '../types/organization.types';
 import {
@@ -15,6 +15,8 @@ import {
   validateOrganizationForm,
 } from '../utils/organizationForm';
 import OrganizationFormFields from './OrganizationFormFields';
+
+const FORM_ID = 'create-organization-form';
 
 interface CreateOrganizationFormProps {
   onCreated: () => void;
@@ -60,12 +62,31 @@ const CreateOrganizationForm = ({ onCreated }: CreateOrganizationFormProps) => {
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4 }}>
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
-        Create Organization
-      </Typography>
-
-      <Paper elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 3 }}>
+    <AdminFormPageShell
+      title="Create Organization"
+      description="Fill in the details below to register a new organization."
+      breadcrumbItems={[{ label: 'Organizations', href: routes.adminOrganizations }, { label: 'Create Organization' }]}
+      actions={
+        <Button
+          type="submit"
+          form={FORM_ID}
+          variant="contained"
+          startIcon={isSubmitting ? undefined : <AddOutlinedIcon />}
+          disabled={isSubmitting}
+          sx={{
+            textTransform: 'none',
+            fontWeight: 600,
+            borderRadius: 2,
+            px: 2.5,
+            boxShadow: 'none',
+            '&:hover': { boxShadow: 'none' },
+          }}
+        >
+          {isSubmitting ? <CircularProgress size={22} color="inherit" /> : 'Create Organization'}
+        </Button>
+      }
+    >
+      <Box component="form" id={FORM_ID} onSubmit={handleSubmit}>
         {submitError && (
           <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
             {submitError}
@@ -78,42 +99,8 @@ const CreateOrganizationForm = ({ onCreated }: CreateOrganizationFormProps) => {
           isSubmitting={isSubmitting}
           onFieldChange={setField}
         />
-
-        <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end', mt: 3 }}>
-          <Button
-            type="button"
-            variant="outlined"
-            onClick={resetForm}
-            disabled={isSubmitting}
-            sx={{
-              textTransform: 'none',
-              fontWeight: 600,
-              borderRadius: 2,
-              px: 2.5,
-              borderColor: 'divider',
-              color: 'text.primary',
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={isSubmitting}
-            sx={{
-              textTransform: 'none',
-              fontWeight: 600,
-              borderRadius: 2,
-              px: 2.5,
-              boxShadow: 'none',
-              '&:hover': { boxShadow: 'none' },
-            }}
-          >
-            {isSubmitting ? <CircularProgress size={22} color="inherit" /> : 'Create Organization'}
-          </Button>
-        </Stack>
-      </Paper>
-    </Box>
+      </Box>
+    </AdminFormPageShell>
   );
 };
 

@@ -1,12 +1,13 @@
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined';
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
-import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 import { type FormEvent, useEffect, useState } from 'react';
 import { ApiError } from '../../../lib/api/client';
+import { routes } from '../../../routes';
+import AdminFormPageShell from '../../dashboard/shared/components/AdminFormPageShell';
 import { organizationService } from '../api/organizationService';
 import type { OrganizationFormValues, OrganizationResponse } from '../types/organization.types';
 import {
@@ -19,15 +20,16 @@ import DeactivateOrganizationDialog from './DeactivateOrganizationDialog';
 import ActivateOrganizationDialog from './ActivateOrganizationDialog';
 import OrganizationFormFields from './OrganizationFormFields';
 
+const FORM_ID = 'edit-organization-form';
+
 interface EditOrganizationFormProps {
   organization: OrganizationResponse;
   onUpdated: () => void;
   onDeactivated: () => void;
   onActivated: () => void;
-  onCancel: () => void;
 }
 
-const EditOrganizationForm = ({ organization, onUpdated, onDeactivated, onActivated, onCancel }: EditOrganizationFormProps) => {
+const EditOrganizationForm = ({ organization, onUpdated, onDeactivated, onActivated }: EditOrganizationFormProps) => {
   const [form, setForm] = useState<OrganizationFormValues>(() => organizationToFormValues(organization));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -74,32 +76,12 @@ const EditOrganizationForm = ({ organization, onUpdated, onDeactivated, onActiva
   };
 
   return (
-    <>
-    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4 }}>
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
-        Edit Organization
-      </Typography>
-
-      <Paper elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 3 }}>
-        {submitError && (
-          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
-            {submitError}
-          </Alert>
-        )}
-
-        <OrganizationFormFields
-          form={form}
-          errors={errors}
-          isSubmitting={isSubmitting}
-          readOnly={isInactive}
-          onFieldChange={setField}
-        />
-
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={1.5}
-          sx={{ justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, mt: 3 }}
-        >
+    <AdminFormPageShell
+      title="Edit Organization"
+      description="Modify the organization details below and save your changes."
+      breadcrumbItems={[{ label: 'Organizations', href: routes.adminOrganizations }, { label: organization.name }]}
+      actions={
+        <>
           {isInactive ? (
             <Button
               type="button"
@@ -121,7 +103,9 @@ const EditOrganizationForm = ({ organization, onUpdated, onDeactivated, onActiva
           ) : (
             <Button
               type="button"
-              variant="contained"
+              variant="outlined"
+              color="error"
+              startIcon={<BlockOutlinedIcon />}
               onClick={() => setDeactivateDialogOpen(true)}
               disabled={isSubmitting}
               sx={{
@@ -129,66 +113,62 @@ const EditOrganizationForm = ({ organization, onUpdated, onDeactivated, onActiva
                 fontWeight: 600,
                 borderRadius: 2,
                 px: 2.5,
-                bgcolor: 'error.main',
-                boxShadow: 'none',
-                '&:hover': { bgcolor: 'error.dark', boxShadow: 'none' },
               }}
             >
               Deactivate
             </Button>
           )}
 
-          <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end' }}>
-            <Button
-              type="button"
-              variant="outlined"
-              onClick={onCancel}
-              disabled={isSubmitting}
-              sx={{
-                textTransform: 'none',
-                fontWeight: 600,
-                borderRadius: 2,
-                px: 2.5,
-                borderColor: 'divider',
-                color: 'text.primary',
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={isSubmitting || isInactive}
-              sx={{
-                textTransform: 'none',
-                fontWeight: 600,
-                borderRadius: 2,
-                px: 2.5,
-                boxShadow: 'none',
-                '&:hover': { boxShadow: 'none' },
-              }}
-            >
-              {isSubmitting ? <CircularProgress size={22} color="inherit" /> : 'Update & Save'}
-            </Button>
-          </Stack>
-        </Stack>
-      </Paper>
-    </Box>
+          <Button
+            type="submit"
+            form={FORM_ID}
+            variant="contained"
+            startIcon={isSubmitting ? undefined : <SaveOutlinedIcon />}
+            disabled={isSubmitting || isInactive}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              borderRadius: 2,
+              px: 2.5,
+              boxShadow: 'none',
+              '&:hover': { boxShadow: 'none' },
+            }}
+          >
+            {isSubmitting ? <CircularProgress size={22} color="inherit" /> : 'Update'}
+          </Button>
+        </>
+      }
+    >
+      <Box component="form" id={FORM_ID} onSubmit={handleSubmit}>
+        {submitError && (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+            {submitError}
+          </Alert>
+        )}
 
-    <DeactivateOrganizationDialog
-      open={deactivateDialogOpen}
-      organizationId={organization.id}
-      onClose={() => setDeactivateDialogOpen(false)}
-      onDeactivated={onDeactivated}
-    />
+        <OrganizationFormFields
+          form={form}
+          errors={errors}
+          isSubmitting={isSubmitting}
+          readOnly={isInactive}
+          onFieldChange={setField}
+        />
+      </Box>
 
-    <ActivateOrganizationDialog
-      open={activateDialogOpen}
-      organizationId={organization.id}
-      onClose={() => setActivateDialogOpen(false)}
-      onActivated={onActivated}
-    />
-    </>
+      <DeactivateOrganizationDialog
+        open={deactivateDialogOpen}
+        organizationId={organization.id}
+        onClose={() => setDeactivateDialogOpen(false)}
+        onDeactivated={onDeactivated}
+      />
+
+      <ActivateOrganizationDialog
+        open={activateDialogOpen}
+        organizationId={organization.id}
+        onClose={() => setActivateDialogOpen(false)}
+        onActivated={onActivated}
+      />
+    </AdminFormPageShell>
   );
 };
 

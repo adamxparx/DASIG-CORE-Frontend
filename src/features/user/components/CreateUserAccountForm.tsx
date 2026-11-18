@@ -1,12 +1,12 @@
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
-import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 import { type FormEvent, useState } from 'react';
 import { ApiError } from '../../../lib/api/client';
+import { routes } from '../../../routes';
+import AdminFormPageShell from '../../dashboard/shared/components/AdminFormPageShell';
 import type { OrganizationResponse } from '../../organization/types/organization.types';
 import type { CommitteeResponse } from '../../committee/types/committee.types';
 import { committeeService } from '../../committee/api/committeeService';
@@ -20,6 +20,8 @@ import {
 } from '../utils/userForm';
 import UserAccountCreatedDialog from './UserAccountCreatedDialog';
 import UserAccountFormFields from './UserAccountFormFields';
+
+const FORM_ID = 'create-user-account-form';
 
 interface CreateUserAccountFormProps {
   organizations: OrganizationResponse[];
@@ -101,7 +103,6 @@ const CreateUserAccountForm = ({ organizations, committees, onCreated }: CreateU
         await syncCommitteesAfterCreate(created.id, form.committeeIds);
       }
       resetForm();
-      onCreated();
       setCreatedUser(created);
     } catch (err) {
       setSubmitError(err instanceof ApiError ? err.message : 'Unable to create user account. Please try again.');
@@ -110,13 +111,37 @@ const CreateUserAccountForm = ({ organizations, committees, onCreated }: CreateU
     }
   };
 
-  return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4 }}>
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
-        Create User Account
-      </Typography>
+  const handleCreatedDialogClose = () => {
+    setCreatedUser(null);
+    onCreated();
+  };
 
-      <Paper elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: 2, p: 3 }}>
+  return (
+    <AdminFormPageShell
+      title="Create User Account"
+      description="Fill in the details below to set up a new user account."
+      breadcrumbItems={[{ label: 'Users', href: routes.adminUsers }, { label: 'Create User' }]}
+      actions={
+        <Button
+          type="submit"
+          form={FORM_ID}
+          variant="contained"
+          startIcon={isSubmitting ? undefined : <AddOutlinedIcon />}
+          disabled={isSubmitting}
+          sx={{
+            textTransform: 'none',
+            fontWeight: 600,
+            borderRadius: 2,
+            px: 2.5,
+            boxShadow: 'none',
+            '&:hover': { boxShadow: 'none' },
+          }}
+        >
+          {isSubmitting ? <CircularProgress size={22} color="inherit" /> : 'Create Account'}
+        </Button>
+      }
+    >
+      <Box component="form" id={FORM_ID} onSubmit={handleSubmit}>
         {submitError && (
           <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
             {submitError}
@@ -133,48 +158,14 @@ const CreateUserAccountForm = ({ organizations, committees, onCreated }: CreateU
           onRoleChange={handleRoleChange}
           onCommitteeIdsChange={handleCommitteeIdsChange}
         />
-
-        <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end', mt: 3 }}>
-          <Button
-            type="button"
-            variant="outlined"
-            onClick={resetForm}
-            disabled={isSubmitting}
-            sx={{
-              textTransform: 'none',
-              fontWeight: 600,
-              borderRadius: 2,
-              px: 2.5,
-              borderColor: 'divider',
-              color: 'text.primary',
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={isSubmitting}
-            sx={{
-              textTransform: 'none',
-              fontWeight: 600,
-              borderRadius: 2,
-              px: 2.5,
-              boxShadow: 'none',
-              '&:hover': { boxShadow: 'none' },
-            }}
-          >
-            {isSubmitting ? <CircularProgress size={22} color="inherit" /> : 'Create Account'}
-          </Button>
-        </Stack>
-      </Paper>
+      </Box>
 
       <UserAccountCreatedDialog
         open={createdUser !== null}
         user={createdUser}
-        onClose={() => setCreatedUser(null)}
+        onClose={handleCreatedDialogClose}
       />
-    </Box>
+    </AdminFormPageShell>
   );
 };
 

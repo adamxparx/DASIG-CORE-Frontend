@@ -1,5 +1,10 @@
-﻿import Box from '@mui/material/Box';
+import Add from '@mui/icons-material/Add';
+import Refresh from '@mui/icons-material/Refresh';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
+import Skeleton from '@mui/material/Skeleton';
+import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -11,7 +16,12 @@ import { useMemo, useState } from 'react';
 import type { CommitteeResponse } from '../types/committee.types';
 import type { OrganizationResponse } from '../../organization/types/organization.types';
 import type { UserResponse } from '../../user/types/user.types';
-import TablePaginationBar, { TABLE_PAGE_SIZE } from '../../dashboard/shared/components/TablePaginationBar';
+import TablePaginationBar from '../../dashboard/shared/components/TablePaginationBar';
+import SortableTableHeadCell from '../../dashboard/shared/components/SortableTableHeadCell';
+import { useTableSort } from '../../dashboard/shared/hooks/useTableSort';
+
+const PAGE_SIZE = 8;
+const TABLE_FIXED_HEIGHT = 480;
 
 interface CommitteesListProps {
   committees: CommitteeResponse[];
@@ -19,11 +29,23 @@ interface CommitteesListProps {
   onSelect: (committee: CommitteeResponse) => void;
   organizations?: OrganizationResponse[];
   users?: UserResponse[];
+  onRefresh: () => void;
+  onCreate: () => void;
+  isLoading?: boolean;
 }
 
 const isActiveStatus = (status: string) => status.toLowerCase() === 'active';
 
-const CommitteesList = ({ committees, selectedId, onSelect, organizations = [], users = [] }: CommitteesListProps) => {
+const CommitteesList = ({
+  committees,
+  selectedId,
+  onSelect,
+  organizations = [],
+  users = [],
+  onRefresh,
+  onCreate,
+  isLoading = false,
+}: CommitteesListProps) => {
   const [page, setPage] = useState(1);
 
   const organizationMap = useMemo(() => {
@@ -33,10 +55,6 @@ const CommitteesList = ({ committees, selectedId, onSelect, organizations = [], 
   const userMap = useMemo(() => {
     return new Map(users.map((user) => [user.id, user.name]));
   }, [users]);
-
-  const totalPages = Math.max(1, Math.ceil(committees.length / TABLE_PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const pagedCommittees = committees.slice((safePage - 1) * TABLE_PAGE_SIZE, safePage * TABLE_PAGE_SIZE);
 
   const truncate = (text: string, maxLen: number) => {
     if (text.length <= maxLen) return text;
@@ -61,38 +79,119 @@ const CommitteesList = ({ committees, selectedId, onSelect, organizations = [], 
     return truncate(joined, 50);
   };
 
+  const compareCommittees = (a: CommitteeResponse, b: CommitteeResponse, key: string): number => {
+    switch (key) {
+      case 'name':
+        return a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true });
+      case 'organization':
+        return getOrganizationNames(a).localeCompare(getOrganizationNames(b), undefined, {
+          sensitivity: 'base',
+        });
+      case 'leads':
+        return getCommitteeLeadNames(a).localeCompare(getCommitteeLeadNames(b), undefined, {
+          sensitivity: 'base',
+        });
+      case 'status':
+        return a.status.localeCompare(b.status, undefined, { sensitivity: 'base' });
+      case 'id':
+      default:
+        return a.id - b.id;
+    }
+  };
+
+  const { sorted, sort, toggleSort } = useTableSort(committees, compareCommittees, 'id', 'desc');
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedCommittees = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   return (
     <Box>
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
-        Committees
-      </Typography>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={1.5}
+        sx={{ alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', mb: 1.5 }}
+      >
+        <Stack spacing={0.5}>
+          <Typography variant="h5" sx={{ fontWeight: 700 }}>
+            Committees
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Create, update, and deactivate committees across the consortium.
+          </Typography>
+        </Stack>
+        <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end' }}>
+          <Button
+            variant="outlined"
+            startIcon={<Refresh />}
+            onClick={onRefresh}
+            disabled={isLoading}
+            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2, borderColor: 'divider', color: 'text.primary' }}
+          >
+            Refresh
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={onCreate}
+            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2, boxShadow: 'none', '&:hover': { boxShadow: 'none' } }}
+          >
+            Create Committee
+          </Button>
+        </Stack>
+      </Stack>
 
       <TableContainer
         component={Paper}
         elevation={0}
-        sx={{ border: 1, borderColor: 'divider', borderRadius: 2 }}
+        sx={{
+          border: 1,
+          borderColor: 'divider',
+          borderRadius: 2,
+          height: TABLE_FIXED_HEIGHT,
+          overflowY: 'auto',
+        }}
       >
-        <Table>
+        <Table stickyHeader>
           <TableHead>
             <TableRow sx={{ bgcolor: '#F9FAFB' }}>
-              <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
-                Name
-              </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
-                Organization
-              </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
-                Committee Leads
-              </TableCell>
-              <TableCell
-                sx={{ fontWeight: 600, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}
-              >
-                Status
-              </TableCell>
+              <SortableTableHeadCell label="Name" columnKey="name" sortKey={sort.key} direction={sort.direction} onSort={toggleSort} />
+              <SortableTableHeadCell
+                label="Organization"
+                columnKey="organization"
+                sortKey={sort.key}
+                direction={sort.direction}
+                onSort={toggleSort}
+              />
+              <SortableTableHeadCell
+                label="Committee Leads"
+                columnKey="leads"
+                sortKey={sort.key}
+                direction={sort.direction}
+                onSort={toggleSort}
+              />
+              <SortableTableHeadCell label="Status" columnKey="status" sortKey={sort.key} direction={sort.direction} onSort={toggleSort} />
             </TableRow>
           </TableHead>
           <TableBody>
-            {committees.length === 0 ? (
+            {isLoading ? (
+              Array.from({ length: PAGE_SIZE }).map((_, index) => (
+                <TableRow key={index}>
+                  <TableCell sx={{ py: 2 }}>
+                    <Skeleton variant="rounded" height={20} width="60%" />
+                  </TableCell>
+                  <TableCell sx={{ py: 2 }}>
+                    <Skeleton variant="rounded" height={20} width="50%" />
+                  </TableCell>
+                  <TableCell sx={{ py: 2 }}>
+                    <Skeleton variant="rounded" height={20} width="50%" />
+                  </TableCell>
+                  <TableCell sx={{ py: 2 }}>
+                    <Skeleton variant="rounded" height={20} width="40%" />
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : committees.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} sx={{ border: 0, py: 6 }}>
                   <Typography align="center" color="text.secondary">
@@ -121,7 +220,7 @@ const CommitteesList = ({ committees, selectedId, onSelect, organizations = [], 
                       },
                     }}
                   >
-                    <TableCell>{committee.name}</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: 'primary.main' }}>{committee.name}</TableCell>
                     <TableCell sx={{ color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getOrganizationNames(committee)}</TableCell>
                     <TableCell sx={{ color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getCommitteeLeadNames(committee)}</TableCell>
                     <TableCell>
@@ -143,7 +242,7 @@ const CommitteesList = ({ committees, selectedId, onSelect, organizations = [], 
         </Table>
       </TableContainer>
 
-      <TablePaginationBar total={committees.length} page={safePage} onPageChange={setPage} />
+      <TablePaginationBar total={committees.length} page={safePage} pageSize={PAGE_SIZE} onPageChange={setPage} />
     </Box>
   );
 };
