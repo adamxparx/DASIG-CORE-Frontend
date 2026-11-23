@@ -32,6 +32,7 @@ import type {
 } from '../../shared/types/kpi.types';
 import { routes } from '../../../../routes';
 import { FormSkeleton } from '../../../shared/components';
+import { logActivity } from '../../../activity/api/activityService';
 
 /* ─────────────────────────────────────────────
    Small helpers
@@ -126,6 +127,11 @@ const CreateKpiPage = () => {
     setToastSeverity(severity);
     setToastOpen(true);
   };
+
+  /* ── Validation study: mark when the Create KPI page opens (T1 start) ── */
+  useEffect(() => {
+    if (!isEdit) logActivity('OPEN_CREATE_KPI');
+  }, [isEdit]);
 
   /* ── Unified concurrent data loader ─────── */
   useEffect(() => {

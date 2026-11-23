@@ -4,6 +4,7 @@ import Stack from '@mui/material/Stack';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import { logActivity } from '../../../activity/api/activityService';
 import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../../../../lib/api/client';
 import CreateKpiButton from '../../admin/components/CreateKpiButton';
@@ -42,6 +43,11 @@ const AdminKpiManagementPage = () => {
         setIsLoading(false);
       }
     }
+  }, []);
+
+  // Validation study: page-open event (task start)
+  useEffect(() => {
+    logActivity('OPEN_DASHBOARD');
   }, []);
 
   useEffect(() => {

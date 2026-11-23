@@ -295,7 +295,7 @@ const formatMetricValue = (value: number) =>
 // ─── Component ───────────────────────────────────────────────────────────────
 
 const KpiProgressChart = ({ history, role }: { history: KpiPeriodHistoryResponse; role: UserRole }) => {
-  const [viewFreq, setViewFreq] = useState<ChartViewFrequency>('MONTHLY');
+  const [viewFreq, setViewFreq] = useState<ChartViewFrequency>('WEEKLY');
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const points = buildChartPointsByFrequency(history, viewFreq);

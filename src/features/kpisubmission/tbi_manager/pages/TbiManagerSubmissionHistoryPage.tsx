@@ -66,6 +66,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { logActivity } from '../../../activity/api/activityService';
 
 import { kpiSubmissionService } from '../../api/kpiSubmissionService';
 import type { AssignableKpi, KpiSubmissionResponse, SubmissionDocumentResponse, SubmissionReviewStatus } from '../../types/kpiSubmission.types';
@@ -387,6 +388,11 @@ const TbiManagerSubmissionHistoryPage = () => {
   }, [selectedCommitteeId]);
 
 
+
+  // Validation study: page-open event (task start)
+  useEffect(() => {
+    logActivity('OPEN_SUBMISSION_HISTORY');
+  }, []);
 
   useEffect(() => {
 
@@ -1010,7 +1016,10 @@ const TbiManagerSubmissionHistoryPage = () => {
 
                           hover
 
-                          onClick={() => setSelectedSubmission(submission)}
+                          onClick={() => {
+                            setSelectedSubmission(submission);
+                            logActivity('OPEN_SUBMISSION_DETAIL', `/submissions/${submission.id}`);
+                          }}
 
                           sx={{
 
