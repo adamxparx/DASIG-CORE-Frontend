@@ -6,6 +6,7 @@ import type { LoginRequest } from '../types/auth.types';
 import { decodeJwtPayload, getDashboardPathForRole } from '../utils/jwt';
 import { tokenStorage } from '../utils/tokenStorage';
 import { routes } from '../../../routes';
+import { logActivity } from '../../activity/api/activityService';
 
 type LoginStatus = 'idle' | 'loading' | 'error';
 
@@ -38,6 +39,7 @@ export function useLogin() {
         }
 
         tokenStorage.set(response.token);
+        logActivity('SIGNED_IN');
 
         if (mustChangePassword) {
           navigate(routes.changePassword, { replace: true });

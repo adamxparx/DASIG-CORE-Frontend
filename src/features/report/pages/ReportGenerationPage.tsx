@@ -31,6 +31,7 @@ import Tabs from '@mui/material/Tabs';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useState } from 'react';
+import { logActivity } from '../../activity/api/activityService';
 import AdminPageLayout from '../../dashboard/shared/components/AdminPageLayout';
 import { kpiService } from '../../dashboard/shared/api/kpiService';
 import type { KpiDefinitionResponse } from '../../dashboard/shared/types/kpi.types';
@@ -97,6 +98,11 @@ export default function ReportGenerationPage() {
       (report.kpiName?.toLowerCase().includes(query) ?? false)
     );
   });
+
+  // Validation study: page-open event (task start)
+  useEffect(() => {
+    logActivity('OPEN_REPORT_GENERATION');
+  }, []);
 
   // Fetch KPIs globally when scope is KPI
   useEffect(() => {

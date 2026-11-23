@@ -21,6 +21,7 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
+import { logActivity } from '../../../activity/api/activityService';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ApiError } from '../../../../lib/api/client';
 import { dashboardService } from '../../shared/api/dashboardService';
@@ -225,6 +226,11 @@ const KpiDetailPage = () => {
       setIsLoadingKpi(false);
     }
   };
+
+  // Validation study: KPI details opened (end of view tasks)
+  useEffect(() => {
+    if (kpiId) logActivity('OPEN_KPI_DETAIL');
+  }, [kpiId]);
 
   useEffect(() => {
     if (kpiId) {

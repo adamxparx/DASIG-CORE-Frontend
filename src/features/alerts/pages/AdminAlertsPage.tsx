@@ -20,6 +20,7 @@ import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useState } from 'react';
+import { logActivity } from '../../activity/api/activityService';
 import { useSearchParams } from 'react-router-dom';
 import { ApiError } from '../../../lib/api/client';
 import AdminPageLayout from '../../dashboard/shared/components/AdminPageLayout';
@@ -64,6 +65,11 @@ export default function AdminAlertsPage() {
         setIsLoading(false);
       }
     }
+  }, []);
+
+  // Validation study: page-open event (task start)
+  useEffect(() => {
+    logActivity('OPEN_ALERTS');
   }, []);
 
   useEffect(() => {

@@ -31,6 +31,7 @@ import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { logActivity } from '../../../activity/api/activityService';
 import { kpiSubmissionService } from '../../api/kpiSubmissionService';
 import type { AssignableKpi, KpiSubmissionResponse, SubmissionDocumentResponse, SubmissionReviewStatus } from '../../types/kpiSubmission.types';
 import { TableSkeleton } from '../../../shared/components';
@@ -203,6 +204,11 @@ const StaffSubmissionHistoryPage = () => {
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  // Validation study: page-open event (task start)
+  useEffect(() => {
+    logActivity('OPEN_SUBMISSION_HISTORY');
   }, []);
 
   useEffect(() => {
@@ -496,7 +502,10 @@ const StaffSubmissionHistoryPage = () => {
                         <TableRow
                           key={submission.id}
                           hover
-                          onClick={() => setSelectedSubmission(submission)}
+                          onClick={() => {
+                            setSelectedSubmission(submission);
+                            logActivity('OPEN_SUBMISSION_DETAIL', `/submissions/${submission.id}`);
+                          }}
                           sx={{
                             cursor: 'pointer',
                             transition: 'background-color 0.15s ease',

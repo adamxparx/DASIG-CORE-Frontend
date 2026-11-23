@@ -18,6 +18,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { logActivity } from '../../../activity/api/activityService';
 import type { ChangeEventHandler } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { kpiSubmissionService } from '../../api/kpiSubmissionService';
@@ -168,6 +169,11 @@ const SubmitKpiEntryPage = ({ role }: SubmitKpiEntryPageProps) => {
     setToastMessage(message);
     setToastSeverity(severity);
     setToastOpen(true);
+  }, []);
+
+  // Validation study: page-open event (task start)
+  useEffect(() => {
+    logActivity('OPEN_SUBMIT_KPI');
   }, []);
 
   useEffect(() => {

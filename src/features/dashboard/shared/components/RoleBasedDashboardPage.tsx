@@ -4,6 +4,7 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Snackbar from '@mui/material/Snackbar';
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import { logActivity } from '../../../activity/api/activityService';
 import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../../../../lib/api/client';
 import DashboardViewToggle from '../../admin/components/DashboardViewToggle';
@@ -95,6 +96,11 @@ const RoleBasedDashboardPage = ({
       }
     }
   }, [selectedCommitteeId]);
+
+  // Validation study: page-open event (task start)
+  useEffect(() => {
+    logActivity('OPEN_DASHBOARD');
+  }, []);
 
   useEffect(() => {
     void loadDashboard();

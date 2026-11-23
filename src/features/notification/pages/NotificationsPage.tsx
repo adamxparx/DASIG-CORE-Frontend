@@ -9,6 +9,7 @@ import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { logActivity } from '../../activity/api/activityService';
 import { ApiError } from '../../../lib/api/client';
 import { committeeAlertsService } from '../../alerts/api/committeeAlertsService';
 import ExplainOverdueDialog from '../../alerts/components/ExplainOverdueDialog';
@@ -68,6 +69,11 @@ const NotificationsPage = ({ canExplainOverdue = false }: NotificationsPageProps
     }
   }, []);
 
+  // Validation study: page-open event (task start)
+  useEffect(() => {
+    logActivity('OPEN_NOTIFICATIONS');
+  }, []);
+
   useEffect(() => {
     void loadNotifications();
   }, [loadNotifications]);
@@ -101,6 +107,8 @@ const NotificationsPage = ({ canExplainOverdue = false }: NotificationsPageProps
   );
 
   const handleSelect = async (notification: NotificationResponse) => {
+    logActivity('OPEN_NOTIFICATION', `/notifications/${notification.id}`);
+
     if (!isUnreadNotification(notification.status)) {
       return;
     }
