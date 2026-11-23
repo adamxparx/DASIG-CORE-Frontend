@@ -1,4 +1,5 @@
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
+import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
@@ -17,7 +18,7 @@ const KPI_CREATE_PATTERN = /^\/dashboard\/admin\/kpis\/create$/;
 const KPI_EDIT_PATTERN = /^\/dashboard\/admin\/kpis\/\d+\/edit$/;
 
 const DashboardUserHeader = () => {
-  const { committeeSelector } = useDashboardShell();
+  const { committeeSelector, setMobileOpen } = useDashboardShell();
   const location = useLocation();
   const navigate = useNavigate();
   const session = getSession();
@@ -83,6 +84,14 @@ const DashboardUserHeader = () => {
       }}
     >
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', minWidth: 0, flex: 1 }}>
+        {/* Menu button for phones and small tablets: opens the mobile sidebar */}
+        <IconButton
+          onClick={() => setMobileOpen(true)}
+          aria-label="Open menu"
+          sx={{ display: { xs: 'inline-flex', md: 'none' }, color: 'text.primary', flexShrink: 0 }}
+        >
+          <MenuRoundedIcon />
+        </IconButton>
         {(isKpiDetail || isKpiCreate || isKpiEdit) ? (
           <>
             <IconButton
